@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>吉伊卡哇 3D 冒險拯救大作戰：探索萌島與生字語詞書寫</title>
+  <!-- Google Fonts: Zen Maru Gothic & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Three.js for 3D Game World -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --chiikawa-pink: #ffb8d1;
+      --chiikawa-pink-dark: #f089ac;
+      --chiikawa-pink-light: #ffe6ef;
+      --hachiware-blue: #89cff0;
+      --hachiware-blue-dark: #58b2e3;
+      --hachiware-blue-light: #e5f5fd;
+      --usagi-yellow: #fff59d;
+      --usagi-yellow-dark: #f6e05e;
+      --usagi-yellow-light: #fffae0;
+      --soft-brown: #5d4037;
+      --soft-brown-light: #8d6e63;
+      --success-green: #77dd77;
+      --success-green-dark: #5cb85c;
+      --error-red: #ff6961;
+      --cream-bg: #fffdf9;
+      --card-bg: #ffffff;
+      --shadow-soft-pink: 0 10px 25px rgba(255, 184, 209, 0.45);
+      --shadow-soft-blue: 0 10px 25px rgba(137, 207, 240, 0.4);
+      --shadow-marshmallow: 0 8px 20px rgba(93, 64, 55, 0.12);
+      --font-cute: 'Zen Maru Gothic', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-cute);
+      color: var(--soft-brown);
+      background-color: #fff9fb;
+      background-image: 
+        radial-gradient(#ffccd9 15%, transparent 16%),
+        radial-gradient(#d0e8f7 15%, transparent 16%);
+      background-size: 36px 36px;
+      background-position: 0 0, 18px 18px;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部導航列 */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .header-left, .header-center, .header-right {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cute-pill-btn {
+      background: #ffffff;
+      border: 3px solid var(--chiikawa-pink);
+      color: var(--soft-brown);
+      font-family: var(--font-cute);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 8px 16px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: var(--shadow-marshmallow);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .cute-pill-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: var(--shadow-soft-pink);
+    }
+    .cute-pill-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .cute-select-wrapper {
+      position: relative;
+    }
+    .cute-select {
+      appearance: none;
+      background: #ffffff;
+      border: 3px solid var(--hachiware-blue);
+      color: var(--soft-brown);
+      font-family: var(--font-cute);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 8px 36px 8px 16px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: var(--shadow-marshmallow);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .cute-select:hover {
+      border-color: var(--hachiware-blue-dark);
+      box-shadow: var(--shadow-soft-blue);
+    }
+    .cute-select-arrow {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--hachiware-blue-dark);
+      font-size: 0.8rem;
+    }
+
+    /* 鑰匙進度 HUD (隨機收集 5銀 + 5金) */
+    .key-hud {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 3px solid var(--usagi-yellow-dark);
+      border-radius: 40px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-marshmallow);
+    }
+    .key-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 900;
+      font-size: 0.95rem;
+    }
+    .key-icons {
+      display: flex;
+      gap: 3px;
+    }
+    .key-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      border: 2px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .key-dot.silver.active {
+      background: #89cff0;
+      border-color: #58b2e3;
+      color: white;
+      transform: scale(1.15);
+      box-shadow: 0 0 8px rgba(137, 207, 240, 0.8);
+    }
+    .key-dot.gold.active {
+      background: #ffd700;
+      border-color: #f59e0b;
+      color: white;
+      transform: scale(1.15);
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+    }
+
+    /* 3D 畫布容器 */
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* 底部浮動 HUD */
+    .bottom-hud {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 20px;
+      pointer-events: none;
+    }
+
+    .touch-controls {
+      pointer-events: auto;
+      display: none;
+    }
+    @media (pointer: coarse) {
+      .touch-controls { display: block; }
+    }
+
+    /* 虛擬搖桿 (Virtual Joystick) */
+    .joystick-zone {
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 3px solid var(--chiikawa-pink);
+      border-radius: 50%;
+      position: relative;
+      touch-action: none;
+      box-shadow: var(--shadow-soft-pink);
+      backdrop-filter: blur(4px);
+    }
+    .joystick-knob {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--chiikawa-pink), var(--chiikawa-pink-dark));
+      border-radius: 50%;
+      position: absolute;
+      top: 35px;
+      left: 35px;
+      pointer-events: none;
+      box-shadow: 0 4px 10px rgba(240, 137, 172, 0.5);
+    }
+
+    .hud-actions {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .action-big-btn {
+      background: linear-gradient(135deg, var(--chiikawa-pink), #ff9ebf);
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      font-family: var(--font-cute);
+      font-weight: 900;
+      font-size: 1.1rem;
+      padding: 14px 24px;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(255, 137, 172, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: pulse-cute 2s infinite ease-in-out;
+    }
+    .action-big-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+    }
+    .action-big-btn:active {
+      transform: translateY(2px) scale(0.96);
+    }
+
+    @keyframes pulse-cute {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .jump-btn {
+      background: linear-gradient(135deg, var(--hachiware-blue), #64c2f3);
+      color: white;
+      border: 3px solid #ffffff;
+      font-family: var(--font-cute);
+      font-weight: 900;
+      font-size: 0.95rem;
+      padding: 10px 18px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgba(88, 178, 227, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    /* 3D 浮動互動提示泡泡 */
+    #interact-prompt {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100px);
+      z-index: 45;
+      background: #ffffff;
+      border: 3px solid var(--chiikawa-pink);
+      border-radius: 30px;
+      padding: 10px 20px;
+      font-weight: 900;
+      font-size: 1.05rem;
+      color: var(--soft-brown);
+      box-shadow: var(--shadow-soft-pink);
+      pointer-events: auto;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: float-bubble 1.5s infinite ease-in-out;
+    }
+    #interact-prompt::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: var(--chiikawa-pink) transparent;
+      display: block;
+      width: 0;
+    }
+    @keyframes float-bubble {
+      0%, 100% { transform: translate(-50%, -100px); }
+      50% { transform: translate(-50%, -110px); }
+    }
+
+    /* 任務挑戰彈窗 (雙模式 Tab Modal) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(93, 64, 55, 0.45);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal-backdrop.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .challenge-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 620px;
+      max-height: 92vh;
+      border-radius: 36px;
+      border: 4px solid var(--chiikawa-pink);
+      box-shadow: 0 20px 40px rgba(93, 64, 55, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-backdrop.show .challenge-card {
+      transform: scale(1);
+    }
+
+    /* 彈窗頭部 */
+    .modal-header {
+      background: linear-gradient(135deg, var(--chiikawa-pink-light), var(--usagi-yellow-light));
+      padding: 14px 20px;
+      border-bottom: 3px solid var(--chiikawa-pink);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .quest-badge {
+      background: linear-gradient(135deg, #ff9ebf, #f089ac);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 20px;
+      box-shadow: 0 2px 6px rgba(240, 137, 172, 0.5);
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--soft-brown);
+    }
+    .modal-close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid var(--chiikawa-pink);
+      color: var(--soft-brown);
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .modal-close-btn:hover {
+      background: var(--chiikawa-pink);
+      color: white;
+      transform: rotate(90deg);
+    }
+
+    /* 題目情境卡 */
+    .clue-context-box {
+      background: var(--cream-bg);
+      margin: 12px 18px 0;
+      padding: 12px 16px;
+      border-radius: 24px;
+      border: 2px dashed var(--chiikawa-pink-dark);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .clue-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+    .clue-text-wrapper {
+      flex: 1;
+    }
+    .clue-target-word {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #d63384;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .clue-desc {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--soft-brown);
+    }
+    .tts-speaker-btn {
+      background: #ffffff;
+      border: 2px solid var(--hachiware-blue);
+      color: var(--hachiware-blue-dark);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-left: 6px;
+      transition: all 0.2s ease;
+    }
+    .tts-speaker-btn:hover {
+      background: var(--hachiware-blue);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* 模式切換 Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 18px 0;
+    }
+    .tab-btn {
+      flex: 1;
+      background: #f1f5f9;
+      border: 2px solid #e2e8f0;
+      color: var(--soft-brown-light);
+      font-family: var(--font-cute);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 8px 12px;
+      border-radius: 20px 20px 0 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      border-color: var(--chiikawa-pink);
+      border-bottom-color: transparent;
+      color: var(--soft-brown);
+      font-weight: 900;
+      box-shadow: 0 -4px 10px rgba(255, 184, 209, 0.2);
+    }
+
+    .modal-body {
+      padding: 14px 18px 18px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ✍️ 純淨米字格自主書寫模式 (無任何筆畫提示) */
+    .writing-mode-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .canvas-container {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      background: #ffffff;
+      border: 3px solid var(--chiikawa-pink-dark);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-marshmallow);
+      touch-action: none;
+    }
+    /* 米字格背景 */
+    .mizige-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #writing-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .tool-btn {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      color: var(--soft-brown);
+      font-family: var(--font-cute);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .tool-btn:hover {
+      border-color: var(--chiikawa-pink);
+      background: var(--chiikawa-pink-light);
+    }
+    .tool-btn.active {
+      background: var(--chiikawa-pink);
+      border-color: var(--chiikawa-pink-dark);
+      color: white;
+    }
+
+    /* 💡 提示與測驗模式內容 */
+    .quiz-mode-view {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hints-accordion {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hint-chip {
+      background: var(--usagi-yellow-light);
+      border: 2px solid var(--usagi-yellow-dark);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--soft-brown);
+    }
+    .hint-chip-title {
+      font-weight: 900;
+      background: var(--usagi-yellow-dark);
+      color: var(--soft-brown);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    /* 四選一選項卡 */
+    .quiz-options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .option-card {
+      background: #ffffff;
+      border: 3px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    .option-card:hover {
+      border-color: var(--hachiware-blue);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: var(--shadow-soft-blue);
+    }
+    .option-char {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--soft-brown);
+      line-height: 1;
+    }
+    .option-zhuyin {
+      font-size: 0.85rem;
+      color: var(--soft-brown-light);
+    }
+    .option-card.correct {
+      background: #eafaf1 !important;
+      border-color: var(--success-green) !important;
+      color: var(--success-green-dark) !important;
+      transform: scale(1.05);
+    }
+    .option-card.wrong {
+      background: #fdf2f2 !important;
+      border-color: var(--error-red) !important;
+      animation: shake 0.4s ease-in-out;
+    }
+
+    /* 打字輸入區 */
+    .typing-section {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 10px 14px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .typing-input {
+      flex: 1;
+      background: #ffffff;
+      border: 2px solid var(--hachiware-blue);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-family: var(--font-cute);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--soft-brown);
+      outline: none;
+    }
+    .typing-input:focus {
+      border-color: var(--hachiware-blue-dark);
+      box-shadow: 0 0 0 3px rgba(137, 207, 240, 0.3);
+    }
+
+    /* 提交確認按鈕 */
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--usagi-yellow), var(--usagi-yellow-dark));
+      border: 3px solid #ffffff;
+      color: var(--soft-brown);
+      font-family: var(--font-cute);
+      font-weight: 900;
+      font-size: 1.1rem;
+      padding: 12px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(246, 224, 94, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+    }
+    .submit-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* 正向回饋橫幅 (Feedback Toast) */
+    #feedback-toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      z-index: 200;
+      background: #ffffff;
+      border: 4px solid var(--success-green);
+      border-radius: 40px;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 15px 35px rgba(119, 221, 119, 0.4);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity: 0;
+      pointer-events: none;
+    }
+    #feedback-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .feedback-icon {
+      font-size: 2rem;
+      animation: spin-celebrate 0.8s ease;
+    }
+    .feedback-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--success-green-dark);
+    }
+    .feedback-sub {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--soft-brown);
+    }
+
+    @keyframes spin-celebrate {
+      0% { transform: scale(0) rotate(-180deg); }
+      70% { transform: scale(1.25) rotate(15deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* 大通關榮譽證書彈窗 (Certificate Modal) */
+    .victory-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(93, 64, 55, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 150;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .victory-modal.show {
+      display: flex;
+    }
+    .certificate-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 640px;
+      border-radius: 40px;
+      border: 6px solid var(--usagi-yellow-dark);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      padding: 28px 24px;
+      text-align: center;
+      position: relative;
+      background-image: radial-gradient(#fff59d 12%, transparent 13%);
+      background-size: 24px 24px;
+    }
+    .cert-badge {
+      font-size: 3.5rem;
+      margin-bottom: 6px;
+    }
+    .cert-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--soft-brown);
+      margin-bottom: 6px;
+    }
+    .cert-desc {
+      font-size: 1rem;
+      color: var(--soft-brown-light);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .cert-friends-box {
+      background: var(--cream-bg);
+      border: 3px solid var(--chiikawa-pink);
+      border-radius: 28px;
+      padding: 14px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .friend-avatar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .avatar-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .friend-name {
+      font-weight: 900;
+      font-size: 0.85rem;
+      color: var(--soft-brown);
+    }
+    .cert-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* 拯救動畫對話氣泡 */
+    .story-toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      z-index: 60;
+      background: #ffffff;
+      border: 4px solid var(--hachiware-blue);
+      border-radius: 30px;
+      padding: 12px 24px;
+      box-shadow: var(--shadow-soft-blue);
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--soft-brown);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .story-toast.show {
+      display: flex;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* 小螢幕 RWD 調整 */
+    @media (max-width: 600px) {
+      header {
+        padding: 6px 10px;
+      }
+      .cute-pill-btn, .cute-select {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+      .key-hud {
+        padding: 4px 10px;
+        gap: 6px;
+      }
+      .key-dot {
+        width: 14px;
+        height: 14px;
+        font-size: 9px;
+      }
+      .action-big-btn {
+        padding: 10px 18px;
+        font-size: 0.95rem;
+      }
+      .canvas-container {
+        width: 210px;
+        height: 210px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部工具列 -->
+  <header>
+    <div class="header-left">
+      <!-- 聲音切換按鈕 -->
+      <button id="mute-toggle-btn" class="cute-pill-btn" onclick="toggleMute()">
+        <span id="mute-icon">🔔</span>
+        <span id="mute-text">聲音開啟</span>
+      </button>
+
+      <!-- 課次切換選單 -->
+      <div class="cute-select-wrapper">
+        <select id="lesson-select" class="cute-select" onchange="changeLesson(this.value)">
+          <option value="lesson1">第一課：你好，新朋友</option>
+          <option value="lesson2">第二課：我們的約定</option>
+          <option value="all">🌟 綜合大挑戰 (隨機)</option>
+        </select>
+        <span class="cute-select-arrow">▼</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- 鑰匙收集 HUD (隨機獲得銀色或金色鑰匙) -->
+      <div class="key-hud">
+        <div class="key-group">
+          <span>🐾 小八:</span>
+          <div class="key-icons" id="silver-key-dots">
+            <div class="key-dot silver">🔑</div>
+            <div class="key-dot silver">🔑</div>
+            <div class="key-dot silver">🔑</div>
+            <div class="key-dot silver">🔑</div>
+            <div class="key-dot silver">🔑</div>
+          </div>
+        </div>
+        <div class="key-group">
+          <span>🐰 烏薩奇:</span>
+          <div class="key-icons" id="gold-key-dots">
+            <div class="key-dot gold">🔑</div>
+            <div class="key-dot gold">🔑</div>
+            <div class="key-dot gold">🔑</div>
+            <div class="key-dot gold">🔑</div>
+            <div class="key-dot gold">🔑</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3D 遊戲畫布容器 -->
+  <div id="game-container"></div>
+
+  <!-- 3D 接近物品互動提示泡泡 -->
+  <div id="interact-prompt" onclick="openCurrentQuestModal()">
+    <span id="prompt-label-text">✨ 發現物品！點擊開始挑戰</span>
+    <span style="font-size: 1.3rem;">📝</span>
+  </div>
+
+  <!-- 底部浮動 HUD -->
+  <div class="bottom-hud">
+    <div class="touch-controls">
+      <div class="joystick-zone" id="joystick-zone">
+        <div class="joystick-knob" id="joystick-knob"></div>
+      </div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="jump-btn" onclick="teleportToNextItem()">
+        <span>🚀 帶我去下一個冒險物品</span>
+      </button>
+      <button class="action-big-btn" onclick="openCurrentQuestModal()">
+        <span>🎯 探索互動 (<span id="current-clue-label">未解開 10 件物品</span>)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 拯救好朋友對話氣泡 -->
+  <div id="story-toast" class="story-toast">
+    <span id="story-toast-icon">💖</span>
+    <span id="story-toast-text">吉伊卡哇在島上探索各種神祕物品！</span>
+  </div>
+
+  <!-- 答對正向回饋通知 -->
+  <div id="feedback-toast">
+    <div class="feedback-icon" id="feedback-icon">🌟</div>
+    <div>
+      <div class="feedback-title" id="feedback-title">答對了！太厲害了！</div>
+      <div class="feedback-sub" id="feedback-sub">隨機獲得了一把神奇鑰匙！🗝️</div>
+    </div>
+  </div>
+
+  <!-- 任務挑戰彈窗 (雙模式 Tab Modal) -->
+  <div id="challenge-modal" class="modal-backdrop">
+    <div class="challenge-card">
+      
+      <!-- 彈窗頭部 -->
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="quest-badge" id="modal-quest-badge">🎁 冒險探索</span>
+          <h2 class="modal-title" id="modal-title">神秘物品大闖關</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeChallengeModal()">✕</button>
+      </div>
+
+      <!-- 題目情境卡 -->
+      <div class="clue-context-box">
+        <div class="clue-icon" id="clue-icon">📜</div>
+        <div class="clue-text-wrapper">
+          <div class="clue-target-word">
+            <span id="clue-question-title">生字任務</span>
+            <button class="tts-speaker-btn" onclick="speakCurrentClue()" title="朗讀題目與生字">🔊</button>
+          </div>
+          <p class="clue-desc" id="clue-question-desc">載入題目中...</p>
+        </div>
+      </div>
+
+      <!-- 雙模式切換 Tab 標籤 -->
+      <div class="tab-bar">
+        <button id="tab-write-btn" class="tab-btn active" onclick="switchTab('write')">
+          <span>✍️ 書寫練字模式</span>
+        </button>
+        <button id="tab-quiz-btn" class="tab-btn" onclick="switchTab('quiz')">
+          <span>💡 提示與測驗模式</span>
+        </button>
+      </div>
+
+      <!-- 彈窗內容主體 -->
+      <div class="modal-body">
+        
+        <!-- 模式一：純淨米字格自主手繪書寫模式 (無任何筆畫提示洩漏) -->
+        <div id="write-view" class="writing-mode-view">
+          <div class="canvas-container">
+            <!-- 米字格格線 SVG -->
+            <svg class="mizige-bg" viewBox="0 0 250 250">
+              <rect x="0" y="0" width="250" height="250" fill="#ffffff"/>
+              <!-- 外框與內虛線 -->
+              <line x1="0" y1="125" x2="250" y2="125" stroke="#ffccd9" stroke-width="2" stroke-dasharray="4,4"/>
+              <line x1="125" y1="0" x2="125" y2="250" stroke="#ffccd9" stroke-width="2" stroke-dasharray="4,4"/>
+              <line x1="0" y1="0" x2="250" y2="250" stroke="#ffccd9" stroke-width="1.5" stroke-dasharray="4,4"/>
+              <line x1="250" y1="0" x2="0" y2="250" stroke="#ffccd9" stroke-width="1.5" stroke-dasharray="4,4"/>
+              <rect x="2" y="2" width="246" height="246" fill="none" stroke="#f089ac" stroke-width="3" rx="20"/>
+            </svg>
+            <!-- 手寫畫布 (自主練習，無筆畫浮水印) -->
+            <canvas id="writing-canvas" width="250" height="250"></canvas>
+          </div>
+
+          <!-- 手寫工具列 -->
+          <div class="canvas-toolbar">
+            <button class="tool-btn active" id="brush-color-pink" onclick="setBrushColor('#d63384')">🌸 粉紅筆</button>
+            <button class="tool-btn" id="brush-color-blue" onclick="setBrushColor('#0284c7')">🌊 藍筆</button>
+            <button class="tool-btn" id="brush-color-black" onclick="setBrushColor('#5d4037')">🍫 棕黑筆</button>
+            <button class="tool-btn" id="brush-eraser" onclick="setEraser()">🧹 橡皮擦</button>
+            <button class="tool-btn" onclick="clearCanvas()">🗑️ 清除重寫</button>
+          </div>
+
+          <!-- 書寫完成確認 -->
+          <button class="submit-btn" onclick="submitWriting()">
+            <span>🌟 我寫好了！送出驗證</span>
+          </button>
+        </div>
+
+        <!-- 模式二：提示與測驗 (Quiz & 打字) 模式 -->
+        <div id="quiz-view" class="quiz-mode-view" style="display: none;">
+          <!-- 智慧提示條 -->
+          <div class="hints-accordion">
+            <div class="hint-chip">
+              <span class="hint-chip-title">部首提示</span>
+              <span id="hint-radical-text">部首：？</span>
+            </div>
+            <div class="hint-chip" style="background: #e8f4fd; border-color: #89cff0;">
+              <span class="hint-chip-title" style="background: #89cff0; color: white;">詞義釋義</span>
+              <span id="hint-meaning-text">說明...</span>
+            </div>
+          </div>
+
+          <!-- 四選一選擇題 -->
+          <div style="font-weight: 900; font-size: 0.95rem; color: var(--soft-brown); margin-top: 4px;">
+            👉 選擇正確的生字或語詞：
+          </div>
+          <div class="quiz-options-grid" id="quiz-options-container">
+            <!-- 動態生成 4 個選項 -->
+          </div>
+
+          <!-- 或是直接打字模式 -->
+          <div style="font-weight: 900; font-size: 0.95rem; color: var(--soft-brown); margin-top: 6px;">
+            ⌨️ 或是直接打字輸入：
+          </div>
+          <div class="typing-section">
+            <input type="text" id="type-input" class="typing-input" placeholder="輸入正確答案..." onkeyup="if(event.key==='Enter') submitTyping()">
+            <button class="cute-pill-btn" style="background: var(--chiikawa-pink); color: white; border: none;" onclick="submitTyping()">
+              確認
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 大通關榮譽證書彈窗 -->
+  <div id="victory-modal" class="victory-modal">
+    <div class="certificate-card">
+      <div class="cert-badge">🏆🎉</div>
+      <h2 class="cert-title">大成功！全員得救榮譽證書</h2>
+      <p class="cert-desc">
+        恭喜聰明的小勇士！你已成功在島嶼探險並收集齊 5 把銀色鑰匙與 5 把金色鑰匙，<br>
+        順利解開牢籠，拯救了小八貓與烏薩奇！
+      </p>
+
+      <div class="cert-friends-box">
+        <div class="friend-avatar">
+          <div class="avatar-circle" style="background: #ffe6ef;">🌸</div>
+          <div class="friend-name">吉伊卡哇</div>
+        </div>
+        <div class="friend-avatar">
+          <div class="avatar-circle" style="background: #e5f5fd;">🐾</div>
+          <div class="friend-name">小八貓 (已得救)</div>
+        </div>
+        <div class="friend-avatar">
+          <div class="avatar-circle" style="background: #fffae0;">🐰</div>
+          <div class="friend-name">烏薩奇 (已得救)</div>
+        </div>
+      </div>
+
+      <div class="cert-buttons">
+        <button class="action-big-btn" onclick="restartAdventure()">
+          <span>🔄 再玩一次</span>
+        </button>
+        <button class="jump-btn" onclick="window.print()">
+          <span>🖨️ 列印證書</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 遊戲核心邏輯 JavaScript ================= -->
+  <script>
+    /* -------------------------------------------------------------
+       1. 生字與語詞資料庫 (依據第一課與第二課教材 Excel 完整建置)
+    ------------------------------------------------------------- */
+    const DATABASE = {
+      lesson1: [
+        {
+          char: '廊',
+          word: '走廊',
+          zhuyin: 'ㄌㄤˊ',
+          radical: '广部',
+          question: '屋外有頂蓋的走道，甘肅西北部也有著名的「河西＿＿」。請寫出生字「ㄌㄤˊ」，完成語詞「走＿＿」！',
+          meaning: '屋簷下可供人往來行走的通道。',
+          distractors: ['郎', '朗', '狼']
+        },
+        {
+          char: '脆',
+          word: '清脆',
+          zhuyin: 'ㄘㄨㄟˋ',
+          radical: '肉部 (月)',
+          question: '形容聲音「清晰悅耳、容易咬碎或爽快」的生字「ㄘㄨㄟˋ」，請寫出這個字，完成「清＿＿」！',
+          meaning: '聲音清越響亮或食物鬆脆。',
+          distractors: ['絕', '翠', '碎']
+        },
+        {
+          char: '朗',
+          word: '開朗',
+          zhuyin: 'ㄌㄤˇ',
+          radical: '月部',
+          question: '形容心情「豁達、樂觀、陽光開闊」的語詞是「開＿＿」。請寫出生字「ㄌㄤˇ」！',
+          meaning: '明亮或聲音清晰高昂。',
+          distractors: ['良', '郎', '浪']
+        },
+        {
+          char: '行',
+          word: '旅行',
+          zhuyin: 'ㄒㄧㄥˊ',
+          radical: '行部',
+          question: '出外旅遊調劑身心、增廣見聞稱為「ㄌㄩˇ ㄒㄧㄥˊ」。請寫出代表「走、行動」的「ㄒㄧㄥˊ」字！',
+          meaning: '走、行動、流通、表現品德。',
+          distractors: ['形', '型', '杏']
+        },
+        {
+          char: '平',
+          word: '平安',
+          zhuyin: 'ㄆㄧㄥˊ',
+          radical: '干部',
+          question: '形容「平穩而沒有危險、安舒無事」的語詞是「＿＿安」。請寫出「ㄆㄧㄥˊ」字！',
+          meaning: '不凹凸、均等、平常、安舒無事。',
+          distractors: ['評', '蘋', '瓶']
+        },
+        {
+          char: '輕',
+          word: '輕快',
+          zhuyin: 'ㄑㄧㄥ',
+          radical: '車部',
+          question: '形容「輕鬆愉快、簡單快速」的生字「ㄑㄧㄥ」，請寫出這個字，完成語詞「＿＿快」！',
+          meaning: '不重、方便、簡單的。',
+          distractors: ['清', '傾', '青']
+        },
+        {
+          char: '羽',
+          word: '羽衣',
+          zhuyin: 'ㄩˇ',
+          radical: '羽部',
+          question: '鳥類身上的毛，也可以用來做成美麗的「＿＿衣」。請寫出生字「ㄩˇ」！',
+          meaning: '鳥類身上的毛。',
+          distractors: ['雨', '與', '宇']
+        },
+        {
+          char: '髮',
+          word: '頭髮',
+          zhuyin: 'ㄈㄚˇ',
+          radical: '髟部',
+          question: '人類頭上生長保護頭部的毛髮稱為「頭＿＿」。請寫出生字「ㄈㄚˇ」！',
+          meaning: '人類頭上所長的毛。',
+          distractors: ['發', '法', '乏']
+        },
+        {
+          char: '男',
+          word: '男孩',
+          zhuyin: 'ㄋㄢˊ',
+          radical: '田部',
+          question: '性別之一，上面是田、下面是力的生字「ㄋㄢˊ」，請寫出這個字！',
+          meaning: '男性、兒子。',
+          distractors: ['難', '南', '藍']
+        },
+        {
+          char: '足',
+          word: '足球',
+          zhuyin: 'ㄗㄨˊ',
+          radical: '足部',
+          question: '用腳踢球的熱門球類運動是「＿＿球」；也代表充分、足夠。請寫出生字「ㄗㄨˊ」！',
+          meaning: '腳、充滿不缺乏、值得。',
+          distractors: ['竹', '主', '族']
+        }
+      ],
+      lesson2: [
+        {
+          char: '約',
+          word: '公約',
+          zhuyin: 'ㄩㄝ',
+          radical: '糸部',
+          question: '班級或團體為了共同遵守而制定的條約稱為「班級公＿＿」。請寫出生字「ㄩㄝ」！',
+          meaning: '雙方事先說定的、限制拘束。',
+          distractors: ['月', '岳', '樂']
+        },
+        {
+          char: '烈',
+          word: '熱烈',
+          zhuyin: 'ㄌㄧㄝˋ',
+          radical: '火部 (灬)',
+          question: '形容氣氛「熱情激烈、聲勢強大」的語詞是「熱＿＿」；請寫出生字「ㄌㄧㄝˋ」！',
+          meaning: '強猛的、剛直的、聲勢強大顯著。',
+          distractors: ['列', '裂', '劣']
+        },
+        {
+          char: '持',
+          word: '主持',
+          zhuyin: 'ㄔˊ',
+          radical: '手部 (扌)',
+          question: '主導管理會議或維護正義稱為「主＿＿」。請寫出代表拿與堅持的「ㄔˊ」字！',
+          meaning: '拿、堅執不變、掌控、幫助維護。',
+          distractors: ['池', '遲', '尺']
+        },
+        {
+          char: '錄',
+          word: '記錄',
+          zhuyin: 'ㄌㄨˋ',
+          radical: '金部',
+          question: '把事情或過程「記載登錄、抄寫下來」稱為「記＿＿」。請寫出生字「ㄌㄨˋ」！',
+          meaning: '抄寫、記載、採納錄取。',
+          distractors: ['陸', '路', '鹿']
+        },
+        {
+          char: '愁',
+          word: '發愁',
+          zhuyin: 'ㄔㄡˊ',
+          radical: '心部',
+          question: '表示「憂慮、擔心、傷心心緒」的生字「ㄔㄡˊ」，上秋下心，請寫出這個字！',
+          meaning: '憂慮、擔心、憂傷心緒。',
+          distractors: ['仇', '籌', '綢']
+        },
+        {
+          char: '訂',
+          word: '訂定',
+          zhuyin: 'ㄉㄧㄥˋ',
+          radical: '言部',
+          question: '表示「修正、事先預約、商量後制定」的生字「ㄉㄧㄥˋ」，請寫出完成「＿＿定」公約！',
+          meaning: '制定、改正、預約。',
+          distractors: ['定', '頂', '丁']
+        },
+        {
+          char: '班',
+          word: '班級',
+          zhuyin: 'ㄅㄢ',
+          radical: '玉部 (王)',
+          question: '學校按學生程度年齡編成的學習群體稱為「＿＿級」。請寫出生字「ㄅㄢ」！',
+          meaning: '人群的組別、行列位次。',
+          distractors: ['般', '斑', '扳']
+        },
+        {
+          char: '記',
+          word: '記得',
+          zhuyin: 'ㄐㄧˋ',
+          radical: '言部',
+          question: '將事物印象留在腦海中、寫下文書稱為「＿＿憶」、「＿＿得」。請寫出生字「ㄐㄧˋ」！',
+          meaning: '將事情寫下來、留在腦海中。',
+          distractors: ['計', '技', '寄']
+        },
+        {
+          char: '聊',
+          word: '聊天',
+          zhuyin: 'ㄌㄧㄠˊ',
+          radical: '耳部',
+          question: '與好友輕鬆談話、分享趣事稱為「＿＿天」。請寫出生字「ㄌㄧㄠˊ」！',
+          meaning: '閒談、姑且、依賴。',
+          distractors: ['療', '僚', '料']
+        },
+        {
+          char: '提',
+          word: '提醒',
+          zhuyin: 'ㄊㄧˊ',
+          radical: '手部 (扌)',
+          question: '從旁提示指點使人注意稱為「＿＿醒」；也可代表拉舉。請寫出生字「ㄊㄧˊ」！',
+          meaning: '指點使注意、拉舉、說談。',
+          distractors: ['題', '蹄', '啼']
+        }
+      ]
+    };
+
+    /* 隨機產生 10 題綜合大挑戰題庫 */
+    function getCombinedQuestions() {
+      const pool = [...DATABASE.lesson1, ...DATABASE.lesson2];
+      const shuffled = pool.sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 10);
+    }
+
+    /* -------------------------------------------------------------
+       2. 萌島 10 種不同探險物品定義 (不同物品，不同闖關)
+    ------------------------------------------------------------- */
+    const MAP_ITEMS_CONFIG = [
+      { id: 0, type: 'chest', name: '🎁 神祕糖果寶箱', intro: '你在草叢中發現了古老神祕寶箱，上面刻著一道生字鎖印！', pos: { x: -6, z: 4 } },
+      { id: 1, type: 'star', name: '⭐ 許願幸運星', intro: '許願星散發著溫暖的光芒，需要寫出正確國字才能喚醒星辰力量！', pos: { x: -8, z: -2 } },
+      { id: 2, type: 'mushroom', name: '🍄 幻彩魔力菇', intro: '彩虹蘑菇微微晃動，解開蘑菇上的生字密碼將獲得神奇獎勵！', pos: { x: -4, z: -7 } },
+      { id: 3, type: 'crystal', name: '💎 奇蹟能量水晶', intro: '閃閃發光的奇蹟水晶在唱歌，請寫出生字完成共鳴儀式！', pos: { x: -9, z: 6 } },
+      { id: 4, type: 'cupcake', name: '🧁 巨型草莓蛋糕', intro: '甜點精靈留下了美味的草莓蛋糕，答對字詞才能品嚐甜蜜滋味！', pos: { x: -11, z: 1 } },
+      { id: 5, type: 'tree', name: '🌳 守護精靈樹洞', intro: '老樹爺爺的樹洞裡藏著字詞謎語，通過智慧考驗吧！', pos: { x: 5, z: 4 } },
+      { id: 6, type: 'fountain', name: '⛲ 夢幻願望之泉', intro: '泉水泛起陣陣漣漪，向許願池投入你的生字智慧之石吧！', pos: { x: 8, z: -1 } },
+      { id: 7, type: 'windmill', name: '🎡 彩色旋轉風車', intro: '旋轉的微風風車吹來了字詞線索，請寫出正確答案！', pos: { x: 4, z: -6 } },
+      { id: 8, type: 'bottle', name: '💌 浪花漂流瓶', intro: '沙灘邊飄來了裝有信籤的漂流瓶，讀讀看裡面的生字謎題！', pos: { x: 8, z: 6 } },
+      { id: 9, type: 'flower', name: '🌸 巨型向陽花', intro: '盛開的花朵散發芬芳香氣，回答問題獲取花仙子的祝福！', pos: { x: 11, z: 1 } }
+    ];
+
+    /* -------------------------------------------------------------
+       3. 全域遊戲狀態管理
+    ------------------------------------------------------------- */
+    let currentLessonKey = 'lesson1';
+    let currentQuestions = [...DATABASE.lesson1];
+    let collectedSilverKeys = 0; // 0 ~ 5 (解鎖小八)
+    let collectedGoldKeys = 0;   // 0 ~ 5 (解鎖烏薩奇)
+    let activeItemIndex = 0;     // 目前互動的物品索引
+    let clearedItems = new Set(); // 已完成闖關的物品
+    let isMuted = false;
+    let isModalOpen = false;
+
+    const PRAISE_LIST = [
+      "你真棒！",
+      "太強了！",
+      "一百分！",
+      "好厲害！",
+      "吉伊卡哇為你歡呼！",
+      "太聰明了！",
+      "拯救好朋友又邁進一步！"
+    ];
+
+    /* -------------------------------------------------------------
+       4. Web Audio API 音效引擎 (零外部依賴)
+    ------------------------------------------------------------- */
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // 正確音效：清脆雙音階 (C5 -> G5)
+    function playDingDongSound() {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.25, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.25);
+
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(783.99, now + 0.12);
+      gain2.gain.setValueAtTime(0.3, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.55);
+    }
+
+    // 獲得鑰匙琶音音效 (C5 -> E5 -> G5 -> C6)
+    function playKeyPickupSound() {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      const now = audioCtx.currentTime;
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.3);
+      });
+    }
+
+    // 牢籠開啟震撼破關號角
+    function playVictoryFanfare() {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const chords = [
+        { freq: 523.25, time: 0 },
+        { freq: 659.25, time: 0.1 },
+        { freq: 783.99, time: 0.2 },
+        { freq: 1046.50, time: 0.35 }
+      ];
+      const now = audioCtx.currentTime;
+      chords.forEach(c => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(c.freq, now + c.time);
+        gain.gain.setValueAtTime(0.25, now + c.time);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + c.time + 0.8);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + c.time);
+        osc.stop(now + c.time + 0.8);
+      });
+    }
+
+    // 答錯輕微提示音
+    function playWrongSound() {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.linearRampToValueAtTime(160, now + 0.25);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
+
+    /* -------------------------------------------------------------
+       5. Web SpeechSynthesis TTS 語音朗讀系統
+    ------------------------------------------------------------- */
+    function speakText(text, callback) {
+      if (isMuted) {
+        if (callback) callback();
+        return;
+      }
+      if (!('speechSynthesis' in window)) {
+        if (callback) callback();
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-TW';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.15;
+
+      const voices = window.speechSynthesis.getVoices();
+      const twVoice = voices.find(v => v.lang.includes('TW') || v.lang.includes('zh-TW'));
+      if (twVoice) utterance.voice = twVoice;
+
+      if (callback) {
+        utterance.onend = callback;
+        utterance.onerror = callback;
+      }
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const icon = document.getElementById('mute-icon');
+      const text = document.getElementById('mute-text');
+      if (isMuted) {
+        icon.innerText = '🔕';
+        text.innerText = '已靜音';
+        window.speechSynthesis.cancel();
+      } else {
+        icon.innerText = '🔔';
+        text.innerText = '聲音開啟';
+        initAudio();
+        speakText('聲音已開啟');
+      }
+    }
+
+    function speakCurrentClue() {
+      const q = currentQuestions[activeItemIndex % currentQuestions.length];
+      if (!q) return;
+      const speech = `${q.char}。${q.word}。${q.zhuyin}。${q.question}`;
+      speakText(speech);
+    }
+
+    /* -------------------------------------------------------------
+       6. 答對正向回饋流程 (隨機獲得金色或銀色鑰匙)
+    ------------------------------------------------------------- */
+    function triggerCorrectRewardSequence() {
+      // 1. 即時音效：Web Audio 清脆雙音階 (C5 -> G5)
+      playDingDongSound();
+
+      // 決定隨機獲得銀色還是金色鑰匙
+      let awardedKeyType = 'silver';
+      if (collectedSilverKeys < 5 && collectedGoldKeys < 5) {
+        awardedKeyType = Math.random() < 0.5 ? 'silver' : 'gold';
+      } else if (collectedSilverKeys >= 5) {
+        awardedKeyType = 'gold';
+      } else {
+        awardedKeyType = 'silver';
+      }
+
+      const toast = document.getElementById('feedback-toast');
+      const fTitle = document.getElementById('feedback-title');
+      const fSub = document.getElementById('feedback-sub');
+      const q = currentQuestions[activeItemIndex % currentQuestions.length];
+      const itemConfig = MAP_ITEMS_CONFIG[activeItemIndex];
+
+      fTitle.innerText = `答對了「${q.char}」！解開了${itemConfig.name}！`;
+      fSub.innerText = awardedKeyType === 'silver' ? '🌟 隨機獲得了一把【銀色鑰匙】🐾！' : '🌟 隨機獲得了一把【金色鑰匙】🐰！';
+      toast.classList.add('show');
+
+      // 2. 延遲 0.6 秒：播放語音「答對了」
+      setTimeout(() => {
+        speakText('答對了！', () => {
+          // 3. 延遲 0.8 秒：隨機播放一句鼓勵語
+          setTimeout(() => {
+            const randomPraise = PRAISE_LIST[Math.floor(Math.random() * PRAISE_LIST.length)];
+            speakText(randomPraise);
+          }, 800);
+        });
+      }, 600);
+
+      // 4. 延遲 2.0 秒：自動發放鑰匙並更新 3D 物品狀態
+      setTimeout(() => {
+        toast.classList.remove('show');
+        closeChallengeModal();
+        awardRandomKey(awardedKeyType);
+      }, 2000);
+    }
+
+    function awardRandomKey(type) {
+      playKeyPickupSound();
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      }
+
+      // 標記目前物品已完成
+      clearedItems.add(activeItemIndex);
+      markItemAsClearedIn3D(activeItemIndex);
+
+      if (type === 'silver') {
+        collectedSilverKeys = Math.min(5, collectedSilverKeys + 1);
+        updateKeyHUD();
+        if (collectedSilverKeys === 5) {
+          triggerHachiwareRescue();
+        }
+      } else {
+        collectedGoldKeys = Math.min(5, collectedGoldKeys + 1);
+        updateKeyHUD();
+        if (collectedGoldKeys === 5) {
+          triggerUsagiRescue();
+        }
+      }
+
+      // 檢查是否已收集滿 10 把鑰匙
+      if (collectedSilverKeys >= 5 && collectedGoldKeys >= 5) {
+        setTimeout(() => {
+          triggerGrandVictory();
+        }, 1500);
+        return;
+      }
+
+      updateRemainingItemsLabel();
+
+      if (chiikawaGroup) {
+        chiikawaGroup.position.y = 0.8;
+      }
+    }
+
+    function updateRemainingItemsLabel() {
+      const remaining = 10 - clearedItems.size;
+      document.getElementById('current-clue-label').innerText = remaining > 0 ? `尚餘 ${remaining} 件物品` : `全部探索完畢！`;
+    }
+
+    function updateKeyHUD() {
+      const silverDots = document.querySelectorAll('#silver-key-dots .key-dot');
+      silverDots.forEach((dot, idx) => {
+        if (idx < collectedSilverKeys) dot.classList.add('active');
+        else dot.classList.remove('active');
+      });
+
+      const goldDots = document.querySelectorAll('#gold-key-dots .key-dot');
+      goldDots.forEach((dot, idx) => {
+        if (idx < collectedGoldKeys) dot.classList.add('active');
+        else dot.classList.remove('active');
+      });
+    }
+
+    function triggerHachiwareRescue() {
+      playVictoryFanfare();
+      showStoryToast('🐾 小八貓：「吉伊卡哇！謝謝你救了我！我們一起去救烏薩奇吧！」');
+      speakText('太好了！收集到5把銀色鑰匙，小八貓得救了！');
+      if (silverCageMesh) silverCageMesh.visible = false;
+      if (hachiwareMesh) hachiwareMesh.position.y = 0.5;
+    }
+
+    function triggerUsagiRescue() {
+      playVictoryFanfare();
+      showStoryToast('🐰 烏薩奇：「YAHA! URA! 烏薩奇得救了！」');
+      speakText('太棒了！收集到5把金色鑰匙，烏薩奇得救了！呀哈！');
+      if (goldCageMesh) goldCageMesh.visible = false;
+      if (usagiMesh) usagiMesh.position.y = 0.5;
+    }
+
+    function triggerGrandVictory() {
+      playVictoryFanfare();
+      speakText('大成功！10把鑰匙全部集齊，全員大團圓！');
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.5 }
+        });
+      }
+      document.getElementById('victory-modal').classList.add('show');
+    }
+
+    function showStoryToast(text) {
+      const toast = document.getElementById('story-toast');
+      const tText = document.getElementById('story-toast-text');
+      tText.innerText = text;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4500);
+    }
+
+    function restartAdventure() {
+      document.getElementById('victory-modal').classList.remove('show');
+      changeLesson(currentLessonKey);
+    }
+
+    function changeLesson(lesson) {
+      currentLessonKey = lesson;
+      if (lesson === 'lesson1') {
+        currentQuestions = [...DATABASE.lesson1];
+      } else if (lesson === 'lesson2') {
+        currentQuestions = [...DATABASE.lesson2];
+      } else {
+        currentQuestions = getCombinedQuestions();
+      }
+
+      collectedSilverKeys = 0;
+      collectedGoldKeys = 0;
+      activeItemIndex = 0;
+      clearedItems.clear();
+      reset3DItemsState();
+      updateKeyHUD();
+      updateRemainingItemsLabel();
+
+      if (silverCageMesh) silverCageMesh.visible = true;
+      if (goldCageMesh) goldCageMesh.visible = true;
+      if (hachiwareMesh) hachiwareMesh.position.y = 0.1;
+      if (usagiMesh) usagiMesh.position.y = 0.1;
+
+      showStoryToast('✨ 冒險重設！出發探索島上的各種神奇物品吧！');
+    }
+
+    /* -------------------------------------------------------------
+       7. 雙模式挑戰彈窗 (純淨書寫 + 提示測驗)
+    ------------------------------------------------------------- */
+    function openCurrentQuestModal() {
+      initAudio();
+      const q = currentQuestions[activeItemIndex % currentQuestions.length];
+      const itemConfig = MAP_ITEMS_CONFIG[activeItemIndex];
+      if (!q || !itemConfig) return;
+
+      isModalOpen = true;
+      const badge = document.getElementById('modal-quest-badge');
+      const title = document.getElementById('modal-title');
+      const qTitle = document.getElementById('clue-question-title');
+      const qDesc = document.getElementById('clue-question-desc');
+
+      badge.innerText = itemConfig.name;
+      title.innerText = '闖關解謎大考驗 ✨';
+      qTitle.innerText = `生字任務：${q.zhuyin}`;
+      qDesc.innerText = `${itemConfig.intro}\n${q.question}`;
+
+      document.getElementById('hint-radical-text').innerText = `部首：${q.radical}`;
+      document.getElementById('hint-meaning-text').innerText = `${q.meaning} (例詞：${q.word})`;
+      document.getElementById('type-input').value = '';
+
+      setupQuizOptions(q);
+      clearCanvas();
+
+      document.getElementById('challenge-modal').classList.add('show');
+    }
+
+    function closeChallengeModal() {
+      isModalOpen = false;
+      document.getElementById('challenge-modal').classList.remove('show');
+    }
+
+    function switchTab(mode) {
+      const writeBtn = document.getElementById('tab-write-btn');
+      const quizBtn = document.getElementById('tab-quiz-btn');
+      const writeView = document.getElementById('write-view');
+      const quizView = document.getElementById('quiz-view');
+
+      if (mode === 'write') {
+        writeBtn.classList.add('active');
+        quizBtn.classList.remove('active');
+        writeView.style.display = 'flex';
+        quizView.style.display = 'none';
+      } else {
+        quizBtn.classList.add('active');
+        writeBtn.classList.remove('active');
+        quizView.style.display = 'flex';
+        writeView.style.display = 'none';
+      }
+    }
+
+    /* 手繪畫布 Canvas 筆刷與橡皮擦實作 */
+    const canvas = document.getElementById('writing-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let brushColor = '#d63384';
+    let brushWidth = 8;
+    let isEraserMode = false;
+    let hasDrawnStrokes = false;
+
+    function initCanvas() {
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      function startDraw(e) {
+        isDrawing = true;
+        hasDrawnStrokes = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        if (isEraserMode) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 20;
+        } else {
+          ctx.strokeStyle = brushColor;
+          ctx.lineWidth = brushWidth;
+        }
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+
+      function endDraw() {
+        isDrawing = false;
+      }
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (clientX - rect.left) * (canvas.width / rect.width),
+          y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+      }
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', endDraw);
+
+      canvas.addEventListener('touchstart', startDraw, { passive: false });
+      canvas.addEventListener('touchmove', draw, { passive: false });
+      window.addEventListener('touchend', endDraw);
+    }
+
+    function setBrushColor(color) {
+      isEraserMode = false;
+      brushColor = color;
+      brushWidth = 8;
+      document.querySelectorAll('.canvas-toolbar .tool-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      if (color === '#d63384') document.getElementById('brush-color-pink').classList.add('active');
+      else if (color === '#0284c7') document.getElementById('brush-color-blue').classList.add('active');
+      else document.getElementById('brush-color-black').classList.add('active');
+    }
+
+    function setEraser() {
+      isEraserMode = true;
+      document.querySelectorAll('.canvas-toolbar .tool-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById('brush-eraser').classList.add('active');
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasDrawnStrokes = false;
+    }
+
+    function submitWriting() {
+      if (!hasDrawnStrokes) {
+        speakText('請先在米字格上練習寫出這個字喔！');
+        return;
+      }
+      triggerCorrectRewardSequence();
+    }
+
+    function setupQuizOptions(q) {
+      const container = document.getElementById('quiz-options-container');
+      container.innerHTML = '';
+      
+      const options = [
+        { char: q.char, zhuyin: q.zhuyin, isCorrect: true },
+        ...q.distractors.map(d => ({ char: d, zhuyin: '', isCorrect: false }))
+      ];
+      options.sort(() => 0.5 - Math.random());
+
+      options.forEach(opt => {
+        const card = document.createElement('div');
+        card.className = 'option-card';
+        card.innerHTML = `
+          <div class="option-char">${opt.char}</div>
+          <div class="option-zhuyin">${opt.zhuyin || '　'}</div>
+        `;
+        card.onclick = () => {
+          if (opt.isCorrect) {
+            card.classList.add('correct');
+            triggerCorrectRewardSequence();
+          } else {
+            card.classList.add('wrong');
+            playWrongSound();
+            speakText('再想想看喔，注意看部首提示！');
+            setTimeout(() => card.classList.remove('wrong'), 600);
+          }
+        };
+        container.appendChild(card);
+      });
+    }
+
+    function submitTyping() {
+      const input = document.getElementById('type-input');
+      const val = input.value.trim();
+      const q = currentQuestions[activeItemIndex % currentQuestions.length];
+      if (!val) return;
+
+      if (val === q.char || val === q.word) {
+        triggerCorrectRewardSequence();
+      } else {
+        playWrongSound();
+        speakText('差一點點，再檢查一下國字喔！');
+        input.style.borderColor = 'var(--error-red)';
+        setTimeout(() => input.style.borderColor = 'var(--hachiware-blue)', 1000);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       8. Three.js 3D 萌系世界與豐富互動景物
+    ------------------------------------------------------------- */
+    let scene, camera, renderer;
+    let chiikawaGroup, hachiwareMesh, usagiMesh;
+    let silverCageMesh, goldCageMesh;
+    let mapItemMeshes = [];
+    let joystickVector = { x: 0, y: 0 };
+    const keysPressed = {};
+
+    function init3DWorld() {
+      const container = document.getElementById('game-container');
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xfff1f5);
+      scene.fog = new THREE.FogExp2(0xfff1f5, 0.032);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 16, 18);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.78);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfff7e6, 0.85);
+      dirLight.position.set(15, 25, 10);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      scene.add(dirLight);
+
+      buildIslandTerrain();
+
+      chiikawaGroup = createChiikawaModel();
+      chiikawaGroup.position.set(0, 0, 2);
+      scene.add(chiikawaGroup);
+
+      // 銀色籠子與小八貓
+      const silverHillPos = new THREE.Vector3(-9, 0, -4);
+      hachiwareMesh = createHachiwareModel();
+      hachiwareMesh.position.copy(silverHillPos);
+      scene.add(hachiwareMesh);
+
+      silverCageMesh = createCageModel(0x89cff0, 0xd0e8f7);
+      silverCageMesh.position.copy(silverHillPos);
+      scene.add(silverCageMesh);
+
+      // 金色籠子與烏薩奇
+      const goldHillPos = new THREE.Vector3(9, 0, -4);
+      usagiMesh = createUsagiModel();
+      usagiMesh.position.copy(goldHillPos);
+      scene.add(usagiMesh);
+
+      goldCageMesh = createCageModel(0xffd700, 0xfff59d);
+      goldCageMesh.position.copy(goldHillPos);
+      scene.add(goldCageMesh);
+
+      // 建立島上 10 種不同的探索物品 (寶箱、許願星、蘑菇、水晶、蛋糕、樹洞、願望泉、風車、漂流瓶、向陽花)
+      buildUniqueMapItems();
+
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('keydown', e => { keysPressed[e.key.toLowerCase()] = true; });
+      window.addEventListener('keyup', e => { keysPressed[e.key.toLowerCase()] = false; });
+      window.addEventListener('pointerdown', onPointerDown);
+
+      animate();
+    }
+
+    function buildIslandTerrain() {
+      const groundGeo = new THREE.CylinderGeometry(18, 19, 1.2, 32);
+      const groundMat = new THREE.MeshLambertMaterial({ color: 0xd2f5e3 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.position.y = -0.6;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // 裝飾鵝卵石
+      for (let i = 0; i < 20; i++) {
+        const stoneGeo = new THREE.CylinderGeometry(0.4 + Math.random()*0.3, 0.5, 0.12, 8);
+        const stoneMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        const stone = new THREE.Mesh(stoneGeo, stoneMat);
+        const angle = (i / 20) * Math.PI * 2;
+        const radius = 6 + Math.sin(i * 3) * 2;
+        stone.position.set(Math.cos(angle) * radius, 0.05, Math.sin(angle) * radius);
+        scene.add(stone);
+      }
+
+      // 裝飾糖果樹
+      for (let i = 0; i < 12; i++) {
+        const treeAngle = (i / 12) * Math.PI * 2 + 0.3;
+        const treeDist = 13 + Math.random() * 3;
+        createCandyTree(Math.cos(treeAngle) * treeDist, Math.sin(treeAngle) * treeDist);
+      }
+    }
+
+    function createCandyTree(x, z) {
+      const treeGroup = new THREE.Group();
+      const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 1.2, 8);
+      const trunkMat = new THREE.MeshLambertMaterial({ color: 0xa1887f });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 0.6;
+      treeGroup.add(trunk);
+
+      const colors = [0xffccd9, 0xfff59d, 0xd0e8f7, 0xc8f7dc];
+      const foliageGeo = new THREE.SphereGeometry(1.0, 16, 16);
+      const foliageMat = new THREE.MeshLambertMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
+      const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+      foliage.position.y = 1.7;
+      treeGroup.add(foliage);
+
+      treeGroup.position.set(x, 0, z);
+      scene.add(treeGroup);
+    }
+
+    /* 建立 10 種不同的 3D 物品模型 */
+    function buildUniqueMapItems() {
+      mapItemMeshes = [];
+      MAP_ITEMS_CONFIG.forEach(cfg => {
+        const itemGroup = new THREE.Group();
+        let mainMesh = null;
+
+        if (cfg.type === 'chest') {
+          // 🎁 神祕寶箱
+          const boxGeo = new THREE.BoxGeometry(0.9, 0.6, 0.7);
+          const boxMat = new THREE.MeshLambertMaterial({ color: 0xffb8d1 });
+          const box = new THREE.Mesh(boxGeo, boxMat);
+          box.position.y = 0.35;
+          itemGroup.add(box);
+          // 金色鎖釦
+          const lockGeo = new THREE.SphereGeometry(0.12, 12, 12);
+          const lockMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+          const lock = new THREE.Mesh(lockGeo, lockMat);
+          lock.position.set(0, 0.35, 0.36);
+          itemGroup.add(lock);
+          mainMesh = box;
+        } 
+        else if (cfg.type === 'star') {
+          // ⭐ 幸運星
+          const starGeo = new THREE.OctahedronGeometry(0.6, 0);
+          const starMat = new THREE.MeshLambertMaterial({ color: 0xffea00, emissive: 0xffb300, emissiveIntensity: 0.5 });
+          const star = new THREE.Mesh(starGeo, starMat);
+          star.position.y = 0.8;
+          itemGroup.add(star);
+          mainMesh = star;
+        } 
+        else if (cfg.type === 'mushroom') {
+          // 🍄 幻彩魔力菇
+          const stemGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.6, 12);
+          const stemMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+          const stem = new THREE.Mesh(stemGeo, stemMat);
+          stem.position.y = 0.3;
+          itemGroup.add(stem);
+
+          const capGeo = new THREE.SphereGeometry(0.7, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+          const capMat = new THREE.MeshLambertMaterial({ color: 0xff6b81 });
+          const cap = new THREE.Mesh(capGeo, capMat);
+          cap.position.y = 0.6;
+          itemGroup.add(cap);
+          mainMesh = cap;
+        } 
+        else if (cfg.type === 'crystal') {
+          // 💎 能量水晶
+          const crystalGeo = new THREE.ConeGeometry(0.45, 1.2, 6);
+          const crystalMat = new THREE.MeshLambertMaterial({ color: 0x89cff0, emissive: 0x58b2e3, emissiveIntensity: 0.5 });
+          const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+          crystal.position.y = 0.6;
+          itemGroup.add(crystal);
+          mainMesh = crystal;
+        } 
+        else if (cfg.type === 'cupcake') {
+          // 🧁 草莓蛋糕
+          const cupGeo = new THREE.CylinderGeometry(0.4, 0.3, 0.5, 12);
+          const cupMat = new THREE.MeshLambertMaterial({ color: 0xffcc80 });
+          const cup = new THREE.Mesh(cupGeo, cupMat);
+          cup.position.y = 0.25;
+          itemGroup.add(cup);
+
+          const creamGeo = new THREE.SphereGeometry(0.45, 16, 16);
+          const creamMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+          const cream = new THREE.Mesh(creamGeo, creamMat);
+          cream.position.y = 0.65;
+          itemGroup.add(cream);
+
+          const cherryGeo = new THREE.SphereGeometry(0.15, 8, 8);
+          const cherryMat = new THREE.MeshLambertMaterial({ color: 0xe91e63 });
+          const cherry = new THREE.Mesh(cherryGeo, cherryMat);
+          cherry.position.y = 1.05;
+          itemGroup.add(cherry);
+          mainMesh = cream;
+        }
+        else if (cfg.type === 'tree') {
+          // 🌳 守護樹洞
+          const trunkGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 10);
+          const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
+          const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+          trunk.position.y = 0.6;
+          itemGroup.add(trunk);
+
+          const leavesGeo = new THREE.DodecahedronGeometry(0.8);
+          const leavesMat = new THREE.MeshLambertMaterial({ color: 0x81c784 });
+          const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+          leaves.position.y = 1.6;
+          itemGroup.add(leaves);
+          mainMesh = leaves;
+        }
+        else if (cfg.type === 'fountain') {
+          // ⛲ 願望之泉
+          const basinGeo = new THREE.CylinderGeometry(0.8, 0.9, 0.3, 16);
+          const basinMat = new THREE.MeshLambertMaterial({ color: 0xb0bec5 });
+          const basin = new THREE.Mesh(basinGeo, basinMat);
+          basin.position.y = 0.15;
+          itemGroup.add(basin);
+
+          const waterGeo = new THREE.SphereGeometry(0.4, 12, 12);
+          const waterMat = new THREE.MeshLambertMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.8 });
+          const water = new THREE.Mesh(waterGeo, waterMat);
+          water.position.y = 0.45;
+          itemGroup.add(water);
+          mainMesh = water;
+        }
+        else if (cfg.type === 'windmill') {
+          // 🎡 旋轉風車
+          const towerGeo = new THREE.CylinderGeometry(0.2, 0.35, 1.3, 8);
+          const towerMat = new THREE.MeshLambertMaterial({ color: 0xfff59d });
+          const tower = new THREE.Mesh(towerGeo, towerMat);
+          tower.position.y = 0.65;
+          itemGroup.add(tower);
+
+          const bladeGeo = new THREE.BoxGeometry(1.2, 0.15, 0.05);
+          const bladeMat = new THREE.MeshLambertMaterial({ color: 0xff80ab });
+          const blades = new THREE.Mesh(bladeGeo, bladeMat);
+          blades.position.set(0, 1.3, 0.25);
+          itemGroup.add(blades);
+          mainMesh = blades;
+        }
+        else if (cfg.type === 'bottle') {
+          // 💌 漂流瓶
+          const bottleGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.7, 10);
+          const bottleMat = new THREE.MeshLambertMaterial({ color: 0x80deea, transparent: true, opacity: 0.75 });
+          const bottle = new THREE.Mesh(bottleGeo, bottleMat);
+          bottle.position.y = 0.45;
+          bottle.rotation.z = 0.3;
+          itemGroup.add(bottle);
+          mainMesh = bottle;
+        }
+        else {
+          // 🌸 巨型向陽花
+          const stemGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8);
+          const stemMat = new THREE.MeshLambertMaterial({ color: 0x66bb6a });
+          const stem = new THREE.Mesh(stemGeo, stemMat);
+          stem.position.y = 0.4;
+          itemGroup.add(stem);
+
+          const flowerGeo = new THREE.TorusGeometry(0.35, 0.15, 8, 16);
+          const flowerMat = new THREE.MeshLambertMaterial({ color: 0xffca28 });
+          const flower = new THREE.Mesh(flowerGeo, flowerMat);
+          flower.position.set(0, 0.85, 0);
+          flower.rotation.x = Math.PI / 2;
+          itemGroup.add(flower);
+          mainMesh = flower;
+        }
+
+        // 光環 (未完成時旋轉漂浮)
+        const auraGeo = new THREE.RingGeometry(0.7, 0.85, 16);
+        const auraMat = new THREE.MeshBasicMaterial({ color: 0xffb8d1, side: THREE.DoubleSide });
+        const aura = new THREE.Mesh(auraGeo, auraMat);
+        aura.rotation.x = Math.PI / 2;
+        aura.position.y = 0.02;
+        itemGroup.add(aura);
+
+        itemGroup.position.set(cfg.pos.x, 0, cfg.pos.z);
+        itemGroup.userData = { ...cfg, mainMesh, aura };
+        scene.add(itemGroup);
+        mapItemMeshes.push(itemGroup);
+      });
+    }
+
+    function markItemAsClearedIn3D(itemIdx) {
+      const itemGroup = mapItemMeshes[itemIdx];
+      if (itemGroup && itemGroup.userData.aura) {
+        // 完成後光環轉為璀璨金色星星
+        itemGroup.userData.aura.material.color.setHex(0x77dd77);
+      }
+    }
+
+    function reset3DItemsState() {
+      mapItemMeshes.forEach(itemGroup => {
+        if (itemGroup.userData.aura) {
+          itemGroup.userData.aura.material.color.setHex(0xffb8d1);
+        }
+      });
+    }
+
+    function teleportToNextItem() {
+      // 尋找下一個尚未完成的物品
+      let nextIdx = -1;
+      for (let i = 0; i < MAP_ITEMS_CONFIG.length; i++) {
+        const candidate = (activeItemIndex + i + 1) % MAP_ITEMS_CONFIG.length;
+        if (!clearedItems.has(candidate)) {
+          nextIdx = candidate;
+          break;
+        }
+      }
+      if (nextIdx === -1) nextIdx = 0;
+
+      activeItemIndex = nextIdx;
+      const targetItem = mapItemMeshes[nextIdx];
+      if (targetItem && chiikawaGroup) {
+        chiikawaGroup.position.set(targetItem.position.x, 0, targetItem.position.z + 1.2);
+        showStoryToast(`🎯 發現了【${MAP_ITEMS_CONFIG[nextIdx].name}】！`);
+        openCurrentQuestModal();
+      }
+    }
+
+    function createChiikawaModel() {
+      const group = new THREE.Group();
+
+      const bodyGeo = new THREE.SphereGeometry(0.7, 32, 32);
+      bodyGeo.scale(1, 1.05, 0.95);
+      const bodyMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.7;
+      body.castShadow = true;
+      group.add(body);
+
+      const earGeo = new THREE.SphereGeometry(0.22, 16, 16);
+      const earMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const leftEar = new THREE.Mesh(earGeo, earMat);
+      leftEar.position.set(-0.45, 1.3, 0);
+      group.add(leftEar);
+
+      const rightEar = leftEar.clone();
+      rightEar.position.x = 0.45;
+      group.add(rightEar);
+
+      const blushGeo = new THREE.SphereGeometry(0.12, 12, 12);
+      const blushMat = new THREE.MeshLambertMaterial({ color: 0xffb8d1 });
+      const leftBlush = new THREE.Mesh(blushGeo, blushMat);
+      leftBlush.position.set(-0.42, 0.68, 0.58);
+      group.add(leftBlush);
+
+      const rightBlush = leftBlush.clone();
+      rightBlush.position.x = 0.42;
+      group.add(rightBlush);
+
+      const eyeGeo = new THREE.SphereGeometry(0.07, 12, 12);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x3e2723 });
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+      leftEye.position.set(-0.25, 0.82, 0.65);
+      group.add(leftEye);
+
+      const rightEye = leftEye.clone();
+      rightEye.position.x = 0.25;
+      group.add(rightEye);
+
+      const handGeo = new THREE.SphereGeometry(0.15, 12, 12);
+      const leftHand = new THREE.Mesh(handGeo, bodyMat);
+      leftHand.position.set(-0.65, 0.55, 0.2);
+      group.add(leftHand);
+
+      const rightHand = leftHand.clone();
+      rightHand.position.x = 0.65;
+      group.add(rightHand);
+
+      return group;
+    }
+
+    function createHachiwareModel() {
+      const group = new THREE.Group();
+
+      const bodyGeo = new THREE.SphereGeometry(0.65, 24, 24);
+      const bodyMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.65;
+      group.add(body);
+
+      const hatGeo = new THREE.ConeGeometry(0.3, 0.4, 16);
+      const blueMat = new THREE.MeshLambertMaterial({ color: 0x89cff0 });
+      const leftEar = new THREE.Mesh(hatGeo, blueMat);
+      leftEar.position.set(-0.35, 1.25, 0);
+      group.add(leftEar);
+
+      const rightEar = leftEar.clone();
+      rightEar.position.x = 0.35;
+      group.add(rightEar);
+
+      return group;
+    }
+
+    function createUsagiModel() {
+      const group = new THREE.Group();
+
+      const bodyGeo = new THREE.SphereGeometry(0.65, 24, 24);
+      const yellowMat = new THREE.MeshLambertMaterial({ color: 0xfff59d });
+      const body = new THREE.Mesh(bodyGeo, yellowMat);
+      body.position.y = 0.65;
+      group.add(body);
+
+      const earGeo = new THREE.CylinderGeometry(0.1, 0.14, 0.8, 16);
+      const leftEar = new THREE.Mesh(earGeo, yellowMat);
+      leftEar.position.set(-0.25, 1.5, 0);
+      leftEar.rotation.z = -0.15;
+      group.add(leftEar);
+
+      const rightEar = leftEar.clone();
+      rightEar.position.x = 0.25;
+      rightEar.rotation.z = 0.15;
+      group.add(rightEar);
+
+      return group;
+    }
+
+    function createCageModel(frameColor, barColor) {
+      const cageGroup = new THREE.Group();
+
+      const domeGeo = new THREE.SphereGeometry(1.6, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const domeMat = new THREE.MeshLambertMaterial({ color: frameColor, wireframe: true });
+      const dome = new THREE.Mesh(domeGeo, domeMat);
+      dome.position.y = 2.0;
+      cageGroup.add(dome);
+
+      const barGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.2, 8);
+      const barMat = new THREE.MeshLambertMaterial({ color: barColor });
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const bar = new THREE.Mesh(barGeo, barMat);
+        bar.position.set(Math.cos(angle) * 1.5, 1.1, Math.sin(angle) * 1.5);
+        cageGroup.add(bar);
+      }
+
+      return cageGroup;
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let targetPos = null;
+
+    function onPointerDown(e) {
+      if (isModalOpen) return;
+      if (e.target.closest('.bottom-hud') || e.target.closest('header')) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0) {
+        const p = intersects[0].point;
+        targetPos = new THREE.Vector3(p.x, 0, p.z);
+      }
+    }
+
+    function initJoystick() {
+      const zone = document.getElementById('joystick-zone');
+      const knob = document.getElementById('joystick-knob');
+      let activeTouchId = null;
+      let startPos = { x: 0, y: 0 };
+
+      zone.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        activeTouchId = touch.identifier;
+        const rect = zone.getBoundingClientRect();
+        startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+        handleMove(touch);
+      }, { passive: false });
+
+      zone.addEventListener('touchmove', e => {
+        for (let i = 0; i < e.touches.length; i++) {
+          if (e.touches[i].identifier === activeTouchId) {
+            handleMove(e.touches[i]);
+            break;
+          }
+        }
+      }, { passive: false });
+
+      function endTouch() {
+        activeTouchId = null;
+        joystickVector = { x: 0, y: 0 };
+        knob.style.transform = `translate(0px, 0px)`;
+      }
+
+      zone.addEventListener('touchend', endTouch);
+      zone.addEventListener('touchcancel', endTouch);
+
+      function handleMove(touch) {
+        const dx = touch.clientX - startPos.x;
+        const dy = touch.clientY - startPos.y;
+        const dist = Math.min(45, Math.hypot(dx, dy));
+        const angle = Math.atan2(dy, dx);
+
+        const kx = Math.cos(angle) * dist;
+        const ky = Math.sin(angle) * dist;
+        knob.style.transform = `translate(${kx}px, ${ky}px)`;
+
+        joystickVector = {
+          x: kx / 45,
+          y: ky / 45
+        };
+      }
+    }
+
+    let clock = new THREE.Clock();
+    let walkCycle = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (chiikawaGroup && !isModalOpen) {
+        let moveX = 0;
+        let moveZ = 0;
+
+        if (keysPressed['w'] || keysPressed['arrowup']) moveZ -= 1;
+        if (keysPressed['s'] || keysPressed['arrowdown']) moveZ += 1;
+        if (keysPressed['a'] || keysPressed['arrowleft']) moveX -= 1;
+        if (keysPressed['d'] || keysPressed['arrowright']) moveX += 1;
+
+        if (Math.abs(joystickVector.x) > 0.1 || Math.abs(joystickVector.y) > 0.1) {
+          moveX = joystickVector.x;
+          moveZ = joystickVector.y;
+          targetPos = null;
+        }
+
+        if (targetPos) {
+          const toTarget = new THREE.Vector3().subVectors(targetPos, chiikawaGroup.position);
+          toTarget.y = 0;
+          if (toTarget.length() > 0.2) {
+            toTarget.normalize();
+            moveX = toTarget.x;
+            moveZ = toTarget.z;
+          } else {
+            targetPos = null;
+          }
+        }
+
+        const isMoving = Math.abs(moveX) > 0.05 || Math.abs(moveZ) > 0.05;
+        if (isMoving) {
+          const speed = 7.0 * delta;
+          chiikawaGroup.position.x += moveX * speed;
+          chiikawaGroup.position.z += moveZ * speed;
+
+          const targetAngle = Math.atan2(moveX, moveZ);
+          chiikawaGroup.rotation.y = targetAngle;
+
+          walkCycle += delta * 12;
+          chiikawaGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.25;
+          chiikawaGroup.rotation.z = Math.sin(walkCycle) * 0.08;
+        } else {
+          walkCycle += delta * 2.5;
+          chiikawaGroup.position.y = Math.sin(walkCycle) * 0.05;
+          chiikawaGroup.rotation.z = 0;
+        }
+
+        camera.position.x += (chiikawaGroup.position.x - camera.position.x) * 0.06;
+        camera.position.z += (chiikawaGroup.position.z + 16 - camera.position.z) * 0.06;
+        camera.lookAt(chiikawaGroup.position.x, 0, chiikawaGroup.position.z);
+
+        checkProximity();
+      }
+
+      // 3D 物品旋轉浮動動畫 (星辰旋轉、風車轉動、水晶浮動)
+      mapItemMeshes.forEach((itemGroup, idx) => {
+        const cfg = MAP_ITEMS_CONFIG[idx];
+        if (itemGroup.userData.mainMesh) {
+          if (cfg.type === 'star') {
+            itemGroup.userData.mainMesh.rotation.y += 0.03;
+            itemGroup.userData.mainMesh.position.y = 0.8 + Math.sin(clock.getElapsedTime() * 3 + idx) * 0.12;
+          } else if (cfg.type === 'crystal') {
+            itemGroup.userData.mainMesh.rotation.y += 0.02;
+            itemGroup.userData.mainMesh.position.y = 0.6 + Math.sin(clock.getElapsedTime() * 2.5 + idx) * 0.1;
+          } else if (cfg.type === 'windmill') {
+            itemGroup.userData.mainMesh.rotation.z += 0.04;
+          } else if (cfg.type === 'bottle') {
+            itemGroup.userData.mainMesh.rotation.y += 0.02;
+            itemGroup.userData.mainMesh.position.y = 0.45 + Math.sin(clock.getElapsedTime() * 2 + idx) * 0.08;
+          }
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    function checkProximity() {
+      const prompt = document.getElementById('interact-prompt');
+      const pText = document.getElementById('prompt-label-text');
+      let nearAny = false;
+
+      mapItemMeshes.forEach((itemGroup, idx) => {
+        const dist = chiikawaGroup.position.distanceTo(itemGroup.position);
+        if (dist < 2.3) {
+          nearAny = true;
+          activeItemIndex = idx;
+          const cfg = MAP_ITEMS_CONFIG[idx];
+          pText.innerText = `✨ 探索【${cfg.name}】！點擊開始挑戰`;
+        }
+      });
+
+      if (nearAny && !isModalOpen) {
+        prompt.style.display = 'flex';
+      } else {
+        prompt.style.display = 'none';
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* -------------------------------------------------------------
+       9. 初始化啟動
+    ------------------------------------------------------------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      initCanvas();
+      initJoystick();
+      init3DWorld();
+      updateKeyHUD();
+      updateRemainingItemsLabel();
+
+      window.addEventListener('pointerdown', () => initAudio(), { once: true });
+    });
+  </script>
+</body>
+</html>

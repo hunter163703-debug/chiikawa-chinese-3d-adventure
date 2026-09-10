@@ -1,0 +1,13 @@
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Local scratch
+scratch/
+test.txt

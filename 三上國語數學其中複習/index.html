@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>國小三年級寶可夢訓練道館 — 柳溪谷冒險 (Willow Valley)</title>
+  <meta name="description" content="國小三年級寶可夢訓練道館：結合南一版三上國語（第1～6課）與康軒版三上數學（第1～4單元），探索柳溪、克洛佛班克河、低雨林小徑、桑布雷克海岸與韋斯頓露台五大區域！" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="console-shell">
+    <!-- 頂部狀態列：即時查看目前寶可夢數量、國語攻擊加成、數學防禦加成、金幣與背包 -->
+    <div class="game-topline">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="pokeball small" aria-hidden="true"><i></i></span>
+        <span>INFINITE POKÉMON · 三上國語數學訓練道館</span>
+      </div>
+
+      <div class="topline-stats">
+        <button class="topline-pill party" id="topPartyPill" title="點擊查看寶可夢隊伍">
+          🐾 寶可夢：1 隻
+        </button>
+        <button class="topline-pill atk" id="topAtkPill" title="點擊進入國語文道館提升攻擊力">
+          ⚔️ 國語攻擊 +0
+        </button>
+        <button class="topline-pill def" id="topDefPill" title="點擊進入數學道館提升防禦力">
+          🛡️ 數學防禦 +0
+        </button>
+        <button class="topline-pill coins" id="topCoinsPill" title="點擊開啟寶可夢商店購買道具">
+          🪙 金幣 ₽ 150
+        </button>
+        <button class="topline-pill" id="topBagPill" title="點擊開啟背包查看精靈球與傷藥">
+          🎒 精靈球 ×5 · 傷藥 ×2
+        </button>
+      </div>
+
+      <span class="link-status">
+        <i class="signal live"></i>
+        <span id="topSoundToggle" style="cursor:pointer;text-decoration:underline;">🔊 音效：開</span>
+      </span>
+    </div>
+
+    <!-- 主遊戲螢幕 (3:2 Viewport + 下方任務對話列) -->
+    <main class="game-screen">
+      <div class="viewport" id="gameViewport">
+        <!-- 2D 世界地圖 Canvas (使用 Infinite Pokémon 真實 terrain.png 與 trainer.png 渲染) -->
+        <div class="game-canvas" id="gameCanvasWrap" tabindex="0">
+          <canvas id="overworldCanvas" width="480" height="320"></canvas>
+        </div>
+
+        <!-- 左上角：當前地區與等級分級木牌 (Location Sign) -->
+        <div class="location-sign" id="locationSign">
+          <h1 id="locationTitle">柳溪 (Willowbrook)</h1>
+          <div class="location-tier" id="locationTier">★ 第 1 階（最初階 Lv.3～5）· 城市與新手草地</div>
+        </div>
+
+        <!-- 右上角：地圖 / 道館快捷鍵與 START 選單按鈕 -->
+        <div class="top-right-hud">
+          <button class="start-button" id="btnHudMap" title="開啟五大地圖導覽與傳送">🗺️ 地圖</button>
+          <button class="start-button" id="btnStartMenu" aria-label="開啟選單">START ☰</button>
+        </div>
+
+        <!-- 右上角彈出式 START 選單 (100% 對齊 Infinite Pokémon .start-menu) -->
+        <nav class="start-menu pixel-window" id="startMenu" aria-label="Game menu" style="display: none;">
+          <button data-menu="party"><span>POKÉMON 隊伍</span><small id="menuPartyCount">1/6</small></button>
+          <button data-menu="bag"><span>BAG 背包道具</span><small>🎒</small></button>
+          <button data-menu="shop"><span>SHOP 寶可夢商店</span><small id="menuCoinsTxt">₽150</small></button>
+          <button data-menu="map"><span>TOWN MAP 五大地圖</span><small>🗺️</small></button>
+          <button data-menu="codex"><span>CODEX 寶可夢圖鑑</span><small>📖</small></button>
+          <button data-menu="trainer"><span id="menuTrainerName">TRAINER 名片</span><small>🧢</small></button>
+          <button data-menu="chinese-gym" style="color:#b91c1c;"><span>📕 國語文道館</span><small>+ATK</small></button>
+          <button data-menu="math-gym" style="color:#1d4ed8;"><span>📘 數學道館</span><small>+DEF</small></button>
+          <button data-menu="reset" style="color:#64748b;font-size:15px;"><span>🔄 重置冒險進度</span></button>
+          <button data-menu="close"><span>EXIT 關閉選單</span></button>
+        </nav>
+
+        <!-- 左下角：目前出戰寶可夢即時狀態卡 (點擊開啟隊伍) -->
+        <div class="hud-leader-badge" id="hudLeaderBadge" title="點擊查看或切換出戰寶可夢">
+          <img id="hudLeaderImg" src="https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/0025/Normal.png" alt="出戰寶可夢" />
+          <div>
+            <div style="font-weight:900;font-size:16px;" id="hudLeaderName">皮卡丘 · Lv.1</div>
+            <div style="font-size:13px;color:#334155;font-weight:800;" id="hudLeaderStats">⚔️ATK 5 · 🛡️DEF 4 · HP 22/22</div>
+            <div class="health" style="margin-top:2px;min-width:135px;">
+              <span>HP</span>
+              <div><i id="hudLeaderHpBar" style="width:100%;"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 遭遇戰閃光過場特效 -->
+        <div class="encounter-transition" id="encounterTransition" style="display: none;"></div>
+
+        <!-- GBA 經典回合制對戰與收服畫面 (.gba-battle) -->
+        <div class="gba-battle hidden" id="gbaBattle">
+          <div class="gba-field"></div>
+          <div class="gba-platform enemy"></div>
+          <div class="gba-platform player"></div>
+
+          <!-- 敵方狀態卡 -->
+          <div class="gba-status enemy">
+            <div class="gba-status-top">
+              <strong id="battleEnemyName">走路草</strong>
+              <span id="battleEnemyLv">Lv.3</span>
+            </div>
+            <div class="gba-substats" id="battleEnemyStats">⚔️ATK 15 · 🛡️DEF 13 · 柳溪</div>
+            <div class="gba-health">
+              <span>HP</span>
+              <div><i id="battleEnemyHpBar" style="width:100%;background:#58b888;"></i></div>
+              <small id="battleEnemyHpTxt">42 / 42</small>
+            </div>
+          </div>
+
+          <!-- 敵方與我方寶可夢精靈圖 -->
+          <div class="gba-creature enemy" id="battleEnemySpriteWrap">
+            <img id="battleEnemySprite" src="" alt="野生寶可夢" />
+          </div>
+
+          <div class="gba-creature player" id="battlePlayerSpriteWrap">
+            <img id="battlePlayerSprite" src="" alt="我方寶可夢" />
+          </div>
+
+          <!-- 投擲精靈球拋物線動畫 -->
+          <div class="gba-thrown-ball" id="battleThrownBall" style="display: none;"></div>
+
+          <!-- 我方狀態卡 -->
+          <div class="gba-status player">
+            <div class="gba-status-top">
+              <strong id="battlePlayerName">皮卡丘</strong>
+              <span id="battlePlayerLv">Lv.1</span>
+            </div>
+            <div class="gba-substats" id="battlePlayerStats">⚔️ATK 5 · 🛡️DEF 4</div>
+            <div class="gba-health">
+              <span>HP</span>
+              <div><i id="battlePlayerHpBar" style="width:100%;background:#58b888;"></i></div>
+              <small id="battlePlayerHpTxt">22 / 22</small>
+            </div>
+          </div>
+
+          <!-- 下方訊息與指令列 (FIGHT / BAG / POKÉMON / RUN) -->
+          <div class="gba-bottom">
+            <div class="gba-message" id="battleMessage">
+              野生的寶可夢跳出來了！請選擇行動！
+            </div>
+            <div class="gba-commands" id="battleMainCommands">
+              <button data-cmd="fight">FIGHT 戰鬥</button>
+              <button data-cmd="bag">BAG 背包/投球</button>
+              <button data-cmd="party">POKÉMON 隊伍</button>
+              <button data-cmd="run">RUN 逃跑</button>
+            </div>
+            <div class="gba-submenu" id="battleSubMenu" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 畫面正下方：目前任務指引與城市建築快捷互動列 -->
+      <section class="game-textbox" aria-label="當前指引與城市互動">
+        <div style="flex: 1 1 320px;">
+          <strong style="color:#1e40af;font-weight:900;" id="objectiveTitle">📍 當前指引：先前往國語文道館與數學道館特訓！</strong>
+          <p id="objectiveDesc" style="font-size:16px;color:#334155;margin-top:2px;">
+            你的初始寶可夢目前是 Lv.1（未受訓狀態），打不贏野外的怪獸！請走進城鎮左上「📕國語文道館」提升攻擊力、右上「📘數學道館」提升防禦力，並在「🏪寶可夢商店」購買精靈球與傷藥！
+          </p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="button primary" id="btnQuickChineseGym" style="border-color:#dc2626;background:#fee2e2;color:#991b1b;">
+            📕 國語文道館 (+ATK)
+          </button>
+          <button class="button primary" id="btnQuickMathGym" style="border-color:#2563eb;background:#dbeafe;color:#1e3a8a;">
+            📘 數學道館 (+DEF)
+          </button>
+          <button class="button gold" id="btnQuickShop">
+            🏪 寶可夢商店 / 醫療
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部操作列：情境互動鍵 (E) + 觸控十字鍵 + 鍵盤操作說明 -->
+    <div class="game-controls">
+      <div class="action-strip contextual">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button id="btnContextInteract" class="highlight-action">
+            <span id="contextActionText">調查面前物件 / 對話</span> <kbd>E / 空白鍵</kbd>
+          </button>
+          <span id="contextHintText" style="font-size:15px;color:#cbd5e1;">
+            走到道館大門、商店、寶箱或 NPC 旁按 E 即可互動（或直接點擊地圖上的建築與寶箱）
+          </span>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button id="btnToggleBike" style="display:none;">🚲 騎乘腳踏車</button>
+          <button id="btnQuickBag">🎒 背包道具</button>
+          <button id="btnQuickParty">🐾 寶可夢隊伍</button>
+          <button id="btnQuickWorldMap">🗺️ 五大地圖分級</button>
+        </div>
+      </div>
+
+      <!-- 平板 / 手機觸控十字方向鍵 -->
+      <div class="touch-controls" aria-label="觸控方向鍵">
+        <button data-direction="north" id="dpadUp">↑</button>
+        <button data-direction="west" id="dpadLeft">←</button>
+        <button data-direction="south" id="dpadDown">↓</button>
+        <button data-direction="east" id="dpadRight">→</button>
+      </div>
+
+      <div class="control-legend">
+        <span>
+          <kbd>W A S D</kbd> 或 <kbd>↑ ↓ ← →</kbd> 移動角色 · <kbd>E</kbd> / <kbd>Space</kbd> 進入建築/開寶箱/對話 · <kbd>ESC</kbd> 開啟選單
+        </span>
+        <span class="world-window-top" id="worldChestCounter">
+          🎁 已開啟地圖寶箱：0 / 16 · 走出城鎮四個路口可前往五大地圖
+        </span>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         Modal 1：初始選擇寶可夢視窗 (Choose your first companion：皮卡丘、噴火龍、妙蛙種子)
+         ==================================================================== -->
+    <div class="modal-scrim hidden" id="starterModal" role="dialog" aria-modal="true" aria-labelledby="starterModalTitle">
+      <div class="modal pixel-window">
+        <div class="modal-title">
+          <h2 id="starterModalTitle">CHOOSE YOUR FIRST COMPANION · 選擇你的初始出戰寶可夢</h2>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;background:#e8ecd8;border:2px solid #a0b0a8;padding:10px 14px;border-radius:6px;margin-bottom:12px;">
+          <img src="assets/trainer.png" alt="主角訓練家" style="width:48px;height:66px;image-rendering:pixelated;flex-shrink:0;" />
+          <div style="flex:1 1;">
+            <label class="field" style="margin:0;">
+              🧢 訓練家暱稱 (Trainer Nickname)：
+              <input type="text" id="trainerNameInput" value="小智" maxlength="12" placeholder="輸入你的名字" />
+            </label>
+          </div>
+        </div>
+
+        <p style="font-size:16px;color:#334155;">
+          歡迎來到<strong>柳溪 (Willowbrook)</strong>！請從下方三隻寶可夢中選擇你的第一隻出戰夥伴。<br />
+          <strong style="color:#b91c1c;">⚠️ 注意：初始寶可夢剛出發時只有 Lv.1（未受訓狀態），直接去野外草叢一定打不贏任何怪獸！</strong>選完夥伴後，請先進入城鎮中的<strong>「📕國語文道館」</strong>與<strong>「📘數學道館」</strong>進行訓練與提升，再到五大地圖挑戰並收服寶可夢！
+        </p>
+
+        <div class="starter-choices" id="starterChoicesGrid">
+          <!-- 由 game.js 動態渲染：皮卡丘、噴火龍、妙蛙種子 -->
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+          <button class="button primary" id="btnConfirmStarter" style="font-size:20px;padding:10px 24px;">
+            🚀 確認選擇，進入柳溪地圖！
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         Modal 2：通用遊戲選單視窗 (POKÉMON 隊伍 / BAG 背包 / SHOP 商店 / TOWN MAP / CODEX / TRAINER / 對話)
+         ==================================================================== -->
+    <div class="modal-scrim hidden" id="menuModal" role="dialog" aria-modal="true" aria-labelledby="menuModalTitle">
+      <div class="modal pixel-window" id="menuModalBox">
+        <div class="modal-title">
+          <h2 id="menuModalTitle">YOUR POKÉMON</h2>
+          <button class="close-button" id="closeMenuModal" aria-label="關閉">×</button>
+        </div>
+        <div id="menuModalBody"></div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         Modal 3：📕 國語文道館 (南一版三上 第1～6課 · 提升寶可夢攻擊力 ATK 與等級)
+         ==================================================================== -->
+    <div class="modal-scrim hidden" id="chineseGymModal" role="dialog" aria-modal="true" aria-labelledby="chineseGymTitle">
+      <div class="modal wide pixel-window">
+        <div class="modal-title">
+          <h2 id="chineseGymTitle" style="color:#991b1b;">
+            📕 國語文道館（南一版三年級上學期 第 1～6 課）— 提升寶可夢攻擊力 ⚔️ATK &amp; 等級 Lv
+          </h2>
+          <button class="close-button" id="closeChineseGym">×</button>
+        </div>
+
+        <div class="gym-tier-tabs">
+          <button class="tier-tab active-chinese" id="chTab_a">
+            ✍️ (a) 初階：語音出題 · 手寫生字 (+4 ⚔️ATK / +Lv / ₽50)
+          </button>
+          <button class="tier-tab" id="chTab_b">
+            🧩 (b) 中階：照樣造句／詞語造句 (+6 ⚔️ATK / +Lv / ₽70)
+          </button>
+          <button class="tier-tab" id="chTab_c">
+            📖 (c) 高階：閱讀測驗活動 (+8 ⚔️ATK / +Lv / ₽100)
+          </button>
+        </div>
+
+        <div id="chineseGymBody"></div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         Modal 4：📘 數學道館 (康軒版三上 第1～4單元 · 提升寶可夢防禦力 DEF、最大 HP 與等級)
+         ==================================================================== -->
+    <div class="modal-scrim hidden" id="mathGymModal" role="dialog" aria-modal="true" aria-labelledby="mathGymTitle">
+      <div class="modal wide pixel-window">
+        <div class="modal-title">
+          <h2 id="mathGymTitle" style="color:#1e3a8a;">
+            📘 數學道館（康軒版三年級上學期 第 1～4 單元）— 提升寶可夢防禦力 🛡️DEF &amp; 最大 HP
+          </h2>
+          <button class="close-button" id="closeMathGym">×</button>
+        </div>
+
+        <div class="gym-tier-tabs">
+          <button class="tier-tab active-math" id="maTab_a">
+            ✖️ (a) 初階：乘法等基本運算 (+4 🛡️DEF / +12 HP / ₽50)
+          </button>
+          <button class="tier-tab" id="maTab_b">
+            📐 (b) 中階：四位數直式加減 (+6 🛡️DEF / +18 HP / ₽70)
+          </button>
+          <button class="tier-tab" id="maTab_c">
+            🧠 (c) 高階：1～4 單元素養與應用題 (+8 🛡️DEF / +25 HP / ₽100)
+          </button>
+        </div>
+
+        <div id="mathGymBody"></div>
+      </div>
+    </div>
+
+    <!-- 頁尾資源致謝 -->
+    <footer class="credits-footer">
+      <div>
+        <strong>📚 課程與道館設計：</strong>
+        📕 <strong>國語文道館</strong>依據<strong>南一版國小三年級上學期第 1～6 課</strong>設計（初階語音手寫生字、中階照樣造句、高階閱讀測驗，提升寶可夢攻擊力與等級）；
+        📘 <strong>數學道館</strong>依據<strong>康軒版國小三年級上學期第 1～4 單元</strong>設計（初階乘法基本運算、中階一萬以內四位數直式加減、高階素養應用題，提升寶可夢防禦力與最大 HP）。
+      </div>
+      <div style="margin-top: 4px;">
+        <strong>🎮 遊戲地圖、介面與資源參考：</strong>
+        地圖與介面參考 <a href="https://infinite-pokemon-blond.vercel.app/game/" target="_blank" rel="noopener noreferrer">Infinite Pokémon — Willow Valley</a>（柳溪、克洛佛班克河、低雨林小徑、桑布雷克海岸、韋斯頓露台五張地圖與商店道具系統），由 Daigan Games 使用 <a href="https://godotengine.org/" target="_blank" rel="noopener noreferrer">Godot 引擎</a> 4.7 製作。
+        寶可夢精靈圖：來自 <a href="https://sprites.pmdcollab.org/" target="_blank" rel="noopener noreferrer">PMD SpriteCollab</a>（CC BY-NC 4.0，藝人：Spike Chunsoft、3P1C、Deeshura、Emboarger、Emmuffin、Grimlin、Gust、G〜、JFain、Morei、NeonCityRain、Prismatic、ShyStarryRain、Top_Kec）。
+        世界與音效素材參考：<a href="https://kenney.nl/" target="_blank" rel="noopener noreferrer">Kenney</a> (CC0)、<a href="https://opengameart.org/content/15-melodic-rpg-chiptunes" target="_blank" rel="noopener noreferrer">Aureolus_Omicron</a> (CC0)、AkitsukiShintai (PokemonHD-2D)，字體採用 Pixelify Sans 與 Nunito (SIL OFL 1.1)。
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast 提示訊息 -->
+  <div class="toast" id="gameToast" role="alert">
+    <span id="gameToastText"></span>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

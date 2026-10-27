@@ -1,0 +1,1615 @@
+/* ==========================================================================
+   國小三年級寶可夢訓練道館 — 樣式表 (styles.css)
+   100% 參考 https://infinite-pokemon-blond.vercel.app/game/ 介面、像素視窗與 GBA 對戰設計
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Pixelify+Sans:wght@500;700&family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+  font-family: 'VT323', 'Noto Sans TC', monospace, sans-serif;
+  color: #303840;
+  background: #242832;
+  font-synthesis: none;
+  font-weight: 500;
+  --ink: #303840;
+  --paper: #f8f8f0;
+  --frame: #384878;
+  --blue: #8898b8;
+  --yellow: #f8d848;
+  --red: #d85048;
+  --green: #58b888;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #242832;
+  color: var(--ink);
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+a, button, input, select, textarea {
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #e89030;
+  outline-offset: 2px;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+p {
+  line-height: 1.4;
+}
+
+kbd {
+  font: 14px 'VT323', monospace;
+  color: #b6c0d1;
+  border: 1px solid #637088;
+  padding: 1px 5px;
+  white-space: nowrap;
+  background: #1e2430;
+}
+
+button kbd {
+  color: inherit;
+  border-color: #8e98ad;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.muted {
+  color: #677082;
+}
+
+.small-copy {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* 經典寶可夢像素按鈕與視窗 (來自 Infinite Pokémon) */
+.button {
+  border: 2px solid var(--frame);
+  box-shadow: inset 0 0 0 2px #fff;
+  background: #e8e8e0;
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.button:hover:not(:disabled) {
+  background: #d8e0f0;
+}
+
+.button.primary {
+  background: #dbeafe;
+  border-color: #1e40af;
+  color: #1e3a8a;
+}
+
+.button.primary:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.button.danger {
+  background: #f1d6ce;
+  color: #873a31;
+  border-color: #a2584c;
+}
+
+.button.gold {
+  background: #fef08a;
+  border-color: #b45309;
+  color: #78350f;
+}
+
+.button.quiet {
+  background: #fff;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.game-textbox, .pixel-window {
+  border: 3px solid #303848;
+  border-radius: 5px;
+  background: var(--paper);
+  box-shadow:
+    inset 0 0 0 3px var(--blue),
+    inset 0 0 0 6px var(--frame),
+    inset 0 0 0 8px #fff;
+}
+
+/* 主掌機外框 (Console Shell) */
+.console-shell {
+  width: min(966px, 100% - 28px);
+  margin: 18px auto 24px;
+  position: relative;
+  font-size: 20px;
+}
+
+.game-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #b7c0cd;
+  font: 12px 'Press Start 2P', 'Noto Sans TC', monospace;
+  margin: 0 2px 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topline-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.topline-pill {
+  background: #171c26;
+  border: 1px solid #4b5563;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.topline-pill:hover {
+  border-color: #93c5fd;
+  background: #1e293b;
+}
+
+.topline-pill.atk { color: #fca5a5; border-color: #ef4444; }
+.topline-pill.def { color: #93c5fd; border-color: #3b82f6; }
+.topline-pill.coins { color: #fde047; border-color: #eab308; }
+.topline-pill.party { color: #86efac; border-color: #22c55e; }
+
+.link-status {
+  display: flex;
+  align-items: center;
+  font: 14px 'VT323', 'Noto Sans TC', monospace;
+  gap: 8px;
+}
+
+.signal {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #80c86c;
+  flex-shrink: 0;
+}
+
+/* 遊戲螢幕與 3:2 視窗 */
+.game-screen {
+  border: 3px solid #101820;
+  box-shadow: 0 0 0 1px #454c58, 0 10px 0 #171b23;
+  background: #101820;
+}
+
+.viewport {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  background: #80b060;
+  overflow: hidden;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.game-canvas canvas, .creature-art, .landscape {
+  image-rendering: pixelated;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 左上角地區木牌 (Location Sign) */
+.location-sign {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 9px 16px;
+  background: #f8f8e8;
+  border: 3px solid #505850;
+  border-radius: 3px;
+  box-shadow: inset 0 -4px #c8d0a0, 3px 3px 0 rgba(32, 48, 40, 0.35);
+  pointer-events: none;
+  max-width: 68%;
+  z-index: 5;
+}
+
+.location-sign h1 {
+  font-family: 'Noto Sans TC', 'VT323', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1e293b;
+  text-shadow: 1px 1px #d1d5db;
+  line-height: 1.15;
+}
+
+.location-sign .location-tier {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f6212;
+  margin-top: 2px;
+}
+
+/* 左下角目前出戰隊長迷你狀態卡 */
+.hud-leader-badge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  background: rgba(248, 248, 232, 0.95);
+  color: #303840;
+  border: 2px solid #505850;
+  box-shadow: inset 0 -3px #c8d0a0, 2px 2px rgba(32, 48, 40, 0.35);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.hud-leader-badge:hover {
+  background: #ffffff;
+}
+
+.hud-leader-badge img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  border: 2px solid #384878;
+  border-radius: 4px;
+  background: #e2e8f0;
+}
+
+/* 右上角 START 按鈕與彈出式選單 */
+.top-right-hud {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 6;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.start-button {
+  min-height: 36px;
+  background: #f8f8f0;
+  border: 2px solid #384878;
+  box-shadow: inset 0 0 0 2px #98a0b8, 2px 2px 0 rgba(0, 0, 0, 0.35);
+  padding: 5px 12px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.start-button:hover {
+  background: #e0e8f8;
+}
+
+.start-menu {
+  max-height: calc(100% - 20px);
+  position: absolute;
+  right: 12px;
+  top: 52px;
+  width: 235px;
+  padding: 16px 14px;
+  z-index: 25;
+  display: grid;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.start-menu button {
+  position: relative;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 19px;
+  font-weight: 800;
+  padding: 6px 12px 6px 24px;
+  min-height: 36px;
+  color: #303840;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.start-menu button:hover,
+.start-menu button:focus-visible {
+  background: #e0e4e8;
+}
+
+.start-menu button:hover::before,
+.start-menu button:focus-visible::before {
+  content: "▶";
+  position: absolute;
+  left: 5px;
+  color: #303840;
+  font-size: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 視窗下方任務與對話列 (Objective / Game Textbox) */
+.game-textbox {
+  position: relative;
+  padding: 14px 22px;
+  min-height: 76px;
+  font-size: 18px;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* 下方互動按鈕與方向鍵控制區 */
+.game-controls {
+  padding-top: 14px;
+}
+
+.action-strip {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-strip button {
+  background: #303746;
+  border: 1px solid #627086;
+  color: #e2e8f0;
+  padding: 7px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  min-height: 36px;
+}
+
+.action-strip button:hover:not(:disabled) {
+  background: #43536a;
+}
+
+.action-strip button.highlight-action {
+  background: #1d4ed8;
+  border-color: #93c5fd;
+  color: #ffffff;
+}
+
+.control-legend {
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.touch-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  grid-template-rows: 40px 40px;
+  gap: 5px;
+  justify-content: center;
+  margin: 12px auto 0;
+}
+
+.touch-controls button[data-direction="north"] { grid-column: 2; grid-row: 1; }
+.touch-controls button[data-direction="west"]  { grid-column: 1; grid-row: 2; }
+.touch-controls button[data-direction="south"] { grid-column: 2; grid-row: 2; }
+.touch-controls button[data-direction="east"]  { grid-column: 3; grid-row: 2; }
+
+.touch-controls button {
+  width: 54px;
+  height: 40px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #d8e0e8;
+  background: #3e4655;
+  border: 2px solid #171c28;
+  box-shadow: inset 0 2px #687489, 0 3px #171c28;
+  touch-action: none;
+}
+
+.touch-controls button:active {
+  transform: translateY(2px);
+}
+
+/* ==========================================================================
+   Modal 彈出式像素視窗 (初始選擇、隊伍、背包、商店、地圖、道館)
+   ========================================================================== */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(16, 24, 32, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: appear 0.12s steps(3);
+}
+
+.modal-scrim.hidden {
+  display: none !important;
+}
+
+.modal {
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 22px 24px;
+  font-size: 18px;
+}
+
+.modal.wide {
+  width: min(880px, 100%);
+}
+
+.modal-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.modal-title h2 {
+  font-size: 22px;
+  color: #1e293b;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.close-button {
+  font-size: 26px;
+  font-weight: 900;
+  border: 2px solid #64748b;
+  background: #f1f5f9;
+  padding: 2px 10px;
+  line-height: 1;
+  color: #334155;
+}
+
+.close-button:hover {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+/* 1. 初始選擇三隻寶可夢 (Starter Choices: 皮卡丘、噴火龍、妙蛙種子) */
+.starter-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+
+.starter-choices button {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  background: #e0e8e0;
+  border: 3px solid #98a8b0;
+  padding: 14px 8px;
+  font-size: 20px;
+  gap: 6px;
+  transition: transform 0.1s;
+}
+
+.starter-choices button:hover,
+.starter-choices button.selected {
+  border-color: #2563eb;
+  background: #dbeafe;
+  box-shadow: 0 4px 0 #1d4ed8;
+  transform: translateY(-2px);
+}
+
+.starter-choices .creature-art {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.starter-choices strong {
+  font-size: 21px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.starter-choices span {
+  font-size: 14px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.field {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 12px 0;
+}
+
+.field input, .field select {
+  display: block;
+  width: 100%;
+  background: #fff;
+  border: 2px solid #8898b8;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 18px;
+  color: #303848;
+  margin-top: 5px;
+}
+
+/* 2. 寶可夢隊伍、背包、商店與世界地圖 (來自 Infinite Pokémon) */
+.pokeball {
+  display: inline-block;
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 2.5px solid #384048;
+  border-radius: 50%;
+  background: linear-gradient(#d85048 0 44%, #384048 44% 56%, #f8f8f0 56%);
+}
+
+.pokeball i {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #384048;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.pokeball.small {
+  width: 22px;
+  height: 22px;
+}
+
+.pokeball.small i {
+  width: 7px;
+  height: 7px;
+  top: 5px;
+  left: 5px;
+}
+
+.health {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.health > span {
+  font: 900 11px system-ui;
+  color: #e8b840;
+  text-shadow: 1px 1px #686040;
+  background: #303840;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.health > div {
+  flex: 1 1;
+  height: 10px;
+  background: #485058;
+  border-radius: 6px;
+  padding: 2px;
+  min-width: 40px;
+}
+
+.health i {
+  display: block;
+  height: 100%;
+  background: #58b888;
+  border-radius: 3px;
+  border-top: 1px solid #b8e8c0;
+  transition: width 0.2s;
+}
+
+.party-list {
+  display: grid;
+  gap: 10px;
+}
+
+.companion-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 3px solid #98a8c0;
+  background: #e8f0f8;
+  border-radius: 6px;
+  padding: 8px 14px;
+  text-align: left;
+}
+
+.companion-card.active {
+  background: #b8d8e0;
+  border-color: #384878;
+}
+
+.companion-card > img {
+  width: 68px;
+  height: 68px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 6px;
+  border: 2px solid #94a3b8;
+}
+
+.companion-card > div {
+  flex: 1 1;
+}
+
+.companion-card strong {
+  display: block;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.catalog-list {
+  display: grid;
+  gap: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid #a0b0a8;
+  background: #e8ecd8;
+  border-radius: 4px;
+}
+
+.catalog-row > .item-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 6px;
+  border: 2px solid #384048;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.catalog-row > div {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.catalog-row strong {
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.catalog-row p {
+  font-size: 15px;
+  color: #334155;
+  margin: 2px 0;
+}
+
+.wallet {
+  font-size: 22px;
+  font-weight: 900;
+  color: #166534;
+  background: #dcfce7;
+  border: 2px solid #22c55e;
+  padding: 8px 14px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.world-atlas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.world-atlas > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  border: 2px solid #94a3b8;
+  background: #e0e8d8;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.world-atlas > div.here {
+  background: #c0d8a8;
+  border-color: #15803d;
+}
+
+/* ==========================================================================
+   3. GBA 經典對戰與收服介面 (100% 移植 Infinite Pokémon .gba-battle)
+   ========================================================================== */
+.encounter-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: all;
+  background: rgba(255, 255, 255, 0.85);
+  animation: encounter-flash 0.45s ease-in-out both;
+}
+
+@keyframes encounter-flash {
+  0%, 100% { opacity: 0; }
+  30%, 70% { opacity: 0.95; }
+}
+
+.gba-battle {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  container-type: inline-size;
+  background: #e8f0c8;
+  color: #303840;
+  font-family: 'VT323', 'Noto Sans TC', monospace;
+}
+
+.gba-battle.hidden {
+  display: none !important;
+}
+
+.gba-field {
+  position: absolute;
+  inset: 0 0 30%;
+  background: repeating-linear-gradient(0deg, #e0e8b8 0 1.25%, #e8f0c8 1.25% 2.5%);
+}
+
+.gba-platform {
+  position: absolute;
+  z-index: 1;
+  background: #b0c888;
+  border-bottom: 0.65cqw solid #98b068;
+  border-radius: 50%;
+  height: 8.5%;
+}
+
+.gba-platform.enemy { left: 58%; top: 40%; width: 35%; }
+.gba-platform.player { left: 5%; top: 60%; width: 41%; }
+
+.gba-creature {
+  position: absolute;
+  width: 26%;
+  height: 38%;
+  z-index: 2;
+  transform-origin: center bottom;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.gba-creature img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.gba-creature.enemy { left: 62%; top: 7%; }
+.gba-creature.player { left: 11%; top: 31%; }
+
+.gba-creature.lunge-player { animation: gba-player-attack 0.22s steps(3); }
+.gba-creature.lunge-enemy  { animation: gba-enemy-attack 0.22s steps(3); }
+.gba-creature.hit          { animation: gba-hit 0.42s steps(2); }
+
+@keyframes gba-player-attack { 50% { transform: translate(3.5cqw, -1.5cqw); } }
+@keyframes gba-enemy-attack  { 50% { transform: translate(-3.5cqw, 1.5cqw); } }
+@keyframes gba-hit           { 20%, 60% { opacity: 0; } 40%, 80% { opacity: 1; } }
+
+.gba-status {
+  position: absolute;
+  z-index: 3;
+  width: 45%;
+  padding: 1.2cqw 1.8cqw;
+  background: #f8f8d8;
+  border: 0.55cqw solid #405848;
+  border-radius: 1.6cqw 0.4cqw 1.6cqw 0.4cqw;
+  box-shadow: 0.6cqw 0.6cqw #789060;
+  font-size: 2.5cqw;
+  line-height: 1.15;
+}
+
+.gba-status.enemy  { left: 4%; top: 8%; }
+.gba-status.player { right: 3%; top: 43%; }
+
+.gba-status-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1cqw;
+  font-weight: 900;
+}
+
+.gba-substats {
+  font-size: 1.9cqw;
+  color: #475569;
+  margin-top: 0.3cqw;
+  font-weight: 700;
+}
+
+.gba-health {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5cqw;
+  margin-top: 0.6cqw;
+  flex-wrap: wrap;
+}
+
+.gba-health > span {
+  color: #d8a820;
+  font: 900 1.6cqw system-ui;
+  background: #303840;
+  padding: 0.1cqw 0.5cqw;
+  border-radius: 0.3cqw;
+}
+
+.gba-health > div {
+  width: 68%;
+  height: 1.5cqw;
+  background: #405850;
+  border-radius: 2cqw;
+  padding: 0.2cqw;
+}
+
+.gba-health > div > i {
+  display: block;
+  height: 100%;
+  border-top: 0.2cqw solid #c8f0c8;
+  border-radius: 2cqw;
+  transition: width 0.25s;
+}
+
+.gba-health > small {
+  width: 100%;
+  text-align: right;
+  font-size: 2.2cqw;
+  font-weight: 800;
+  margin-top: 0.2cqw;
+}
+
+.gba-thrown-ball {
+  position: absolute;
+  z-index: 4;
+  left: 31%;
+  top: 55%;
+  width: 3cqw;
+  height: 3cqw;
+  border: 0.35cqw solid #384048;
+  border-radius: 50%;
+  background: linear-gradient(#d85048 0 45%, #384048 45% 55%, #fff 55%);
+  animation: gba-throw 0.45s linear forwards;
+}
+
+@keyframes gba-throw {
+  50% { transform: translate(22cqw, -21cqw) rotate(180deg); }
+  100% { transform: translate(43cqw, -15cqw) rotate(360deg); }
+}
+
+.gba-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  z-index: 5;
+  display: flex;
+  border-top: 0.6cqw solid #384050;
+  background: #f8f8f0;
+}
+
+.gba-message {
+  width: 56%;
+  padding: 1.8cqw 2.2cqw;
+  background: #285060;
+  color: #f8f8e8;
+  border: 0.6cqw solid #d8b870;
+  border-radius: 0.5cqw;
+  font-size: 2.6cqw;
+  font-weight: 700;
+  line-height: 1.3;
+  text-shadow: 0.2cqw 0.2cqw #183040;
+  white-space: pre-line;
+  overflow-y: auto;
+}
+
+.gba-commands {
+  width: 44%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5cqw;
+  border: 0.55cqw solid #687890;
+  padding: 1cqw;
+  background: #fff;
+  border-radius: 0.4cqw;
+}
+
+.gba-commands button,
+.gba-submenu button {
+  font-size: 2.5cqw;
+  font-weight: 900;
+  background: none;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+  position: relative;
+  padding: 0.8cqw 0.8cqw 0.8cqw 2.3cqw;
+  color: #303840;
+  border-radius: 4px;
+}
+
+.gba-commands button:hover:not(:disabled),
+.gba-submenu button:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.gba-commands button:hover:not(:disabled)::before,
+.gba-submenu button:hover:not(:disabled)::before {
+  content: "▶";
+  position: absolute;
+  left: 0.5cqw;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.8cqw;
+}
+
+.gba-submenu {
+  width: 44%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5cqw;
+  border: 0.55cqw solid #687890;
+  padding: 1cqw;
+  background: #fff;
+  overflow-y: auto;
+}
+
+/* ==========================================================================
+   4. 國語文道館（田字格手寫生字）與 數學道館（四位數直式加減）專用樣式
+   ========================================================================== */
+.gym-tier-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tier-tab {
+  border: 2px solid #94a3b8;
+  background: #f1f5f9;
+  padding: 9px 10px;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  color: #334155;
+}
+
+.tier-tab.active-chinese {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #991b1b;
+  box-shadow: inset 0 -3px 0 #dc2626;
+}
+
+.tier-tab.active-math {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1e3a8a;
+  box-shadow: inset 0 -3px 0 #2563eb;
+}
+
+/* 田字格手寫區 */
+.tianzige-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.tianzige-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 2px solid #94a3b8;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.tianzige-box {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border: 3px solid #dc2626;
+  background-color: #fffdf9;
+  background-image:
+    linear-gradient(to right, transparent 49%, rgba(220, 38, 38, 0.3) 49%, rgba(220, 38, 38, 0.3) 51%, transparent 51%),
+    linear-gradient(to bottom, transparent 49%, rgba(220, 38, 38, 0.3) 49%, rgba(220, 38, 38, 0.3) 51%, transparent 51%);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.tianzige-box canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.candidate-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.cand-chip {
+  padding: 3px 9px;
+  font-size: 16px;
+  font-weight: 900;
+  border: 2px solid #384878;
+  background: #f8fafc;
+}
+
+.cand-chip:hover {
+  background: #dbeafe;
+}
+
+/* 四位數直式加減算式板 */
+.vertical-math-board {
+  background: #ffffff;
+  border: 3px solid #1e3a8a;
+  border-radius: 8px;
+  padding: 18px 22px;
+  max-width: 440px;
+  margin: 10px auto;
+  box-shadow: 4px 4px 0 #93c5fd;
+}
+
+.vmath-grid {
+  display: grid;
+  grid-template-columns: 44px repeat(4, 68px);
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.vmath-header {
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 0;
+  border-radius: 4px;
+}
+
+.vmath-carry-input {
+  width: 42px;
+  height: 30px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #dc2626;
+  border: 1.5px dashed #f87171;
+  background: #fff5f5;
+  border-radius: 4px;
+}
+
+.vmath-digit {
+  font-family: 'Pixelify Sans', 'Nunito', monospace;
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vmath-op {
+  font-size: 30px;
+  font-weight: 900;
+  color: #2563eb;
+}
+
+.vmath-line {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: #0f172a;
+  margin: 4px 0;
+}
+
+.vmath-ans-box {
+  width: 66px;
+  height: 66px;
+  border: 2.5px solid #2563eb;
+  background: #f8fafc;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.vmath-ans-box input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 900;
+  color: #1d4ed8;
+}
+
+.vmath-ans-box canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.vmath-ans-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* 計算草稿板 */
+.scratchpad-wrap {
+  border: 2px solid #94a3b8;
+  background: #fffef8;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.scratchpad-canvas {
+  width: 100%;
+  height: 190px;
+  background:
+    linear-gradient(#e2e8f0 1px, transparent 1px),
+    linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1.5px solid #cbd5e1;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Toast 浮動提示 */
+.toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(650px, 92vw);
+  z-index: 250;
+  background: #f8f8f0;
+  border: 3px solid #384878;
+  box-shadow: inset 0 0 0 2px #98a8b8, 0 8px 20px rgba(0, 0, 0, 0.45);
+  padding: 12px 18px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.toast.show {
+  display: flex;
+}
+
+/* 頁尾授權資訊 */
+.credits-footer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: #1a1e29;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.credits-footer a {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .starter-choices {
+    grid-template-columns: 1fr;
+  }
+  .gym-tier-tabs {
+    grid-template-columns: 1fr;
+  }
+  .world-atlas {
+    grid-template-columns: 1fr;
+  }
+  .vmath-grid {
+    grid-template-columns: 34px repeat(4, 56px);
+  }
+  .vmath-ans-box {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+/* ==========================================================================
+   5. 國語文道館與數學道館內部元件完整樣式 (田字格、造句池、四位數直式運算板)
+   ========================================================================== */
+.brand-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  border-radius: 4px;
+  background: #384878;
+}
+
+.hud-btn {
+  border: 2px solid #384878;
+  box-shadow: inset 0 0 0 2px #fff;
+  background: #e8e8e0;
+  padding: 6px 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.hud-btn:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.btn-pixel-lg {
+  border: 2px solid #1e3a8a;
+  box-shadow: inset 0 0 0 2px #fff, 0 3px 0 #1e3a8a;
+  background: #dbeafe;
+  padding: 8px 18px;
+  font-size: 17px;
+  font-weight: 900;
+  color: #1e3a8a;
+}
+
+.btn-pixel-lg:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.dictation-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.voice-prompt-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #e8ecd8;
+  border: 2px solid #a0b0a8;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.voice-play-btn {
+  border: 2px solid #b91c1c;
+  box-shadow: inset 0 0 0 2px #fff, 0 3px 0 #991b1b;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.voice-play-btn:hover {
+  background: #fecaca;
+}
+
+.tianzige-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.trace-guide-char {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Sans TC', serif;
+  font-size: 120px;
+  font-weight: 900;
+  color: rgba(220, 38, 38, 0.18);
+  pointer-events: none;
+  user-select: none;
+}
+
+.handwrite-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.candidate-strip {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 30px;
+  max-width: 180px;
+}
+
+.candidate-btn {
+  border: 1.5px solid #384878;
+  background: #ffffff;
+  padding: 2px 8px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.candidate-btn:hover {
+  background: #dbeafe;
+}
+
+.recognized-slot {
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #dc2626;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: #1e293b;
+  border-radius: 6px;
+}
+
+.word-block-pool,
+.sentence-builder-zone {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+  min-height: 54px;
+  border: 2px dashed #94a3b8;
+  background: #ffffff;
+  border-radius: 6px;
+  align-items: center;
+}
+
+.word-chip {
+  border: 2px solid #384878;
+  background: #e8f0f8;
+  padding: 6px 12px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.word-chip:hover {
+  background: #dbeafe;
+}
+
+.quiz-options-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.quiz-option-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: 2px solid #94a3b8;
+  background: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 6px;
+}
+
+.quiz-option-btn:hover,
+.quiz-option-btn.selected {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+/* 四位數直式加減法面板補充樣式 */
+.place-value-header,
+.carry-row,
+.vertical-num-row,
+.vertical-ans-row {
+  display: grid;
+  grid-template-columns: 44px repeat(4, 64px);
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0;
+}
+
+.pv-tag {
+  font-size: 13px;
+  font-weight: 900;
+  padding: 3px 0;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.pv-th { background: #dc2626; }
+.pv-hu { background: #d97706; }
+.pv-te { background: #16a34a; }
+.pv-on { background: #2563eb; }
+
+.carry-input {
+  width: 44px;
+  height: 28px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #dc2626;
+  border: 1.5px dashed #f87171;
+  background: #fff5f5;
+  border-radius: 4px;
+}
+
+.vertical-num-row span {
+  font-family: 'Pixelify Sans', 'Nunito', monospace;
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.vertical-divider {
+  height: 4px;
+  background: #0f172a;
+  margin: 6px auto;
+  width: 316px;
+}
+
+.digit-write-cell {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto;
+  border: 2.5px solid #64748b;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-family: 'Pixelify Sans', 'Nunito', monospace;
+  font-size: 30px;
+  font-weight: 900;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.digit-write-cell.active-cell {
+  border-color: #2563eb;
+  background: #dbeafe;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.numpad-bar {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.numpad-btn {
+  min-width: 36px;
+  height: 36px;
+  border: 2px solid #384878;
+  background: #ffffff;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.numpad-btn:hover {
+  background: #dbeafe;
+}

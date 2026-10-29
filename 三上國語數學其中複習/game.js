@@ -2373,7 +2373,8 @@
       const isGuardian = currentBattle.kind === "guardian";
       const isTrainer = currentBattle.kind === "trainer";
       const coinDrop = isGuardian ? 120 + enemy.level * 6 : isTrainer ? 50 + enemy.level * 8 : 35 + enemy.level * 5;
-      const expReward = isGuardian ? 35 : isTrainer ? 24 : 14 + Math.floor(enemy.level / 2);
+      // 對外戰鬥只提供象徵性 EXP；主要升級必須回到國語文／數學道館完成訓練。
+      const expReward = isGuardian ? 3 : isTrainer ? 2 : 1;
 
       state.coins = (state.coins || 0) + coinDrop;
       state.items["potion"] = Math.min(30, (state.items["potion"] || 0) + 1);
@@ -2389,10 +2390,10 @@
 
       // 賦予經驗值並檢查是否升級
       const lvResult = gainPokemonExp(lead, expReward, true);
-      // 隊伍其他成員也獲得 50% 共享經驗值
+      // 隊伍其他成員只獲得極少量共享經驗值，避免靠外戰快速升級。
       state.party.forEach((member, idx) => {
         if (idx !== state.activeIndex && member.hp > 0) {
-          gainPokemonExp(member, Math.max(4, Math.round(expReward * 0.5)), false);
+          gainPokemonExp(member, 1, false);
         }
       });
 
@@ -2575,13 +2576,13 @@
           if (!state.caughtIds.includes(catchId)) {
             state.caughtIds.push(catchId);
           }
-          // 收服成功也給予出戰隊長 +10 EXP！
-          gainPokemonExp(lead, 10, true);
+          // 收服只給象徵性 EXP；真正成長仍需完成道館訓練。
+          gainPokemonExp(lead, 1, true);
           addJournalEntry(`🔴 成功收服了【${newPoke.name} Lv.${newPoke.level}】！`);
           saveGame();
           updateAllHUD();
           setBattleMessage(
-            `✨ 喀嚓！太棒了！你成功收服了【${newPoke.name} Lv.${newPoke.level}】！\n（已加入你的${state.party.length <= 6 ? "出戰隊伍" : "寶可夢倉庫"}與圖鑑，出戰夥伴同時獲得 +10 EXP！）`
+            `✨ 喀嚓！太棒了！你成功收服了【${newPoke.name} Lv.${newPoke.level}】！\n（已加入你的${state.party.length <= 6 ? "出戰隊伍" : "寶可夢倉庫"}與圖鑑，出戰夥伴僅獲得 +1 EXP；請回道館訓練升級。）`
           );
           showToast(`🎉 成功收服【${newPoke.name} Lv.${newPoke.level}】！`);
           setTimeout(() => {
@@ -3789,23 +3790,11 @@
       state.ridingBicycle = true;
       showToast("🚲 恭喜兌換【越野腳踏車】！現在你在戶外地圖的移動速度提升至 160%！");
     } else if (item.effect === "atk-boost") {
-      state.atkBonus += item.power;
       state.items[itemId] = (state.items[itemId] || 0) + 1;
-      state.party.forEach((p) => {
-        p.atk += item.power;
-        p.level += 1;
-      });
-      showToast(`⚔️ 兌換【${item.name}】！全隊寶可夢永久提升攻擊力 +${item.power} 並升 1 級！`);
+      showToast(`⚔️ 已取得【${item.name}】；攻擊力只能透過國語文道館訓練提升。`);
     } else if (item.effect === "def-boost") {
-      state.defBonus += item.power;
       state.items[itemId] = (state.items[itemId] || 0) + 1;
-      state.party.forEach((p) => {
-        p.def += item.power;
-        p.maxHp += 15;
-        p.hp = p.maxHp;
-        p.level += 1;
-      });
-      showToast(`🛡️ 兌換【${item.name}】！全隊寶可夢永久提升防禦力 +${item.power}、最大HP +15！`);
+      showToast(`🛡️ 已取得【${item.name}】；防禦力只能透過數學道館訓練提升。`);
     } else if (item.effect === "rare-candy") {
       state.items[itemId] = (state.items[itemId] || 0) + 1;
       const lead = getLeadPokemon();

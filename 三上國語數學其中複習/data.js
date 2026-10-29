@@ -1,21 +1,70 @@
 // ============================================================================
 // 國小三年級寶可夢訓練道館 — 核心資料庫 (data.js)
-// 參考 https://infinite-pokemon-blond.vercel.app/game/ 製作
+// 地圖參考：Game Boy Color《寶可夢 金／銀》(Pokémon Gold / Silver — 城都地區)
+// 進化系統：100% 依據 神奇寶貝百科 (52poke) 寶可夢進化等級列表
 // ============================================================================
 
 window.GAME_DATA = {
-  starterIds: [25, 6, 1],
+  // 開局三選一必須對應 pokemonCatalog 中實際存在的初始夥伴：
+  // 皮卡丘、噴火龍、妙蛙種子。舊資料含有不存在的物種 ID，會讓
+  // showStarterModal 在讀取 s.id 時中斷，導致整個開局選擇器無法渲染。
+  starterIds: [25, 4, 1],
   regionsOrder: ["0,0", "0,1", "0,-1", "1,0", "-1,0"],
+  evolutionRules: {
+    "1":{"level":16,"to":2},"2":{"level":32,"to":3},"4":{"level":16,"to":5},"5":{"level":36,"to":6},
+    "7":{"level":16,"to":8},"8":{"level":36,"to":9},"10":{"level":7,"to":11},"11":{"level":10,"to":12},
+    "13":{"level":7,"to":14},"14":{"level":10,"to":15},"16":{"level":18,"to":17},"17":{"level":36,"to":18},
+    "19":{"level":20,"to":20},"21":{"level":20,"to":22},"23":{"level":22,"to":24},"27":{"level":22,"to":28},
+    "29":{"level":16,"to":30},"32":{"level":16,"to":33},"41":{"level":22,"to":42},"43":{"level":21,"to":44},
+    "46":{"level":24,"to":47},"48":{"level":31,"to":49},"50":{"level":26,"to":51},"52":{"level":28,"to":53},
+    "54":{"level":33,"to":55},"56":{"level":28,"to":57},"60":{"level":25,"to":61},"63":{"level":16,"to":64},
+    "66":{"level":28,"to":67},"69":{"level":21,"to":70},"72":{"level":30,"to":73},"74":{"level":25,"to":75},
+    "79":{"level":37,"to":80},"81":{"level":30,"to":82},"84":{"level":31,"to":85},"86":{"level":34,"to":87},
+    "88":{"level":38,"to":89},"92":{"level":25,"to":93},"96":{"level":26,"to":97},"98":{"level":28,"to":99},
+    "100":{"level":30,"to":101},"104":{"level":28,"to":105},"109":{"level":35,"to":110},"111":{"level":42,"to":112},
+    "116":{"level":32,"to":117},"118":{"level":33,"to":119},"129":{"level":20,"to":130},"147":{"level":30,"to":148},
+    "152":{"level":16,"to":153},"153":{"level":32,"to":154},"155":{"level":14,"to":156},"156":{"level":36,"to":157},
+    "158":{"level":18,"to":159},"159":{"level":36,"to":160},"165":{"level":18,"to":166},"167":{"level":22,"to":168},
+    "170":{"level":27,"to":171},"183":{"level":18,"to":184},"246":{"level":30,"to":247},"247":{"level":55,"to":248}
+  },
+  traits: {
+    hearty:  { id: "hearty",  name: "健壯 (Hearty)",  desc: "生命力旺盛，最大 HP 額外 +8", hpBonus: 8 },
+    bold:    { id: "bold",    name: "勇敢 (Bold)",    desc: "無懼強敵，對戰攻擊傷害額外提升 +15%", atkMult: 1.15 },
+    gentle:  { id: "gentle",  name: "溫和 (Gentle)",  desc: "守勢穩健，受到敵方攻擊時減免 15% 傷害", defMult: 0.85 },
+    curious: { id: "curious", name: "好奇 (Curious)", desc: "充滿求知慾，戰鬥與道館獲得經驗值 XP +25%", xpMult: 1.25 },
+    swift:   { id: "swift",   name: "敏捷 (Swift)",   desc: "身手矯捷，招式暴擊率提升 +18%", critBonus: 0.18 },
+    elusive: { id: "elusive", name: "靈巧 (Elusive)", desc: "閃避靈活，野生狀態較難收服，成為夥伴後可閃避部分傷害", dodgeBonus: 0.12 },
+    sturdy:  { id: "sturdy",  name: "堅毅 (Sturdy)",  desc: "意志堅定，最大 HP +4、防禦力 +3", hpBonus: 4, defBonus: 3 },
+    radiant: { id: "radiant", name: "閃耀 (Radiant)", desc: "散發星芒，全能力 ATK/DEF +2 且升級進化時額外獲得能力加成", allBonus: 2 }
+  },
+  typeAffinities: {
+    ELECTRIC: { strong: ["WATER", "FLYING"], weak: ["GRASS", "GROUND", "ELECTRIC", "DRAGON"] },
+    FIRE:     { strong: ["GRASS", "BUG", "ICE", "STEEL"], weak: ["WATER", "ROCK", "FIRE", "DRAGON"] },
+    GRASS:    { strong: ["WATER", "ROCK", "GROUND"], weak: ["FIRE", "GRASS", "FLYING", "BUG", "POISON", "DRAGON"] },
+    WATER:    { strong: ["FIRE", "ROCK", "GROUND"], weak: ["WATER", "GRASS", "ELECTRIC", "DRAGON"] },
+    ROCK:     { strong: ["FIRE", "FLYING", "BUG", "ICE"], weak: ["WATER", "GRASS", "GROUND", "FIGHTING", "STEEL"] },
+    GROUND:   { strong: ["ELECTRIC", "FIRE", "ROCK", "POISON", "STEEL"], weak: ["GRASS", "BUG", "FLYING"] },
+    ICE:      { strong: ["GRASS", "FLYING", "GROUND", "DRAGON"], weak: ["FIRE", "WATER", "ROCK", "STEEL"] },
+    FLYING:   { strong: ["GRASS", "BUG", "FIGHTING"], weak: ["ELECTRIC", "ROCK", "ICE", "STEEL"] },
+    BUG:      { strong: ["GRASS", "PSYCHIC", "DARK"], weak: ["FIRE", "FLYING", "ROCK", "FIGHTING", "STEEL", "FAIRY"] },
+    FAIRY:    { strong: ["DRAGON", "FIGHTING", "DARK"], weak: ["FIRE", "POISON", "STEEL"] },
+    FIGHTING: { strong: ["NORMAL", "ROCK", "ICE", "STEEL", "DARK"], weak: ["FLYING", "PSYCHIC", "FAIRY", "BUG"] },
+    DRAGON:   { strong: ["DRAGON"], weak: ["STEEL", "FAIRY", "ICE"] },
+    PSYCHIC:  { strong: ["FIGHTING", "POISON"], weak: ["PSYCHIC", "STEEL", "DARK"] },
+    STEEL:    { strong: ["ROCK", "ICE", "FAIRY"], weak: ["FIRE", "WATER", "ELECTRIC", "STEEL"] },
+    DARK:     { strong: ["PSYCHIC", "GHOST"], weak: ["FIGHTING", "FAIRY", "DARK"] },
+    NORMAL:   { strong: [], weak: ["ROCK", "STEEL"] }
+  },
   regions: {
   "0,0": {
     "id": "0,0",
-    "name": "柳溪 (Willowbrook)",
-    "enName": "Willowbrook",
+    "name": "若葉鎮・29號道路 (New Bark Town)",
+    "enName": "New Bark Town",
     "tier": 1,
-    "tierLabel": "第 1 階（最初階 · 新手城鎮與草地）",
+    "tierLabel": "第 1 階（最初階 · 始まりの風が吹く町 Lv.3～6）",
     "levelRange": [
       3,
-      5
+      6
     ],
     "recAtk": 12,
     "recDef": 10,
@@ -27,29 +76,29 @@ window.GAME_DATA = {
       "x": 16,
       "y": 12
     },
-    "description": "座落於木木博士研究所與兩大道館之間的寧靜城鎮。城鎮內設有「國語文道館」、「數學道館」與「寶可夢商店」，南側則有最初階的練習草地（Lv.3～5）。",
+    "description": "《寶可夢 金／銀》城都地區吹起初始之風的寧靜小鎮！鎮內設有「國語文道館」、「數學道館」與「友好商店／寶可夢中心」，南側草地棲息著波波、綠毛蟲、尾立與走路草等初階寶可夢（達指定等級即可自動進化！）。",
     "exits": {
       "north": {
         "target": "0,-1",
-        "name": "低雨林小徑 (Lv.12~16)",
+        "name": "檜皮鎮・櫟樹林 (Lv.12~18)",
         "x": 16,
         "y": 22
       },
       "south": {
         "target": "0,1",
-        "name": "克洛佛班克河 (Lv.7~10)",
+        "name": "吉花市海灣・30號水路 (Lv.7~12)",
         "x": 16,
         "y": 1
       },
       "east": {
         "target": "1,0",
-        "name": "桑布雷克海岸 (Lv.18~23)",
+        "name": "淺蔥市海岸・光輝燈塔 (Lv.18~25)",
         "x": 1,
         "y": 12
       },
       "west": {
         "target": "-1,0",
-        "name": "韋斯頓露台 (Lv.25~32)",
+        "name": "煙墨市・龍之穴與白銀山 (Lv.26~36)",
         "x": 30,
         "y": 12
       }
@@ -908,11 +957,11 @@ window.GAME_DATA = {
         "kind": "npc",
         "role": "guide",
         "sprite": "prof_oak",
-        "name": "木木博士 (Professor Fern)",
+        "name": "空木博士 (Prof. Elm)",
         "x": 15,
         "y": 10,
         "solid": true,
-        "text": "歡迎來到柳溪！你剛領到的初始寶可夢只有 Lv.1，現在去草叢一定打不贏野生怪獸！請先走進左上方『📕國語文道館』提升攻擊力、右上方『📘數學道館』提升防禦力，再到『🏪寶可夢商店』補給道具吧！"
+        "text": "歡迎來到《寶可夢 金／銀》的若葉鎮 (New Bark Town)！你剛領到的初始寶可夢只有 Lv.1，請先走進左上方『📕國語文道館』提升攻擊力、右上方『📘數學道館』提升防禦力！當寶可夢達到指定進化等級（如 Lv.14 / Lv.16 / Lv.18 / Lv.32 / Lv.36）時，就會自動進化成更強大的形態喔！"
       },
       {
         "id": "chinese-coach",
@@ -923,7 +972,7 @@ window.GAME_DATA = {
         "x": 9,
         "y": 8,
         "solid": true,
-        "text": "這裡是『📕國語文道館』（南一版第1～6課）！透過(a)語音手寫生字、(b)照樣造句、(c)閱讀測驗，能大幅強化寶可夢的【攻擊力 ⚔️ATK】與等級！"
+        "text": "這裡是『📕國語文道館』（南一版第1～6課）！完成初階 10 題生字手寫、中階 8 題綜合題庫或進階 5 題閱讀測驗即可進入結算畫面，大幅強化寶可夢的【攻擊力 ⚔️ATK】與等級，加速達成進化等級！"
       },
       {
         "id": "math-coach",
@@ -934,48 +983,70 @@ window.GAME_DATA = {
         "x": 26,
         "y": 8,
         "solid": true,
-        "text": "這裡是『📘數學道館』（康軒版第1～4單元）！透過(a)乘法運算、(b)四位數直式加減、(c)素養應用題，能大幅強化寶可夢的【防禦力 🛡️DEF】與最大 HP！"
+        "text": "這裡是『📘數學道館』（康軒版第1～4單元）！完成初階 10 題千位數直式加減、中階 8 題題庫或進階 5 題應用題即可進入結算畫面，大幅強化寶可夢的【防禦力 🛡️DEF】、最大 HP 與等級！"
       },
       {
         "id": "shop-clerk-out",
         "kind": "npc",
         "role": "poke-shop",
         "sprite": "nurse",
-        "name": "商店與喬伊小姐",
+        "name": "友好商店與喬伊小姐",
         "x": 21,
         "y": 18,
         "solid": true,
-        "text": "歡迎光臨『🏪寶可夢商店 & 治療中心』！收集地圖上的寶箱獲得金幣（₽），就能在我這裡購買精靈球、超級球、傷藥與強化護符喔！"
+        "text": "歡迎光臨『🏪若葉鎮友好商店 & 寶可夢中心』！在道館答題與地圖寶箱獲得金幣（₽），就能購買神奇糖果、幸運蛋、護符金幣、甜甜蜜、覺醒之石與大師球喔！"
+      },
+      {
+        "id": "evo-researcher",
+        "kind": "npc",
+        "role": "evolution",
+        "sprite": "scientist",
+        "name": "進化研究員 小遙 (Evolution Guide)",
+        "x": 19,
+        "y": 10,
+        "solid": true,
+        "text": "我是空木博士研究所的『✨寶可夢等級進化研究員』！所有寶可夢都遵循官方進化等級表（如綠毛蟲 Lv.7→鐵甲蛹 Lv.10→巴大蝶；小火龍 Lv.16→火恐龍 Lv.36→噴火龍；菊草葉 Lv.16→月桂葉 Lv.32→大竺葵）！點擊即可查看完整的【寶可夢進化等級一覽表】！"
+      },
+      {
+        "id": "town-trainer",
+        "kind": "npc",
+        "role": "trainer",
+        "sprite": "youngster",
+        "name": "短褲小子 阿響 (Youngster Joey)",
+        "x": 11,
+        "y": 16,
+        "solid": true,
+        "text": "我是若葉鎮 29 號道路的短褲小子阿響！完成國語道館與數學道館訓練後，隨時可以跟我進行【訓練家對戰】賺取經驗值 EXP 讓寶可夢升級進化喔！"
       },
       {
         "id": "waystone-0",
         "kind": "waystone",
-        "name": "柳溪路標石",
+        "name": "若葉鎮石碑 (Johto Monument)",
         "x": 18,
         "y": 15,
         "solid": true,
-        "text": "【五大地圖等級指南】\n★ 第1階：柳溪 (Lv.3~5)\n★ 第2階(南)：克洛佛班克河 (Lv.7~10)\n★ 第3階(北)：低雨林小徑 (Lv.12~16)\n★ 第4階(東)：桑布雷克海岸 (Lv.18~23)\n★ 第5階(西)：韋斯頓露台 (Lv.25~32)"
+        "text": "古老的城都地區石碑散發著微光。【城都五大地圖等級指南】★ 第1階：若葉鎮(Lv.3~6) ★ 第2階(南)：吉花市海灣(Lv.7~12) ★ 第3階(北)：檜皮鎮・櫟樹林(Lv.12~18) ★ 第4階(東)：淺蔥市海岸(Lv.18~25) ★ 第5階(西)：煙墨市・白銀山(Lv.26~36)。"
       },
       {
         "id": "town-sign",
         "kind": "sign",
-        "name": "城鎮告示牌",
+        "name": "若葉鎮告示牌",
         "x": 12,
         "y": 8,
         "solid": true,
-        "text": "【柳溪主城鎮】西側：📕國語文道館｜東北：📘數學道館｜東南：🏪寶可夢商店｜西南：🌿初階練習草地。"
+        "text": "【若葉鎮 New Bark Town】西側：📕國語文道館｜東北：📘數學道館｜廣場中央：✨等級進化研究員｜東南：🏪友好商店／寶可夢中心｜西南：🌿29號道路初階草地。"
       },
       {
         "id": "chest-wb-1",
         "kind": "chest",
-        "name": "柳溪花園寶箱",
+        "name": "若葉鎮花圃寶箱",
         "x": 2,
         "y": 9,
         "solid": true,
         "coins": 120,
         "bonusItem": "poke-ball",
         "bonusCount": 2,
-        "text": "開啟了【柳溪花園寶箱】！獲得金幣 ₽120 與 精靈球 ×2！"
+        "text": "開啟了【若葉鎮花圃寶箱】！獲得金幣 ₽120 與 精靈球 ×2！"
       },
       {
         "id": "chest-wb-2",
@@ -992,38 +1063,38 @@ window.GAME_DATA = {
       {
         "id": "chest-wb-3",
         "kind": "chest",
-        "name": "草地角落寶箱",
+        "name": "29號道路草地寶箱",
         "x": 2,
         "y": 21,
         "solid": true,
         "coins": 100,
         "bonusItem": "poke-ball",
         "bonusCount": 2,
-        "text": "開啟了【草地角落寶箱】！獲得金幣 ₽100 與 精靈球 ×2！"
+        "text": "開啟了【29號道路草地寶箱】！獲得金幣 ₽100 與 精靈球 ×2！"
       },
       {
         "id": "chest-wb-4",
         "kind": "chest",
-        "name": "商店庭院寶箱",
+        "name": "友好商店庭院寶箱",
         "x": 29,
         "y": 20,
         "solid": true,
         "coins": 160,
         "bonusItem": "super-potion",
         "bonusCount": 1,
-        "text": "開啟了【商店庭院寶箱】！獲得金幣 ₽160 與 好傷藥 ×1！"
+        "text": "開啟了【友好商店庭院寶箱】！獲得金幣 ₽160 與 好傷藥 ×1！"
       }
     ]
   },
   "0,1": {
     "id": "0,1",
-    "name": "克洛佛班克河 (Cloverbank River)",
-    "enName": "Cloverbank River",
+    "name": "吉花市海灣・30號水路 (Cherrygrove Bay)",
+    "enName": "Cherrygrove Bay",
     "tier": 2,
-    "tierLabel": "第 2 階（初進階 · 河畔花田 Lv.7～10）",
+    "tierLabel": "第 2 階（初進階 · 櫻花海灣與水路 Lv.7～12）",
     "levelRange": [
       7,
-      10
+      12
     ],
     "recAtk": 20,
     "recDef": 18,
@@ -1035,11 +1106,11 @@ window.GAME_DATA = {
       "x": 14,
       "y": 12
     },
-    "description": "從柳溪往南走即可抵達的花田河畔。木橋連接西側的河畔休息屋與東側河岸，棲息著 Lv.7～10 的水系與草系寶可夢。",
+    "description": "從若葉鎮往南抵達的吉花市海灣與 30 號水路。木橋連接西側寶可夢休息屋與東側花田河岸，棲息著咩利羊、瑪力露、烏波、蚊香蝌蚪與可達鴨（Lv.7～12）。",
     "exits": {
       "north": {
         "target": "0,0",
-        "name": "返回 柳溪主城鎮 (Lv.3~5)",
+        "name": "返回 若葉鎮主城鎮 (Lv.3~6)",
         "x": 16,
         "y": 22
       }
@@ -1868,43 +1939,43 @@ window.GAME_DATA = {
         "id": "guide",
         "kind": "npc",
         "role": "guide",
-        "name": "Riverkeeper Tansy",
+        "name": "吉花嚮導 老爺爺",
         "x": 11,
         "y": 9,
         "solid": true,
         "sprite": "fisher",
         "facing": "south",
-        "text": "這裡是【克洛佛班克河 (Cloverbank River)】（第 2 階（初進階 · 河畔花田 Lv.7～10））！本區野生寶可夢等級為 Lv.7～10，建議攻擊力 20+、防禦力 18+。若打不過，請回柳溪的國語道館與數學道館加強訓練！"
+        "text": "這裡是【吉花市海灣・30號水路 (Cherrygrove Bay)】（第 2 階 Lv.7～12）！本區棲息著咩利羊（Lv.15 進化茸茸羊）、瑪力露（Lv.18 進化瑪力露麗）、烏波（Lv.20 進化沼王）與蚊香蝌蚪（Lv.25 進化蚊香君）。若打不過，請回若葉鎮的國語與數學道館加強訓練！"
       },
       {
         "id": "trainer",
         "kind": "npc",
         "role": "trainer",
-        "name": "Trainer Lena",
+        "name": "迷你裙 莉娜 (Lass Lena)",
         "x": 26,
         "y": 14,
         "solid": true,
-        "sprite": "youngster",
+        "sprite": "lass",
         "facing": "south",
-        "text": "我是駐守在【克洛佛班克河 (Cloverbank River)】的巡邏訓練家！記得在草叢對戰時先把野生寶可夢打敗或削弱，再從背包丟出精靈球收服喔！"
+        "text": "我是駐守在【吉花市海灣】的訓練家莉娜！打贏我能獲得豐厚經驗值，讓你的寶可夢更快達到進化等級喔！"
       },
       {
         "id": "waystone",
         "kind": "waystone",
-        "name": "Waystone",
+        "name": "吉花海灣石碑",
         "x": 8,
         "y": 18,
         "solid": true,
-        "text": "Someone has tied a ribbon to the bridge; a matching ribbon drifts past every morning."
+        "text": "石碑上記載著水系與電系寶可夢的進化奧秘：咩利羊在 Lv.15 進化為茸茸羊，瑪力露在 Lv.18 進化為瑪力露麗！"
       },
       {
         "id": "route-sign",
         "kind": "sign",
-        "name": "Route guide",
+        "name": "吉花市路標",
         "x": 17,
         "y": 10,
         "solid": true,
-        "text": "Cloverbank River. Flower meadows slope toward a winding river. A timber bridge links the western rest house with the broad eastern riverbank. Visit the local shelter to heal your companions."
+        "text": "【吉花市海灣・30號水路】西側設有免費治療的寶可夢休息屋，過橋往東可遇見稀有水系與電系寶可夢。"
       },
       {
         "id": "chest-cr-1",
@@ -1946,13 +2017,13 @@ window.GAME_DATA = {
   },
   "0,-1": {
     "id": "0,-1",
-    "name": "低雨林小徑 (Whisperwood Trail)",
-    "enName": "Whisperwood Trail",
+    "name": "檜皮鎮・櫟樹林 (Ilex Forest)",
+    "enName": "Ilex Forest",
     "tier": 3,
-    "tierLabel": "第 3 階（中階 · 森林迷蹤 Lv.12～16）",
+    "tierLabel": "第 3 階（中階 · 森林祠堂與迷蹤 Lv.12～18）",
     "levelRange": [
       12,
-      16
+      18
     ],
     "recAtk": 30,
     "recDef": 26,
@@ -1964,11 +2035,11 @@ window.GAME_DATA = {
       "x": 14,
       "y": 16
     },
-    "description": "從柳溪往北進入的茂密雨林小徑，林間棲息著 Lv.12～16 的中階森林寶可夢，需要足夠的道館訓練才能挑戰！",
+    "description": "《寶可夢 金／銀》著名的蔥鬱櫟樹林！林間棲息著菊草葉、火球鼠、凱西、鬼斯、六尾與飛天螳螂（Lv.12～18），許多寶可夢都在此階段迎來第一次進化！",
     "exits": {
       "south": {
         "target": "0,0",
-        "name": "返回 柳溪主城鎮 (Lv.3~5)",
+        "name": "返回 若葉鎮主城鎮 (Lv.3~6)",
         "x": 16,
         "y": 1
       }
@@ -2776,91 +2847,91 @@ window.GAME_DATA = {
         "id": "guide",
         "kind": "npc",
         "role": "guide",
-        "name": "Ranger Hazel",
+        "name": "櫟樹林護林員 阿筆",
         "x": 12,
         "y": 14,
         "solid": true,
         "sprite": "hiker",
         "facing": "south",
-        "text": "這裡是【低雨林小徑 (Whisperwood Trail)】（第 3 階（中階 · 森林迷蹤 Lv.12～16））！本區野生寶可夢等級為 Lv.12～16，建議攻擊力 30+、防禦力 26+。若打不過，請回柳溪的國語道館與數學道館加強訓練！"
+        "text": "這裡是【檜皮鎮・櫟樹林 (Ilex Forest)】（第 3 階 Lv.12～18）！林間棲息著菊草葉（Lv.16 進化月桂葉）、火球鼠（Lv.14 進化火岩鼠）、凱西（Lv.16 進化勇基拉）、鬼斯（Lv.25 進化鬼斯通）與飛天螳螂！"
       },
       {
         "id": "trainer",
         "kind": "npc",
         "role": "trainer",
-        "name": "Scout Bram",
+        "name": "捕蟲少年 小杉 (Bug Catcher Wade)",
         "x": 7,
         "y": 12,
         "solid": true,
-        "sprite": "hiker",
+        "sprite": "youngster",
         "facing": "south",
-        "text": "我是駐守在【低雨林小徑 (Whisperwood Trail)】的巡邏訓練家！記得在草叢對戰時先把野生寶可夢打敗或削弱，再從背包丟出精靈球收服喔！"
+        "text": "我是駐守在【櫟樹林】的捕蟲少年小杉！我的綠毛蟲在 Lv.7 進化成鐵甲蛹，Lv.10 就進化成巴大蝶了！來對戰吧！"
       },
       {
         "id": "waystone",
         "kind": "waystone",
-        "name": "Waystone",
+        "name": "櫟樹林小祠堂",
         "x": 17,
         "y": 17,
         "solid": true,
-        "text": "Tiny footprints lead from the ranger cabin into a clearing where the trees seem to listen."
+        "text": "守護森林的古老木造小祠堂，傳說中森林的守護神曾在這裡降臨！"
       },
       {
         "id": "route-sign",
         "kind": "sign",
-        "name": "Route guide",
+        "name": "櫟樹林路標",
         "x": 9,
         "y": 4,
         "solid": true,
-        "text": "Whisperwood Trail. A winding woodland trail curls between dense trees, fern clearings, and a ranger cabin. Follow the bends to find the forest’s hidden glade. Visit the local shelter to heal your companions."
+        "text": "【檜皮鎮・櫟樹林】蜿蜒的森林小徑穿過茂密樹海，東北方設有護林員休息木屋可免費治療寶可夢。"
       },
       {
         "id": "chest-wt-1",
         "kind": "chest",
-        "name": "巡護員木屋寶箱",
+        "name": "護林員木屋寶箱",
         "x": 27,
         "y": 4,
         "solid": true,
         "coins": 240,
         "bonusItem": "great-ball",
         "bonusCount": 2,
-        "text": "開啟了【巡護員木屋寶箱】！獲得金幣 ₽240 與 超級球 ×2！"
+        "text": "開啟了【護林員木屋寶箱】！獲得金幣 ₽240 與 超級球 ×2！"
       },
       {
         "id": "chest-wt-2",
         "kind": "chest",
-        "name": "密林深處寶箱",
+        "name": "櫟樹林深處寶箱",
         "x": 4,
         "y": 18,
         "solid": true,
         "coins": 260,
         "bonusItem": "hyper-potion",
         "bonusCount": 1,
-        "text": "開啟了【密林深處寶箱】！獲得金幣 ₽260 與 厲害傷藥 ×1！"
+        "text": "開啟了【櫟樹林深處寶箱】！獲得金幣 ₽260 與 厲害傷藥 ×1！"
       },
       {
         "id": "chest-wt-3",
         "kind": "chest",
-        "name": "蕨類空地寶箱",
+        "name": "祠堂空地寶箱",
         "x": 26,
         "y": 19,
         "solid": true,
         "coins": 250,
         "bonusItem": "revive",
         "bonusCount": 1,
-        "text": "開啟了【蕨類空地寶箱】！獲得金幣 ₽250 與 復活藥 ×1！"
+        "text": "開啟了【祠堂空地寶箱】！獲得金幣 ₽250 與 活力碎片 ×1！"
       }
     ]
   },
   "1,0": {
     "id": "1,0",
-    "name": "桑布雷克海岸 (Sunbreak Coast)",
-    "enName": "Sunbreak Coast",
+    "name": "淺蔥市海岸・光輝燈塔 (Olivine Coast)",
+    "enName": "Olivine Coast",
     "tier": 4,
-    "tierLabel": "第 4 階（中高階 · 陽光海灣 Lv.18～23）",
+    "tierLabel": "第 4 階（進階 · 港口與光輝燈塔 Lv.18～25）",
     "levelRange": [
       18,
-      23
+      25
     ],
     "recAtk": 42,
     "recDef": 38,
@@ -2872,11 +2943,11 @@ window.GAME_DATA = {
       "x": 13,
       "y": 13
     },
-    "description": "從柳溪往東走出的開闊陽光海岸，長木棧道延伸至深水海灣，出沒 Lv.18～23 的強大水系與電系寶可夢。",
+    "description": "《寶可夢 金／銀》海風吹拂的淺蔥市海岸與光輝燈塔！海灣出沒鯉魚王（Lv.20 進化暴鯉龍）、拉普拉斯、電龍、寶石海星與小拳石（Lv.18～25）。",
     "exits": {
       "west": {
         "target": "0,0",
-        "name": "返回 柳溪主城鎮 (Lv.3~5)",
+        "name": "返回 若葉鎮主城鎮 (Lv.3~6)",
         "x": 30,
         "y": 12
       }
@@ -4691,135 +4762,404 @@ window.GAME_DATA = {
 },
   shopItems: [
   {
+    "id": "rare-candy",
+    "name": "神奇糖果",
+    "enName": "Rare Candy",
+    "category": "backpack",
+    "description": "充滿能量結晶的糖果！你開局與每次使用時讓寶可夢立即多升 2 級（並大幅提升 HP、攻擊與防禦）。",
+    "effect": "rare-candy",
+    "tier": 2,
+    "rarity": "uncommon",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png",
+    "icon": "rare-candy",
+    "color": "#3b82f6",
+    "price": 150,
+    "priceStep": 75,
+    "maxStock": 4,
+    "maxCarry": 9,
+    "power": 40
+  },
+  {
+    "id": "lucky-egg",
+    "name": "幸運蛋",
+    "enName": "Lucky Egg",
+    "category": "backpack",
+    "description": "裝滿幸福能量的精靈蛋。放於背包中整局經驗值 EXP +25%（每顆可疊加，亦可直接使用立即獲得 +30 EXP）。",
+    "effect": "lucky-egg",
+    "tier": 2,
+    "rarity": "uncommon",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/lucky-egg.png",
+    "icon": "lucky-egg",
+    "color": "#10b981",
+    "price": 250,
+    "priceStep": 125,
+    "maxStock": 4,
+    "maxCarry": 9,
+    "power": 0.25
+  },
+  {
+    "id": "amulet-coin",
+    "name": "護符金幣",
+    "enName": "Amulet Coin",
+    "category": "backpack",
+    "description": "散發神祕金光的古老護符。放於背包中整局道館特訓、寶箱與對戰獲得的寶可幣 +50%（可疊加）。",
+    "effect": "amulet-coin",
+    "tier": 2,
+    "rarity": "uncommon",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/amulet-coin.png",
+    "icon": "amulet-coin",
+    "color": "#eab308",
+    "price": 250,
+    "priceStep": 125,
+    "maxStock": 4,
+    "maxCarry": 9,
+    "power": 0.5
+  },
+  {
+    "id": "sweet-honey",
+    "name": "甜甜蜜",
+    "enName": "Sweet Honey",
+    "category": "backpack",
+    "description": "香氣濃郁的花蜜。每個區域多吸引一隻頭目寶可夢，在背包點擊使用可立即召喚當前區域頭目寶可夢出沒！",
+    "effect": "sweet-honey",
+    "tier": 2,
+    "rarity": "rare",
+    "dotColor": "#3b82f6",
+    "orbTheme": "sky",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/honey.png",
+    "icon": "sweet-honey",
+    "color": "#f59e0b",
+    "price": 450,
+    "priceStep": 225,
+    "maxStock": 3,
+    "maxCarry": 9,
+    "power": 1
+  },
+  {
+    "id": "evo-stone",
+    "name": "覺醒之石",
+    "enName": "Dawn Stone",
+    "category": "backpack",
+    "description": "閃耀翡翠星芒的突破結晶！第 1 區域必定出現高潛能異色光澤寶可夢，使用後立即讓寶可夢突破進化（ATK+6、DEF+6、HP+20）！",
+    "effect": "breakthrough",
+    "tier": 3,
+    "rarity": "epic",
+    "dotColor": "#a855f7",
+    "orbTheme": "epic-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dawn-stone.png",
+    "icon": "evo-stone",
+    "color": "#a855f7",
+    "price": 900,
+    "priceStep": 450,
+    "maxStock": 2,
+    "maxCarry": 9,
+    "power": 1
+  },
+  {
+    "id": "master-ball",
+    "name": "大師球",
+    "enName": "Master Ball",
+    "category": "backpack",
+    "description": "最頂級的終極精靈球！你在對戰中投擲時（包含區域頭目或石碑守護者）必定 100% 捕獲成功！",
+    "effect": "capture",
+    "tier": 4,
+    "rarity": "legendary",
+    "dotColor": "#eab308",
+    "orbTheme": "gold-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png",
+    "icon": "master-ball",
+    "color": "#9333ea",
+    "price": 1800,
+    "priceStep": 0,
+    "maxStock": 1,
+    "maxCarry": 9,
+    "power": 1.0,
+    "guaranteedCapture": true
+  },
+  {
     "id": "poke-ball",
-    "name": "精靈球 (Poké Ball)",
-    "description": "用於收服野生寶可夢的標準精靈球（擊敗對手後約 60% 機率成功收服）。",
+    "name": "精靈球",
+    "enName": "Poké Ball",
+    "category": "supply",
+    "description": "用於收服野生寶可夢的標準精靈球（擊敗對手後約 62% 機率成功收服）。",
     "effect": "capture",
     "tier": 1,
-    "icon": "orb",
+    "rarity": "common",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
+    "icon": "poke-ball",
     "color": "#e06058",
     "price": 40,
+    "priceStep": 0,
+    "maxStock": 9,
+    "maxCarry": 99,
     "power": 0.62
   },
   {
     "id": "great-ball",
-    "name": "超級球 (Great Ball)",
+    "name": "超級球",
+    "enName": "Great Ball",
+    "category": "supply",
     "description": "比精靈球性能更好的高性能球（擊敗對手後約 76% 機率成功收服）。",
     "effect": "capture",
     "tier": 2,
-    "icon": "orb",
+    "rarity": "rare",
+    "dotColor": "#3b82f6",
+    "orbTheme": "sky",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png",
+    "icon": "great-ball",
     "color": "#5890d8",
     "price": 100,
+    "priceStep": 20,
+    "maxStock": 9,
+    "maxCarry": 99,
     "power": 0.76
   },
   {
     "id": "ultra-ball",
-    "name": "高級球 (Ultra Ball)",
-    "description": "針對高階與傳說寶可夢特製的頂級球（擊敗對手後約 88% 機率成功收服）。",
+    "name": "高級球",
+    "enName": "Ultra Ball",
+    "category": "supply",
+    "description": "針對高階與傳說寶可夢特製的高性能球（擊敗對手後約 88% 機率成功收服）。",
     "effect": "capture",
     "tier": 3,
-    "icon": "orb",
+    "rarity": "epic",
+    "dotColor": "#a855f7",
+    "orbTheme": "epic-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png",
+    "icon": "ultra-ball",
     "color": "#f59e0b",
     "price": 220,
+    "priceStep": 40,
+    "maxStock": 6,
+    "maxCarry": 99,
     "power": 0.88
   },
   {
     "id": "potion",
-    "name": "傷藥 (Potion)",
-    "description": "噴霧式傷藥，可為 1 隻寶可夢恢復 24 點 HP。",
+    "name": "傷藥",
+    "enName": "Potion",
+    "category": "supply",
+    "description": "噴霧式醫療傷藥，可為 1 隻寶可夢立即恢復 24 點 HP。",
     "effect": "heal",
     "tier": 1,
-    "icon": "bottle",
+    "rarity": "common",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png",
+    "icon": "potion",
     "color": "#af80cb",
     "price": 60,
+    "priceStep": 0,
+    "maxStock": 9,
+    "maxCarry": 99,
     "power": 24
   },
   {
     "id": "super-potion",
-    "name": "好傷藥 (Super Potion)",
-    "description": "濃縮型醫療噴霧，可為 1 隻寶可夢恢復 50 點 HP。",
+    "name": "好傷藥",
+    "enName": "Super Potion",
+    "category": "supply",
+    "description": "濃縮型醫療噴霧，可為 1 隻寶可夢立即恢復 50 點 HP。",
     "effect": "heal",
     "tier": 2,
-    "icon": "bottle",
+    "rarity": "rare",
+    "dotColor": "#3b82f6",
+    "orbTheme": "sky",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png",
+    "icon": "super-potion",
     "color": "#e89060",
     "price": 150,
+    "priceStep": 25,
+    "maxStock": 6,
+    "maxCarry": 99,
     "power": 50
   },
   {
     "id": "hyper-potion",
-    "name": "厲害傷藥 (Hyper Potion)",
-    "description": "高級醫療補給藥劑，可為 1 隻寶可夢恢復 120 點 HP。",
+    "name": "厲害傷藥",
+    "enName": "Hyper Potion",
+    "category": "supply",
+    "description": "高級醫療補給藥劑，可為 1 隻寶可夢立即恢復 120 點 HP。",
     "effect": "heal",
     "tier": 3,
-    "icon": "bottle",
+    "rarity": "epic",
+    "dotColor": "#a855f7",
+    "orbTheme": "epic-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png",
+    "icon": "hyper-potion",
     "color": "#d960aa",
     "price": 300,
+    "priceStep": 50,
+    "maxStock": 4,
+    "maxCarry": 99,
     "power": 120
   },
   {
     "id": "revive",
-    "name": "活力碎片 (Revive)",
-    "description": "讓陷入瀕死狀態（0 HP）的寶可夢甦醒，並恢復一半的最大 HP。",
+    "name": "活力碎片",
+    "enName": "Revive",
+    "category": "supply",
+    "description": "讓陷入瀕死狀態的寶可夢甦醒，並恢復一半的最大 HP。",
     "effect": "revive",
     "tier": 2,
-    "icon": "charm",
+    "rarity": "rare",
+    "dotColor": "#3b82f6",
+    "orbTheme": "sky",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/revive.png",
+    "icon": "revive",
     "color": "#ecd078",
     "price": 180,
+    "priceStep": 30,
+    "maxStock": 5,
+    "maxCarry": 99,
     "power": 0.5
   },
   {
     "id": "ether",
-    "name": "單項補藥 / 以太 (Ether)",
-    "description": "為寶可夢的兩個招式各恢復 10 點 PP。",
+    "name": "單項補藥 (以太)",
+    "enName": "Ether",
+    "category": "supply",
+    "description": "補充能量的藥劑，為寶可夢的兩個招式各恢復 10 點 PP。",
     "effect": "pp",
     "tier": 1,
-    "icon": "bottle",
+    "rarity": "common",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ether.png",
+    "icon": "ether",
     "color": "#70bbb8",
     "price": 120,
+    "priceStep": 20,
+    "maxStock": 6,
+    "maxCarry": 99,
     "power": 10
   },
   {
     "id": "repel",
-    "name": "除蟲噴霧 (Repel)",
+    "name": "除蟲噴霧",
+    "enName": "Super Repel",
+    "category": "supply",
     "description": "使用後在接下來的 100 步內不會遇到野生寶可夢，方便在地圖尋找寶箱。",
     "effect": "repel",
     "tier": 1,
-    "icon": "herb",
+    "rarity": "common",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-repel.png",
+    "icon": "repel",
     "color": "#76a85e",
     "price": 90,
+    "priceStep": 15,
+    "maxStock": 5,
+    "maxCarry": 99,
     "power": 100
   },
   {
+    "id": "exp-candy-s",
+    "name": "經驗糖果 S",
+    "enName": "Exp. Candy S",
+    "category": "supply",
+    "description": "充滿能量的糖果，使用後立即為指定寶可夢注入 +20 EXP（直接升 1 級並強化能力）！",
+    "effect": "exp-candy",
+    "tier": 1,
+    "rarity": "common",
+    "dotColor": "#22c55e",
+    "orbTheme": "mint",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png",
+    "icon": "exp-candy-s",
+    "color": "#a855f7",
+    "price": 80,
+    "priceStep": 20,
+    "maxStock": 6,
+    "maxCarry": 99,
+    "power": 20
+  },
+  {
+    "id": "exp-candy-l",
+    "name": "經驗糖果 L",
+    "enName": "Exp. Candy L",
+    "category": "supply",
+    "description": "高濃縮經驗糖果，使用後立即為指定寶可夢注入 +60 EXP（連升 3 級並大幅強化能力）！",
+    "effect": "exp-candy",
+    "tier": 2,
+    "rarity": "rare",
+    "dotColor": "#3b82f6",
+    "orbTheme": "sky",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png",
+    "icon": "exp-candy-l",
+    "color": "#ec4899",
+    "price": 200,
+    "priceStep": 50,
+    "maxStock": 4,
+    "maxCarry": 99,
+    "power": 60
+  },
+  {
     "id": "power-charm",
-    "name": "力量護符 (Power Charm)",
-    "description": "【商店特殊道具】使用後永久提升全隊寶可夢攻擊力 ⚔️ATK +5！",
+    "name": "力量護符",
+    "enName": "Power Bracer",
+    "category": "supply",
+    "description": "【道館神兵】購買或使用後永久提升全隊寶可夢攻擊力 ⚔️ATK +5！",
     "effect": "atk-boost",
     "tier": 3,
-    "icon": "charm",
+    "rarity": "epic",
+    "dotColor": "#a855f7",
+    "orbTheme": "epic-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/power-bracer.png",
+    "icon": "power-charm",
     "color": "#ef4444",
     "price": 320,
+    "priceStep": 80,
+    "maxStock": 3,
+    "maxCarry": 9,
     "power": 5
   },
   {
     "id": "guard-charm",
-    "name": "守護護符 (Guard Charm)",
-    "description": "【商店特殊道具】使用後永久提升全隊寶可夢防禦力 🛡️DEF +5 與最大 HP +15！",
+    "name": "守護護符",
+    "enName": "Power Belt",
+    "category": "supply",
+    "description": "【道館神盾】購買或使用後永久提升全隊寶可夢防禦力 🛡️DEF +5 與最大 HP +15！",
     "effect": "def-boost",
     "tier": 3,
-    "icon": "charm",
+    "rarity": "epic",
+    "dotColor": "#a855f7",
+    "orbTheme": "epic-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/power-belt.png",
+    "icon": "guard-charm",
     "color": "#3b82f6",
     "price": 320,
+    "priceStep": 80,
+    "maxStock": 3,
+    "maxCarry": 9,
     "power": 5
   },
   {
     "id": "bicycle",
-    "name": "越野腳踏車 (Trail Bicycle)",
-    "description": "【商店特殊載具】購買後可在戶外地圖騎乘，移動速度提升至 160%！",
+    "name": "越野腳踏車",
+    "enName": "Mach Bike",
+    "category": "supply",
+    "description": "【特殊載具】購買後可在戶外地圖一鍵騎乘，移動速度提升至 160%！",
     "effect": "vehicle",
-    "tier": 3,
-    "icon": "bike",
+    "tier": 4,
+    "rarity": "legendary",
+    "dotColor": "#eab308",
+    "orbTheme": "gold-burst",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mach-bike.png",
+    "icon": "bicycle",
     "color": "#10b981",
     "price": 400,
+    "priceStep": 0,
+    "maxStock": 1,
+    "maxCarry": 1,
     "power": 1.6
   }
 ],
@@ -5279,299 +5619,1458 @@ window.GAME_DATA = {
     "basicMove": "波導彈",
     "specialPp": 10,
     "desc": "韋斯頓露台最深處的最強傳說寶可夢，唯有稱霸國語與數學道館的大師才能擊敗並收服牠！"
-  }
+  },
+  {
+    "id": 901,
+    "id4": "0901",
+    "speciesKey": "mosskit",
+    "name": "苔芽獸",
+    "enName": "Mosskit",
+    "type": "草",
+    "typeEn": "GRASS",
+    "typeColor": "#6fa66a",
+    "regionId": "0,0",
+    "minLv": 3,
+    "baseHp": 44,
+    "baseAtk": 15,
+    "baseDef": 14,
+    "move": "苔蘚飛葉",
+    "basicMove": "撞擊",
+    "specialPp": 25,
+    "traits": ["gentle", "curious"],
+    "art": { "form": "quadruped", "primary": "#6fa66a", "accent": "#d7e48b", "pattern": "spots", "horns": false, "wings": false },
+    "desc": "【柳溪谷原創種】背上長著柔軟青苔的小獸，在柳溪草地散步時會留下淡淡的青草香。"
+  },
+  {
+    "id": 902,
+    "id4": "0902",
+    "speciesKey": "emberwing",
+    "name": "燼翼鳥",
+    "enName": "Emberwing",
+    "type": "火 / 飛行",
+    "typeEn": "FIRE",
+    "typeColor": "#de6d49",
+    "regionId": "0,0",
+    "minLv": 4,
+    "baseHp": 42,
+    "baseAtk": 17,
+    "baseDef": 12,
+    "move": "烈焰俯衝",
+    "basicMove": "啄",
+    "specialPp": 22,
+    "traits": ["bold", "swift"],
+    "art": { "form": "bird", "primary": "#de6d49", "accent": "#f5cf6b", "pattern": "crest", "horns": false, "wings": true },
+    "desc": "【柳溪谷原創種】羽冠閃爍著溫暖火花的飛鳥寶可夢，常在道館屋頂振翅高飛。"
+  },
+  {
+    "id": 903,
+    "id4": "0903",
+    "speciesKey": "brookfin",
+    "name": "溪鰭魚",
+    "enName": "Brookfin",
+    "type": "水",
+    "typeEn": "WATER",
+    "typeColor": "#4f8fc4",
+    "regionId": "0,1",
+    "minLv": 7,
+    "baseHp": 70,
+    "baseAtk": 23,
+    "baseDef": 21,
+    "move": "清流漩渦",
+    "basicMove": "拍擊",
+    "specialPp": 22,
+    "traits": ["swift", "elusive"],
+    "art": { "form": "fish", "primary": "#4f8fc4", "accent": "#9fe3de", "pattern": "stripes", "horns": false, "wings": false },
+    "desc": "【柳溪谷原創種】順著克洛佛班克河清澈溪水逆流而上的靈巧魚類寶可夢。"
+  },
+  {
+    "id": 904,
+    "id4": "0904",
+    "speciesKey": "voltling",
+    "name": "電光靈",
+    "enName": "Voltling",
+    "type": "電",
+    "typeEn": "ELECTRIC",
+    "typeColor": "#ecd056",
+    "regionId": "0,1",
+    "minLv": 8,
+    "baseHp": 68,
+    "baseAtk": 26,
+    "baseDef": 20,
+    "move": "脈衝電網",
+    "basicMove": "電光一閃",
+    "specialPp": 20,
+    "traits": ["curious", "radiant"],
+    "art": { "form": "sprite", "primary": "#ecd056", "accent": "#5a6888", "pattern": "stripes", "horns": true, "wings": false },
+    "desc": "【柳溪谷原創種】在河畔木橋旁閃爍微光的電系精靈，合成後代極易繼承閃耀特性。"
+  },
+  {
+    "id": 905,
+    "id4": "0905",
+    "speciesKey": "pebblit",
+    "name": "礫石怪",
+    "enName": "Pebblit",
+    "type": "岩石",
+    "typeEn": "ROCK",
+    "typeColor": "#8e887a",
+    "regionId": "0,1",
+    "minLv": 9,
+    "baseHp": 82,
+    "baseAtk": 24,
+    "baseDef": 26,
+    "move": "落石崩擊",
+    "basicMove": "撞擊",
+    "specialPp": 18,
+    "traits": ["sturdy", "hearty"],
+    "art": { "form": "golem", "primary": "#8e887a", "accent": "#c8b38c", "pattern": "spots", "horns": true, "wings": false },
+    "desc": "【柳溪谷原創種】由河床圓石凝聚而成的岩石夥伴，擁有極高的生命與防禦潛力。"
+  },
+  {
+    "id": 906,
+    "id4": "0906",
+    "speciesKey": "frostowl",
+    "name": "霜羽梟",
+    "enName": "Frostowl",
+    "type": "冰 / 飛行",
+    "typeEn": "ICE",
+    "typeColor": "#86c5da",
+    "regionId": "0,-1",
+    "minLv": 13,
+    "baseHp": 102,
+    "baseAtk": 35,
+    "baseDef": 31,
+    "move": "冰霜羽嵐",
+    "basicMove": "起風",
+    "specialPp": 18,
+    "traits": ["gentle", "swift"],
+    "art": { "form": "bird", "primary": "#86c5da", "accent": "#eef9ff", "pattern": "crest", "horns": false, "wings": true },
+    "desc": "【柳溪谷原創種】棲息於低雨林小徑高處樹冠的冰羽貓頭鷹，振翅時會飄落細雪。"
+  },
+  {
+    "id": 907,
+    "id4": "0907",
+    "speciesKey": "duskcoil",
+    "name": "暮影蛇",
+    "enName": "Duskcoil",
+    "type": "幽靈 / 毒",
+    "typeEn": "DARK",
+    "typeColor": "#74629a",
+    "regionId": "0,-1",
+    "minLv": 14,
+    "baseHp": 104,
+    "baseAtk": 37,
+    "baseDef": 30,
+    "move": "暗影纏繞",
+    "basicMove": "咬碎",
+    "specialPp": 18,
+    "traits": ["elusive", "bold"],
+    "art": { "form": "serpent", "primary": "#74629a", "accent": "#d991ba", "pattern": "stripes", "horns": true, "wings": false },
+    "desc": "【柳溪谷原創種】穿梭在森林暮色中的神祕長蛇寶可夢，身法詭譎難以捉摸。"
+  },
+  {
+    "id": 908,
+    "id4": "0908",
+    "speciesKey": "sunmoth",
+    "name": "陽炎蛾",
+    "enName": "Sunmoth",
+    "type": "蟲 / 火",
+    "typeEn": "BUG",
+    "typeColor": "#f29d52",
+    "regionId": "0,-1",
+    "minLv": 15,
+    "baseHp": 108,
+    "baseAtk": 38,
+    "baseDef": 32,
+    "move": "日冕麟粉",
+    "basicMove": "起風",
+    "specialPp": 16,
+    "traits": ["radiant", "curious"],
+    "art": { "form": "sprite", "primary": "#b6c85b", "accent": "#f29d52", "pattern": "spots", "horns": false, "wings": true },
+    "desc": "【柳溪谷原創種】在林間空地沐浴陽光的美麗翅蛾，雙翼能釋放溫暖的金紅火光。"
+  },
+  {
+    "id": 909,
+    "id4": "0909",
+    "speciesKey": "reedram",
+    "name": "蘆角羊",
+    "enName": "Reedram",
+    "type": "地面",
+    "typeEn": "GROUND",
+    "typeColor": "#b58d58",
+    "regionId": "1,0",
+    "minLv": 19,
+    "baseHp": 140,
+    "baseAtk": 46,
+    "baseDef": 44,
+    "move": "大地重踏",
+    "basicMove": "角撞",
+    "specialPp": 16,
+    "traits": ["hearty", "sturdy"],
+    "art": { "form": "quadruped", "primary": "#b58d58", "accent": "#ede0b8", "pattern": "stripes", "horns": true, "wings": false },
+    "desc": "【柳溪谷原創種】奔馳於桑布雷克海岸沙洲的強健角羊，雙角堅不可摧。"
+  },
+  {
+    "id": 910,
+    "id4": "0910",
+    "speciesKey": "glimmerfox",
+    "name": "微光狐",
+    "enName": "Glimmerfox",
+    "type": "妖精",
+    "typeEn": "FAIRY",
+    "typeColor": "#ea9ab8",
+    "regionId": "1,0",
+    "minLv": 21,
+    "baseHp": 138,
+    "baseAtk": 49,
+    "baseDef": 43,
+    "move": "星芒圓舞曲",
+    "basicMove": "高速星星",
+    "specialPp": 16,
+    "traits": ["radiant", "gentle"],
+    "art": { "form": "quadruped", "primary": "#ea9ab8", "accent": "#fff1a8", "pattern": "crest", "horns": false, "wings": false },
+    "desc": "【柳溪谷原創種】在海灣月光下漫步的幻光妖精狐，是培育合成高階後代的熱門親代。"
+  },
+  {
+    "id": 911,
+    "id4": "0911",
+    "speciesKey": "ironclod",
+    "name": "鐵甲巨兵",
+    "enName": "Ironclod",
+    "type": "鋼 / 岩石",
+    "typeEn": "STEEL",
+    "typeColor": "#7d8fa1",
+    "regionId": "-1,0",
+    "minLv": 26,
+    "baseHp": 182,
+    "baseAtk": 60,
+    "baseDef": 62,
+    "move": "鋼鐵巨錘",
+    "basicMove": "金屬爪",
+    "specialPp": 12,
+    "traits": ["sturdy", "bold"],
+    "art": { "form": "golem", "primary": "#7d8fa1", "accent": "#bfd4e6", "pattern": "stripes", "horns": true, "wings": false },
+    "desc": "【柳溪谷原創種】守護韋斯頓露台石階的古代鋼鐵巨兵，防禦力冠絕全谷！"
+  },
+  {
+    "id": 912,
+    "id4": "0912",
+    "speciesKey": "skydrake",
+    "name": "蒼穹龍",
+    "enName": "Skydrake",
+    "type": "龍 / 飛行",
+    "typeEn": "DRAGON",
+    "typeColor": "#5a7fd6",
+    "regionId": "-1,0",
+    "minLv": 30,
+    "baseHp": 204,
+    "baseAtk": 68,
+    "baseDef": 62,
+    "move": "蒼穹龍星群",
+    "basicMove": "龍爪",
+    "specialPp": 12,
+    "traits": ["radiant", "bold"],
+    "art": { "form": "serpent", "primary": "#5a7fd6", "accent": "#f4d36e", "pattern": "crest", "horns": true, "wings": true },
+    "desc": "【柳溪谷原創種】翱翔於韋斯頓露台雲端的古代蒼龍，合成後能誕生傳說級雙翼神獸！"
+  },
+{"id": 2, "id4": "0002", "speciesKey": "ivysaur", "name": "妙蛙草", "enName": "Ivysaur", "type": "草 / 毒", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 16, "baseHp": 35, "baseAtk": 7, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 3, "id4": "0003", "speciesKey": "venusaur", "name": "妙蛙花", "enName": "Venusaur", "type": "草 / 毒", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 32, "baseHp": 48, "baseAtk": 10, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 4, "id4": "0004", "speciesKey": "charmander", "name": "小火龍", "enName": "Charmander", "type": "火", "typeEn": "FIRE", "typeColor": "#7aa9d8", "regionId": "starter", "minLv": 1, "baseHp": 24, "baseAtk": 6, "baseDef": 4, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 5, "id4": "0005", "speciesKey": "charmeleon", "name": "火恐龍", "enName": "Charmeleon", "type": "火", "typeEn": "FIRE", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 16, "baseHp": 34, "baseAtk": 8, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 8, "id4": "0008", "speciesKey": "wartortle", "name": "卡咪龜", "enName": "Wartortle", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 16, "baseHp": 36, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 9, "id4": "0009", "speciesKey": "blastoise", "name": "水箭龜", "enName": "Blastoise", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 36, "baseHp": 50, "baseAtk": 10, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 11, "id4": "0011", "speciesKey": "metapod", "name": "鐵甲蛹", "enName": "Metapod", "type": "蟲", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 7, "baseHp": 22, "baseAtk": 4, "baseDef": 5, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 12, "id4": "0012", "speciesKey": "butterfree", "name": "巴大蝶", "enName": "Butterfree", "type": "蟲 / 飛行", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 10, "baseHp": 34, "baseAtk": 7, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 14, "id4": "0014", "speciesKey": "kakuna", "name": "鐵殼蛹", "enName": "Kakuna", "type": "蟲 / 毒", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 7, "baseHp": 22, "baseAtk": 4, "baseDef": 5, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 15, "id4": "0015", "speciesKey": "beedrill", "name": "大針蜂", "enName": "Beedrill", "type": "蟲 / 毒", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 10, "baseHp": 35, "baseAtk": 8, "baseDef": 6, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 17, "id4": "0017", "speciesKey": "pidgeotto", "name": "比比鳥", "enName": "Pidgeotto", "type": "一般 / 飛行", "typeEn": "FLYING", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 18, "baseHp": 38, "baseAtk": 8, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 18, "id4": "0018", "speciesKey": "pidgeot", "name": "大比鳥", "enName": "Pidgeot", "type": "一般 / 飛行", "typeEn": "FLYING", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 36, "baseHp": 52, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 20, "id4": "0020", "speciesKey": "raticate", "name": "拉達", "enName": "Raticate", "type": "一般", "typeEn": "NORMAL", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 20, "baseHp": 38, "baseAtk": 9, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 22, "id4": "0022", "speciesKey": "fearow", "name": "大嘴雀", "enName": "Fearow", "type": "一般 / 飛行", "typeEn": "FLYING", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 20, "baseHp": 42, "baseAtk": 10, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 24, "id4": "0024", "speciesKey": "arbok", "name": "阿柏怪", "enName": "Arbok", "type": "毒", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 22, "baseHp": 45, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 28, "id4": "0028", "speciesKey": "sandslash", "name": "穿山王", "enName": "Sandslash", "type": "地面", "typeEn": "GROUND", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 22, "baseHp": 48, "baseAtk": 10, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 30, "id4": "0030", "speciesKey": "nidorina", "name": "尼多娜", "enName": "Nidorina", "type": "毒", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 16, "baseHp": 40, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 33, "id4": "0033", "speciesKey": "nidorino", "name": "尼多力諾", "enName": "Nidorino", "type": "毒", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 16, "baseHp": 40, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 41, "id4": "0041", "speciesKey": "zubat", "name": "超音蝠", "enName": "Zubat", "type": "毒 / 飛行", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 1, "baseHp": 30, "baseAtk": 6, "baseDef": 5, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 42, "id4": "0042", "speciesKey": "golbat", "name": "大嘴蝠", "enName": "Golbat", "type": "毒 / 飛行", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 22, "baseHp": 52, "baseAtk": 11, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 44, "id4": "0044", "speciesKey": "gloom", "name": "臭臭花", "enName": "Gloom", "type": "草 / 毒", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 21, "baseHp": 40, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 47, "id4": "0047", "speciesKey": "parasect", "name": "派拉斯特", "enName": "Parasect", "type": "蟲 / 草", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 24, "baseHp": 42, "baseAtk": 9, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 49, "id4": "0049", "speciesKey": "venomoth", "name": "摩魯蛾", "enName": "Venomoth", "type": "蟲 / 毒", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 31, "baseHp": 45, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 51, "id4": "0051", "speciesKey": "dugtrio", "name": "三地鼠", "enName": "Dugtrio", "type": "地面", "typeEn": "GROUND", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 26, "baseHp": 40, "baseAtk": 11, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 53, "id4": "0053", "speciesKey": "persian", "name": "貓老大", "enName": "Persian", "type": "一般", "typeEn": "NORMAL", "typeColor": "#7aa9d8", "regionId": "0,0", "minLv": 28, "baseHp": 42, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 55, "id4": "0055", "speciesKey": "golduck", "name": "哥達鴨", "enName": "Golduck", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 33, "baseHp": 48, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 57, "id4": "0057", "speciesKey": "primeape", "name": "火爆猴", "enName": "Primeape", "type": "格鬥", "typeEn": "FIGHTING", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 28, "baseHp": 48, "baseAtk": 11, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 61, "id4": "0061", "speciesKey": "poliwhirl", "name": "蚊香君", "enName": "Poliwhirl", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 25, "baseHp": 44, "baseAtk": 9, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 64, "id4": "0064", "speciesKey": "kadabra", "name": "勇基拉", "enName": "Kadabra", "type": "超能力", "typeEn": "PSYCHIC", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 16, "baseHp": 38, "baseAtk": 11, "baseDef": 6, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 67, "id4": "0067", "speciesKey": "machoke", "name": "豪力", "enName": "Machoke", "type": "格鬥", "typeEn": "FIGHTING", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 28, "baseHp": 50, "baseAtk": 11, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 70, "id4": "0070", "speciesKey": "weepinbell", "name": "口呆花", "enName": "Weepinbell", "type": "草 / 毒", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 21, "baseHp": 40, "baseAtk": 9, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 73, "id4": "0073", "speciesKey": "tentacruel", "name": "毒刺水母", "enName": "Tentacruel", "type": "水 / 毒", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 30, "baseHp": 48, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 75, "id4": "0075", "speciesKey": "graveler", "name": "隆隆石", "enName": "Graveler", "type": "岩石 / 地面", "typeEn": "ROCK", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 25, "baseHp": 48, "baseAtk": 11, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 80, "id4": "0080", "speciesKey": "slowbro", "name": "呆殼獸", "enName": "Slowbro", "type": "水 / 超能力", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 37, "baseHp": 58, "baseAtk": 12, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 82, "id4": "0082", "speciesKey": "magneton", "name": "三合一磁怪", "enName": "Magneton", "type": "電", "typeEn": "ELECTRIC", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 30, "baseHp": 46, "baseAtk": 12, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 85, "id4": "0085", "speciesKey": "dodrio", "name": "嘟嘟利", "enName": "Dodrio", "type": "一般 / 飛行", "typeEn": "FLYING", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 31, "baseHp": 46, "baseAtk": 12, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 87, "id4": "0087", "speciesKey": "dewgong", "name": "白海獅", "enName": "Dewgong", "type": "水 / 冰", "typeEn": "ICE", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 34, "baseHp": 52, "baseAtk": 11, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 89, "id4": "0089", "speciesKey": "muk", "name": "臭臭泥", "enName": "Muk", "type": "毒", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 38, "baseHp": 56, "baseAtk": 13, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 93, "id4": "0093", "speciesKey": "haunter", "name": "鬼斯通", "enName": "Haunter", "type": "幽靈 / 毒", "typeEn": "GHOST", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 25, "baseHp": 46, "baseAtk": 11, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 97, "id4": "0097", "speciesKey": "hypno", "name": "引夢貘人", "enName": "Hypno", "type": "超能力", "typeEn": "PSYCHIC", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 26, "baseHp": 52, "baseAtk": 12, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 99, "id4": "0099", "speciesKey": "kingler", "name": "巨鉗蟹", "enName": "Kingler", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 28, "baseHp": 50, "baseAtk": 13, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 101, "id4": "0101", "speciesKey": "electrode", "name": "頑皮雷彈", "enName": "Electrode", "type": "電", "typeEn": "ELECTRIC", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 30, "baseHp": 48, "baseAtk": 12, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 105, "id4": "0105", "speciesKey": "marowak", "name": "嘎啦嘎啦", "enName": "Marowak", "type": "地面", "typeEn": "GROUND", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 28, "baseHp": 52, "baseAtk": 12, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 110, "id4": "0110", "speciesKey": "weezing", "name": "雙彈瓦斯", "enName": "Weezing", "type": "毒", "typeEn": "POISON", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 35, "baseHp": 58, "baseAtk": 14, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 112, "id4": "0112", "speciesKey": "rhydon", "name": "鑽角犀獸", "enName": "Rhydon", "type": "地面 / 岩石", "typeEn": "GROUND", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 42, "baseHp": 68, "baseAtk": 16, "baseDef": 15, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 117, "id4": "0117", "speciesKey": "seadra", "name": "海刺龍", "enName": "Seadra", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 32, "baseHp": 50, "baseAtk": 12, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 119, "id4": "0119", "speciesKey": "seaking", "name": "金魚王", "enName": "Seaking", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 33, "baseHp": 52, "baseAtk": 12, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 120, "id4": "0120", "speciesKey": "staryu", "name": "海星星", "enName": "Staryu", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 1, "baseHp": 34, "baseAtk": 8, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 129, "id4": "0129", "speciesKey": "magikarp", "name": "鯉魚王", "enName": "Magikarp", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 1, "baseHp": 20, "baseAtk": 4, "baseDef": 4, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 142, "id4": "0142", "speciesKey": "aerodactyl", "name": "化石翼龍", "enName": "Aerodactyl", "type": "岩石 / 飛行", "typeEn": "ROCK", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 1, "baseHp": 58, "baseAtk": 14, "baseDef": 10, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 147, "id4": "0147", "speciesKey": "dratini", "name": "迷你龍", "enName": "Dratini", "type": "龍", "typeEn": "DRAGON", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 1, "baseHp": 35, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 148, "id4": "0148", "speciesKey": "dragonair", "name": "哈克龍", "enName": "Dragonair", "type": "龍", "typeEn": "DRAGON", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 30, "baseHp": 55, "baseAtk": 12, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 153, "id4": "0153", "speciesKey": "bayleef", "name": "月桂葉", "enName": "Bayleef", "type": "草", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 16, "baseHp": 42, "baseAtk": 9, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 154, "id4": "0154", "speciesKey": "meganium", "name": "大竺葵", "enName": "Meganium", "type": "草", "typeEn": "GRASS", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 32, "baseHp": 58, "baseAtk": 12, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 155, "id4": "0155", "speciesKey": "cyndaquil", "name": "火球鼠", "enName": "Cyndaquil", "type": "火", "typeEn": "FIRE", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 1, "baseHp": 32, "baseAtk": 7, "baseDef": 5, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 156, "id4": "0156", "speciesKey": "quilava", "name": "火岩鼠", "enName": "Quilava", "type": "火", "typeEn": "FIRE", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 14, "baseHp": 40, "baseAtk": 9, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 157, "id4": "0157", "speciesKey": "typhlosion", "name": "火暴獸", "enName": "Typhlosion", "type": "火", "typeEn": "FIRE", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 36, "baseHp": 60, "baseAtk": 14, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 159, "id4": "0159", "speciesKey": "croconaw", "name": "藍鱷", "enName": "Croconaw", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 18, "baseHp": 44, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 160, "id4": "0160", "speciesKey": "feraligatr", "name": "大力鱷", "enName": "Feraligatr", "type": "水", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 36, "baseHp": 62, "baseAtk": 15, "baseDef": 13, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 166, "id4": "0166", "speciesKey": "ledian", "name": "安瓢蟲", "enName": "Ledian", "type": "蟲 / 飛行", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 18, "baseHp": 40, "baseAtk": 8, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 168, "id4": "0168", "speciesKey": "ariados", "name": "阿利多斯", "enName": "Ariados", "type": "蟲 / 毒", "typeEn": "BUG", "typeColor": "#7aa9d8", "regionId": "0,-1", "minLv": 22, "baseHp": 44, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 170, "id4": "0170", "speciesKey": "chinchou", "name": "燈籠魚", "enName": "Chinchou", "type": "水 / 電", "typeEn": "ELECTRIC", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 1, "baseHp": 34, "baseAtk": 8, "baseDef": 7, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 171, "id4": "0171", "speciesKey": "lanturn", "name": "電燈怪", "enName": "Lanturn", "type": "水 / 電", "typeEn": "ELECTRIC", "typeColor": "#7aa9d8", "regionId": "1,0", "minLv": 27, "baseHp": 52, "baseAtk": 12, "baseDef": 11, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 184, "id4": "0184", "speciesKey": "azumarill", "name": "瑪力露麗", "enName": "Azumarill", "type": "水 / 妖精", "typeEn": "WATER", "typeColor": "#7aa9d8", "regionId": "0,1", "minLv": 18, "baseHp": 52, "baseAtk": 12, "baseDef": 12, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 233, "id4": "0233", "speciesKey": "porygon2", "name": "多邊獸Ⅱ", "enName": "Porygon2", "type": "一般", "typeEn": "NORMAL", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 1, "baseHp": 42, "baseAtk": 10, "baseDef": 9, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 238, "id4": "0238", "speciesKey": "smoochum", "name": "迷唇娃", "enName": "Smoochum", "type": "冰 / 超能力", "typeEn": "ICE", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 1, "baseHp": 30, "baseAtk": 7, "baseDef": 5, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 246, "id4": "0246", "speciesKey": "larvitar", "name": "幼基拉斯", "enName": "Larvitar", "type": "岩石 / 地面", "typeEn": "ROCK", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 1, "baseHp": 40, "baseAtk": 10, "baseDef": 8, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"},
+{"id": 247, "id4": "0247", "speciesKey": "pupitar", "name": "沙基拉斯", "enName": "Pupitar", "type": "岩石 / 地面", "typeEn": "ROCK", "typeColor": "#7aa9d8", "regionId": "-1,0", "minLv": 30, "baseHp": 58, "baseAtk": 14, "baseDef": 13, "move": "撞擊", "basicMove": "撞擊", "specialPp": 20, "desc": "金銀版可取得的既有寶可夢。"}
 ],
 
   // --------------------------------------------------------------------------
-  // 2. 國語文道館題庫（南一版三年級上學期 第 1 課 ～ 第 6 課）
-  //    完成訓練提升寶可夢【攻擊力 ATK】
+  // 2. 國語文道館題庫（南一版三年級上學期 第 1 課 ～ 第 6 課 ＆ 題庫試卷 1～5）
+  //    - 初階（每次隨機 10 題）：第 1～6 課生字書寫練習（聽寫生字，無任何選字按鈕，純手寫辨識）
+  //    - 中階（每次隨機 8 題）：依照題庫內出題（改錯字、多音字辨析、選詞填寫、部首字義、修辭標點、短語造句）
+  //    - 進階（每次隨機 5 題）：閱讀測驗為主（題庫長短篇閱讀理解與課文統整閱讀）
   // --------------------------------------------------------------------------
   chineseGym: {
+    tierCounts: { a: 10, b: 8, c: 5 },
     lessonsInfo: [
-      { id: 1, title: "第一課：你好，新朋友", chars: "泥化雀輕羽衣脆髮處旅行平男朗足", words: ["泥土","小雲雀","輕快","羽衣","清脆","頭髮","四處","旅行","平安","開朗","足球"] },
-      { id: 2, title: "第二課：我們的約定", chars: "廊訂班級約紛持記錄聊言烈些提愁", words: ["走廊","訂定","班級","公約","紛紛","主持","記錄","聊天","發言","熱烈","這些","提醒","幾家歡樂幾家愁"] },
-      { id: 3, title: "第三課：下課十分鐘", chars: "短鐘鬼鬧準朝蹈表暢無總響忘盡責", words: ["分鐘","熱鬧","手舞足蹈","表情","總是","得意忘形","盡責"] },
-      { id: 4, title: "第四課：留住今天的太陽", chars: "指夕賽緊店逗轉露業專勝利悅乖溫", words: ["夕陽","比賽","加緊","店家","逗留","轉身","露出","作業","專心","勝利","喜悅","乖乖","溫暖"] },
-      { id: 5, title: "第五課：火大了", chars: "龍沖菱兄吐歪防警鈴注員傷死諒脾", words: ["怒氣沖天","菱角","兄弟","東倒西歪","消防員","原諒","發脾氣"] },
-      { id: 6, title: "第六課：我該怎麼辦?", chars: "幕杯撞流溼透雙胸負慌逃辦題灰剪", words: ["布幕","杯子","負責","慌張","逃走","怎麼辦","問題"] }
+      { id: 1, title: "第一課：你好，新朋友", chars: "泥化雀輕羽衣脆髮處旅行平男朗足", words: ["泥土","雲雀","輕快","羽衣","清脆","頭髮","四處","旅行","平安","開朗","足球"] },
+      { id: 2, title: "第二課：我們的約定", chars: "廊訂班級約紛持記錄聊言烈些提愁", words: ["走廊","訂定","班級","公約","紛紛","主持","記錄","聊天","發言","熱烈","這些","提醒","發愁"] },
+      { id: 3, title: "第三課：下課十分鐘", chars: "短鐘鬼鬧準朝蹈表暢無總響忘盡責", words: ["分鐘","熱鬧","舞蹈","表情","總是","忘記","盡責","準備","暢快","響亮"] },
+      { id: 4, title: "第四課：留住今天的太陽", chars: "指夕賽緊店逗轉露業專勝利悅乖溫", words: ["夕陽","比賽","加緊","店家","逗留","轉彎","露水","作業","專心","勝利","喜悅","乖巧","溫暖"] },
+      { id: 5, title: "第五課：火大了", chars: "龍沖菱兄吐歪防警鈴注員傷死諒脾", words: ["沖水","菱角","兄弟","防備","警鈴","注意","消防員","受傷","原諒","脾氣"] },
+      { id: 6, title: "第六課：我該怎麼辦?", chars: "幕杯撞流溼透雙胸負慌逃辦題灰剪", words: ["布幕","水杯","撞倒","溼透","雙手","胸口","負責","慌張","逃走","辦法","問題","灰心"] }
     ],
 
-    // (a) 初階：書寫生字活動（語音出題 ＋ iPad 繁體中文手寫辨識）
+    // (a) 初階：第 1～6 課生字書寫練習（聽寫生字，共 42 題池，每次進入隨機抽 10 題）
     dictationQuestions: [
+      // 第一課：你好，新朋友
       {
-        id: "ch_a_1",
-        lesson: "第三課：下課十分鐘",
-        word: "熱鬧",
-        bopomofo: "ㄖㄜˋ ㄋㄠˋ",
-        voicePrompt: "請聽寫語詞：熱鬧。下課十分鐘，操場上非常熱鬧的，熱鬧。",
-        radicals: ["灬（火部）", "鬥部"],
-        firstStrokes: ["一（橫）", "丨（豎）"],
-        atkBonus: 4
-      },
-      {
-        id: "ch_a_2",
+        id: "ch_a_01",
         lesson: "第一課：你好，新朋友",
         word: "清脆",
         bopomofo: "ㄑㄧㄥ ㄘㄨㄟˋ",
-        voicePrompt: "請聽寫語詞：清脆。小雲雀有清脆的歌聲，清澈悅耳的，清脆。",
+        voicePrompt: "請聽寫生字語詞：清脆。操場上響起清脆的哨聲，小雲雀有清脆的歌聲，清脆。",
         radicals: ["水（氵）部", "肉（月）部"],
         firstStrokes: ["丶（點）", "丿（撇）"],
+        strokeCounts: [11, 10],
         atkBonus: 4
       },
       {
-        id: "ch_a_3",
+        id: "ch_a_02",
         lesson: "第一課：你好，新朋友",
         word: "旅行",
         bopomofo: "ㄌㄩˇ ㄒㄧㄥˊ",
-        voicePrompt: "請聽寫語詞：旅行。微風最喜歡四處旅行，出外遊歷的，旅行。",
+        voicePrompt: "請聽寫生字語詞：旅行。微風最喜歡四處旅行，寫下旅行計畫的，旅行。",
         radicals: ["方部", "行部"],
         firstStrokes: ["丶（點）", "丿（撇）"],
+        strokeCounts: [10, 6],
         atkBonus: 4
       },
       {
-        id: "ch_a_4",
+        id: "ch_a_03",
         lesson: "第一課：你好，新朋友",
         word: "開朗",
         bopomofo: "ㄎㄞ ㄌㄤˇ",
-        voicePrompt: "請聽寫語詞：開朗。個性陽光、樂觀開朗的，開朗。",
+        voicePrompt: "請聽寫生字語詞：開朗。我是開朗的學生，個性樂觀開朗的，開朗。",
         radicals: ["門部", "月部"],
         firstStrokes: ["丨（豎）", "丶（點）"],
+        strokeCounts: [12, 10],
         atkBonus: 4
       },
       {
-        id: "ch_a_5",
+        id: "ch_a_04",
         lesson: "第一課：你好，新朋友",
         word: "輕快",
         bopomofo: "ㄑㄧㄥ ㄎㄨㄞˋ",
-        voicePrompt: "請聽寫語詞：輕快。踏著輕快的腳步，輕鬆愉快的，輕快。",
+        voicePrompt: "請聽寫生字語詞：輕快。踏著輕快的腳步，跳著輕快的舞蹈，輕快。",
         radicals: ["車部", "心（忄）部"],
         firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [14, 7],
         atkBonus: 4
       },
       {
-        id: "ch_a_6",
+        id: "ch_a_05",
+        lesson: "第一課：你好，新朋友",
+        word: "泥土",
+        bopomofo: "ㄋㄧˊ ㄊㄨˇ",
+        voicePrompt: "請聽寫生字語詞：泥土。小草從泥土裡冒出來，芬芳的泥土，泥土。",
+        radicals: ["水（氵）部", "土部"],
+        firstStrokes: ["丶（點）", "一（橫）"],
+        strokeCounts: [8, 3],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_06",
+        lesson: "第一課：你好，新朋友",
+        word: "羽衣",
+        bopomofo: "ㄩˇ ㄧ",
+        voicePrompt: "請聽寫生字語詞：羽衣。小雲雀沒有多彩的羽衣，羽毛衣裳的，羽衣。",
+        radicals: ["羽部", "衣部"],
+        firstStrokes: ["𠃍（橫折）", "丶（點）"],
+        strokeCounts: [6, 6],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_07",
+        lesson: "第一課：你好，新朋友",
+        word: "頭髮",
+        bopomofo: "ㄊㄡˊ ㄈㄚˇ",
+        voicePrompt: "請聽寫生字語詞：頭髮。頭髮灰白的老師，梳著整齊的頭髮，頭髮。",
+        radicals: ["頁部", "髟部"],
+        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [16, 15],
+        atkBonus: 4
+      },
+      // 第二課：我們的約定
+      {
+        id: "ch_a_08",
         lesson: "第二課：我們的約定",
         word: "走廊",
         bopomofo: "ㄗㄡˇ ㄌㄤˊ",
-        voicePrompt: "請聽寫語詞：走廊。教室外面供人行走的通道，走廊。",
+        voicePrompt: "請聽寫生字語詞：走廊。在熱鬧的走廊上要慢步走，教室外的走廊，走廊。",
         radicals: ["走部", "广部"],
         firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [7, 12],
         atkBonus: 4
       },
       {
-        id: "ch_a_7",
+        id: "ch_a_09",
         lesson: "第二課：我們的約定",
         word: "班級",
         bopomofo: "ㄅㄢ ㄐㄧˊ",
-        voicePrompt: "請聽寫語詞：班級。三年級的新班級，訂定班級公約的，班級。",
+        voicePrompt: "請聽寫生字語詞：班級。大家一起訂定班級公約，三年級的新班級，班級。",
         radicals: ["玉（王）部", "糸（糹）部"],
         firstStrokes: ["一（橫）", "ㄥ（撇折）"],
-        atkBonus: 4
-      },
-      {
-        id: "ch_a_8",
-        lesson: "第二課：我們的約定",
-        word: "記錄",
-        bopomofo: "ㄐㄧˋ ㄌㄨˋ",
-        voicePrompt: "請聽寫語詞：記錄。把大家的意見寫在黑板上，記載登錄的，記錄。",
-        radicals: ["言部", "金（釒）部"],
-        firstStrokes: ["丶（點）", "丿（撇）"],
-        atkBonus: 4
-      },
-      {
-        id: "ch_a_9",
-        lesson: "第二課：我們的約定",
-        word: "提醒",
-        bopomofo: "ㄊㄧˊ ㄒㄧㄥˇ",
-        voicePrompt: "請聽寫語詞：提醒。從旁指點使人注意，互相提醒的，提醒。",
-        radicals: ["手（扌）部", "酉部"],
-        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [10, 10],
         atkBonus: 4
       },
       {
         id: "ch_a_10",
-        lesson: "第三課：下課十分鐘",
-        word: "盡責",
-        bopomofo: "ㄐㄧㄣˋ ㄗㄜˊ",
-        voicePrompt: "請聽寫語詞：盡責。把自己的工作做好，盡力負責的，盡責。",
-        radicals: ["皿部", "貝部"],
-        firstStrokes: ["𠃍（橫折）", "一（橫）"],
+        lesson: "第二課：我們的約定",
+        word: "約定",
+        bopomofo: "ㄩㄝ ㄉㄧㄥˋ",
+        voicePrompt: "請聽寫生字語詞：約定。我們重新訂下約定，遵守彼此的約定，約定。",
+        radicals: ["糸（糹）部", "宀部"],
+        firstStrokes: ["ㄥ（撇折）", "丶（點）"],
+        strokeCounts: [9, 8],
         atkBonus: 4
       },
       {
         id: "ch_a_11",
-        lesson: "第四課：留住今天的太陽",
-        word: "專心",
-        bopomofo: "ㄓㄨㄢ ㄒㄧㄣ",
-        voicePrompt: "請聽寫語詞：專心。集中精神寫作業，專一心思的，專心。",
-        radicals: ["寸部", "心部"],
-        firstStrokes: ["一（橫）", "丶（點）"],
+        lesson: "第二課：我們的約定",
+        word: "紛紛",
+        bopomofo: "ㄈㄣ ㄈㄣ",
+        voicePrompt: "請聽寫生字語詞：紛紛。大家紛紛舉手發言，學生紛紛前來，紛紛。",
+        radicals: ["糸（糹）部", "糸（糹）部"],
+        firstStrokes: ["ㄥ（撇折）", "ㄥ（撇折）"],
+        strokeCounts: [10, 10],
         atkBonus: 4
       },
       {
         id: "ch_a_12",
-        lesson: "第四課：留住今天的太陽",
-        word: "溫暖",
-        bopomofo: "ㄨㄣ ㄋㄨㄢˇ",
-        voicePrompt: "請聽寫語詞：溫暖。太陽照在身上暖洋洋的，溫暖。",
-        radicals: ["水（氵）部", "日部"],
-        firstStrokes: ["丶（點）", "丨（豎）"],
+        lesson: "第二課：我們的約定",
+        word: "記錄",
+        bopomofo: "ㄐㄧˋ ㄌㄨˋ",
+        voicePrompt: "請聽寫生字語詞：記錄。小豆子在黑板上當記錄，把生活記錄下來，記錄。",
+        radicals: ["言部", "金（釒）部"],
+        firstStrokes: ["丶（點）", "丿（撇）"],
+        strokeCounts: [10, 16],
         atkBonus: 4
       },
       {
         id: "ch_a_13",
-        lesson: "第四課：留住今天的太陽",
-        word: "勝利",
-        bopomofo: "ㄕㄥˋ ㄌㄧˋ",
-        voicePrompt: "請聽寫語詞：勝利。在比賽中贏得勝利的，勝利。",
-        radicals: ["力部", "刀（刂）部"],
-        firstStrokes: ["丿（撇）", "丿（撇）"],
+        lesson: "第二課：我們的約定",
+        word: "提醒",
+        bopomofo: "ㄊㄧˊ ㄒㄧㄥˇ",
+        voicePrompt: "請聽寫生字語詞：提醒。需要老師提醒才能完成作業，互相提醒，提醒。",
+        radicals: ["手（扌）部", "酉部"],
+        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [12, 16],
         atkBonus: 4
       },
       {
         id: "ch_a_14",
-        lesson: "第五課：火大了",
-        word: "原諒",
-        bopomofo: "ㄩㄢˊ ㄌㄧㄤˋ",
-        voicePrompt: "請聽寫語詞：原諒。寬恕別人的不小心，真心原諒的，原諒。",
-        radicals: ["厂部", "言部"],
-        firstStrokes: ["一（橫）", "丶（點）"],
+        lesson: "第二課：我們的約定",
+        word: "熱烈",
+        bopomofo: "ㄖㄜˋ ㄌㄧㄝˋ",
+        voicePrompt: "請聽寫生字語詞：熱烈。班會上大家發言很熱烈，響起熱烈的掌聲，熱烈。",
+        radicals: ["灬（火部）", "灬（火部）"],
+        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [15, 10],
         atkBonus: 4
       },
       {
         id: "ch_a_15",
+        lesson: "第二課：我們的約定",
+        word: "聊天",
+        bopomofo: "ㄌㄧㄠˊ ㄊㄧㄢ",
+        voicePrompt: "請聽寫生字語詞：聊天。下課時和好朋友一邊走一邊聊天，上課不聊天，聊天。",
+        radicals: ["耳部", "大部"],
+        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [11, 4],
+        atkBonus: 4
+      },
+      // 第三課：下課十分鐘
+      {
+        id: "ch_a_16",
+        lesson: "第三課：下課十分鐘",
+        word: "熱鬧",
+        bopomofo: "ㄖㄜˋ ㄋㄠˋ",
+        voicePrompt: "請聽寫生字語詞：熱鬧。下課十分鐘，操場上非常熱鬧，熱鬧。",
+        radicals: ["灬（火部）", "鬥部"],
+        firstStrokes: ["一（橫）", "丨（豎）"],
+        strokeCounts: [15, 15],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_17",
+        lesson: "第三課：下課十分鐘",
+        word: "盡責",
+        bopomofo: "ㄐㄧㄣˋ ㄗㄜˊ",
+        voicePrompt: "請聽寫生字語詞：盡責。乖巧盡責的把工作做好，盡力負責的，盡責。",
+        radicals: ["皿部", "貝部"],
+        firstStrokes: ["𠃍（橫折）", "一（橫）"],
+        strokeCounts: [14, 11],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_18",
+        lesson: "第三課：下課十分鐘",
+        word: "舞蹈",
+        bopomofo: "ㄨˇ ㄉㄠˋ",
+        voicePrompt: "請聽寫生字語詞：舞蹈。輕快的跳著舞蹈，手舞足蹈的，舞蹈。",
+        radicals: ["舛部", "足部"],
+        firstStrokes: ["丿（撇）", "丨（豎）"],
+        strokeCounts: [14, 17],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_19",
+        lesson: "第三課：下課十分鐘",
+        word: "表情",
+        bopomofo: "ㄅㄧㄠˇ ㄑㄧㄥˊ",
+        voicePrompt: "請聽寫生字語詞：表情。臉上露出開心的表情，喜怒哀樂的表情，表情。",
+        radicals: ["衣部", "心（忄）部"],
+        firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [8, 11],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_20",
+        lesson: "第三課：下課十分鐘",
+        word: "忘記",
+        bopomofo: "ㄨㄤˋ ㄐㄧˋ",
+        voicePrompt: "請聽寫生字語詞：忘記。太急著出門所以忘記拿便當盒，千萬別忘記，忘記。",
+        radicals: ["心部", "言部"],
+        firstStrokes: ["丶（點）", "丶（點）"],
+        strokeCounts: [7, 10],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_21",
+        lesson: "第三課：下課十分鐘",
+        word: "準備",
+        bopomofo: "ㄓㄨㄣˇ ㄅㄟˋ",
+        voicePrompt: "請聽寫生字語詞：準備。提早做準備，隨時準備好防災用品，準備。",
+        radicals: ["水（氵）部", "人（亻）部"],
+        firstStrokes: ["丶（點）", "丿（撇）"],
+        strokeCounts: [13, 12],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_22",
+        lesson: "第三課：下課十分鐘",
+        word: "分鐘",
+        bopomofo: "ㄈㄣ ㄓㄨㄥ",
+        voicePrompt: "請聽寫生字語詞：分鐘。下課十分鐘，把握每一分鐘，分鐘。",
+        radicals: ["刀部", "金（釒）部"],
+        firstStrokes: ["丿（撇）", "丿（撇）"],
+        strokeCounts: [4, 17],
+        atkBonus: 4
+      },
+      // 第四課：留住今天的太陽
+      {
+        id: "ch_a_23",
+        lesson: "第四課：留住今天的太陽",
+        word: "逗留",
+        bopomofo: "ㄉㄡˋ ㄌㄧㄡˊ",
+        voicePrompt: "請聽寫生字語詞：逗留。放學後不要在公園或玩具店逗留，停留的，逗留。",
+        radicals: ["辵（辶）部", "田部"],
+        firstStrokes: ["一（橫）", "丿（撇）"],
+        strokeCounts: [11, 10],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_24",
+        lesson: "第四課：留住今天的太陽",
+        word: "專心",
+        bopomofo: "ㄓㄨㄢ ㄒㄧㄣ",
+        voicePrompt: "請聽寫生字語詞：專心。回家後先專心完成作業，集中精神的，專心。",
+        radicals: ["寸部", "心部"],
+        firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [11, 4],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_25",
+        lesson: "第四課：留住今天的太陽",
+        word: "溫暖",
+        bopomofo: "ㄨㄣ ㄋㄨㄢˇ",
+        voicePrompt: "請聽寫生字語詞：溫暖。露出溫暖的微笑，太陽照在身上十分溫暖，溫暖。",
+        radicals: ["水（氵）部", "日部"],
+        firstStrokes: ["丶（點）", "丨（豎）"],
+        strokeCounts: [13, 13],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_26",
+        lesson: "第四課：留住今天的太陽",
+        word: "勝利",
+        bopomofo: "ㄕㄥˋ ㄌㄧˋ",
+        voicePrompt: "請聽寫生字語詞：勝利。帶大家贏得下一場的勝利，獲得勝利，勝利。",
+        radicals: ["力部", "刀（刂）部"],
+        firstStrokes: ["丿（撇）", "丿（撇）"],
+        strokeCounts: [12, 7],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_27",
+        lesson: "第四課：留住今天的太陽",
+        word: "比賽",
+        bopomofo: "ㄅㄧˇ ㄙㄞˋ",
+        voicePrompt: "請聽寫生字語詞：比賽。結束一場暢快無比的籃球比賽，龍舟比賽，比賽。",
+        radicals: ["比部", "貝部"],
+        firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [4, 17],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_28",
+        lesson: "第四課：留住今天的太陽",
+        word: "乖巧",
+        bopomofo: "ㄍㄨㄞ ㄑㄧㄠˇ",
+        voicePrompt: "請聽寫生字語詞：乖巧。只要乖乖聽話，做個乖巧盡責的好學生，乖巧。",
+        radicals: ["丿部", "工部"],
+        firstStrokes: ["丿（撇）", "一（橫）"],
+        strokeCounts: [8, 5],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_29",
+        lesson: "第四課：留住今天的太陽",
+        word: "喜悅",
+        bopomofo: "ㄒㄧˇ ㄩㄝˋ",
+        voicePrompt: "請聽寫生字語詞：喜悅。內心充滿了喜悅，高興喜悅的，喜悅。",
+        radicals: ["口部", "心（忄）部"],
+        firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [12, 10],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_30",
+        lesson: "第四課：留住今天的太陽",
+        word: "夕陽",
+        bopomofo: "ㄒㄧˋ ㄧㄤˊ",
+        voicePrompt: "請聽寫生字語詞：夕陽。傍晚的太陽叫做夕陽，夕陽對我微微笑，夕陽。",
+        radicals: ["夕部", "阜（阝）部"],
+        firstStrokes: ["丿（撇）", "𠃍（橫折）"],
+        strokeCounts: [3, 12],
+        atkBonus: 4
+      },
+      // 第五課：火大了
+      {
+        id: "ch_a_31",
+        lesson: "第五課：火大了",
+        word: "原諒",
+        bopomofo: "ㄩㄢˊ ㄌㄧㄤˋ",
+        voicePrompt: "請聽寫生字語詞：原諒。因為他盡力的道歉，大家紛紛原諒了隊長，原諒。",
+        radicals: ["厂部", "言部"],
+        firstStrokes: ["一（橫）", "丶（點）"],
+        strokeCounts: [10, 15],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_32",
+        lesson: "第五課：火大了",
+        word: "脾氣",
+        bopomofo: "ㄆㄧˊ ㄑㄧˋ",
+        voicePrompt: "請聽寫生字語詞：脾氣。不要隨便對隊友發脾氣，控制好自己的脾氣，脾氣。",
+        radicals: ["肉（月）部", "气部"],
+        firstStrokes: ["丿（撇）", "丿（撇）"],
+        strokeCounts: [12, 10],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_33",
+        lesson: "第五課：火大了",
+        word: "受傷",
+        bopomofo: "ㄕㄡˋ ㄕㄤ",
+        voicePrompt: "請聽寫生字語詞：受傷。關心受傷的隊友，查看有沒有受傷，受傷。",
+        radicals: ["又部", "人（亻）部"],
+        firstStrokes: ["丿（撇）", "丿（撇）"],
+        strokeCounts: [8, 13],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_34",
+        lesson: "第五課：火大了",
+        word: "警鈴",
+        bopomofo: "ㄐㄧㄥˇ ㄌㄧㄥˊ",
+        voicePrompt: "請聽寫生字語詞：警鈴。防災演練的警鈴響起，注意安全警鈴，警鈴。",
+        radicals: ["言部", "金（釒）部"],
+        firstStrokes: ["一（橫）", "丿（撇）"],
+        strokeCounts: [20, 13],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_35",
+        lesson: "第五課：火大了",
+        word: "菱角",
+        bopomofo: "ㄌㄧㄥˊ ㄐㄧㄠˇ",
+        voicePrompt: "請聽寫生字語詞：菱角。生氣讓龍角變成烏黑的菱角，菱角。",
+        radicals: ["艸（艹）部", "角部"],
+        firstStrokes: ["一（橫）", "丿（撇）"],
+        strokeCounts: [12, 7],
+        atkBonus: 4
+      },
+      // 第六課：我該怎麼辦?
+      {
+        id: "ch_a_36",
         lesson: "第六課：我該怎麼辦?",
         word: "慌張",
         bopomofo: "ㄏㄨㄤ ㄓㄤ",
-        voicePrompt: "請聽寫語詞：慌張。遇到突發狀況不要慌忙緊張，慌張。",
+        voicePrompt: "請聽寫生字語詞：慌張。遇到困難不要慌張的想要逃走，冷靜不慌張，慌張。",
         radicals: ["心（忄）部", "弓部"],
         firstStrokes: ["丶（點）", "𠃍（橫折）"],
+        strokeCounts: [13, 11],
         atkBonus: 4
       },
       {
-        id: "ch_a_16",
+        id: "ch_a_37",
         lesson: "第六課：我該怎麼辦?",
         word: "負責",
         bopomofo: "ㄈㄨˋ ㄗㄜˊ",
-        voicePrompt: "請聽寫語詞：負責。做錯事勇於承擔，負起責任的，負責。",
+        voicePrompt: "請聽寫生字語詞：負責。做錯事勇於承擔，找負責的人過來處理，負責。",
         radicals: ["貝部", "貝部"],
         firstStrokes: ["丿（撇）", "一（橫）"],
+        strokeCounts: [9, 11],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_38",
+        lesson: "第六課：我該怎麼辦?",
+        word: "逃走",
+        bopomofo: "ㄊㄠˊ ㄗㄡˇ",
+        voicePrompt: "請聽寫生字語詞：逃走。做錯事不可以慌張逃走，要勇敢面對，逃走。",
+        radicals: ["辵（辶）部", "走部"],
+        firstStrokes: ["丿（撇）", "一（橫）"],
+        strokeCounts: [10, 7],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_39",
+        lesson: "第六課：我該怎麼辦?",
+        word: "布幕",
+        bopomofo: "ㄅㄨˋ ㄇㄨˋ",
+        voicePrompt: "請聽寫生字語詞：布幕。話劇即將開始，工作人員發現舞台的布幕歪了，布幕。",
+        radicals: ["巾部", "巾部"],
+        firstStrokes: ["一（橫）", "一（橫）"],
+        strokeCounts: [5, 14],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_40",
+        lesson: "第六課：我該怎麼辦?",
+        word: "辦法",
+        bopomofo: "ㄅㄢˋ ㄈㄚˇ",
+        voicePrompt: "請聽寫生字語詞：辦法。開班會時大家一起幫忙想辦法，解決問題的好辦法，辦法。",
+        radicals: ["辛部", "水（氵）部"],
+        firstStrokes: ["丶（點）", "丶（點）"],
+        strokeCounts: [16, 8],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_41",
+        lesson: "第六課：我該怎麼辦?",
+        word: "問題",
+        bopomofo: "ㄨㄣˋ ㄊㄧˊ",
+        voicePrompt: "請聽寫生字語詞：問題。有人提出問題，我們一起動腦解決問題，問題。",
+        radicals: ["口部", "頁部"],
+        firstStrokes: ["丨（豎）", "丨（豎）"],
+        strokeCounts: [11, 18],
+        atkBonus: 4
+      },
+      {
+        id: "ch_a_42",
+        lesson: "第六課：我該怎麼辦?",
+        word: "溼透",
+        bopomofo: "ㄕ ㄊㄡˋ",
+        voicePrompt: "請聽寫生字語詞：溼透。緊張得流汗溼透了衣服，被水弄得溼透，溼透。",
+        radicals: ["水（氵）部", "辵（辶）部"],
+        firstStrokes: ["丶（點）", "丿（撇）"],
+        strokeCounts: [13, 11],
         atkBonus: 4
       }
     ],
 
-    // (b) 中階：照樣造句／詞語造句活動（南一版三上第1~6課句型與成語造句）
-    sentenceQuestions: [
+    // (b) 中階：依照題庫（國exam.pdf ～ 國exam5.pdf）出題（共 32 題池，每次進入隨機抽 8 題）
+    middleQuestions: [
       {
-        id: "ch_b_1",
-        lesson: "第一課：你好，新朋友",
-        type: "照樣寫短語",
-        pattern: "（動詞）＋（疊字形容詞）＋的＋（名詞）",
-        example: "課文範例：伸出（暖暖）的（手）",
-        prompt: "請依「動詞＋疊字形容詞＋的＋名詞」結構，排列並完成下方的短語造句：",
-        blocks: ["喝下", "冰冰", "的", "泉水"],
-        distractors: ["快樂", "跑步", "飛快"],
-        targetSentence: "喝下冰冰的泉水",
-        explanation: "「喝下」是動詞，「冰冰」是疊字形容詞，「泉水」是名詞，完全符合「伸出暖暖的手」的短語結構！",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_2",
-        lesson: "第一課：你好，新朋友",
-        type: "句型造句（轉折複句：沒有……卻有……）",
-        pattern: "我是……，沒有……，卻有……。",
-        example: "課文範例：我是小雲雀，沒有多彩的羽衣，卻有清脆的歌聲。",
-        prompt: "請運用「沒有……卻有……」的句型，組出通順的自我介紹句子：",
-        blocks: ["我是小蝸牛，", "沒有飛快的雙腳，", "卻有堅固的殼", "保護自己。"],
-        distractors: ["而且有", "因為沒有"],
-        targetSentence: "我是小蝸牛，沒有飛快的雙腳，卻有堅固的殼保護自己。",
-        explanation: "「沒有……卻有……」能對比出自己的獨特優點，是第一課最重要的轉折句型！",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_3",
-        lesson: "第二課：我們的約定",
-        type: "詞語造句（紛紛）",
-        pattern: "當……，大家紛紛……。",
-        example: "詞語解釋：【紛紛】形容人或事物多而接連不斷的樣子。",
-        prompt: "請使用第二課重點語詞「紛紛」，排列出描寫班會討論的完整句子：",
-        blocks: ["老師提出問題後，", "同學們", "紛紛舉手", "發表自己的意見。"],
-        distractors: ["一個人", "安靜不語"],
-        targetSentence: "老師提出問題後，同學們紛紛舉手發表自己的意見。",
-        explanation: "「紛紛」用來形容許多人接連不斷做同一件事，因此搭配「同學們紛紛舉手」最恰當！",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_4",
-        lesson: "第三課：下課十分鐘",
-        type: "成語造句（手舞足蹈）",
-        pattern: "一聽到……，就高興得手舞足蹈。",
-        example: "成語解釋：【手舞足蹈】手腳舞動跳躍，形容非常高興喜悅的樣子。",
-        prompt: "請使用第三課成語「手舞足蹈」，組出正確的句子：",
-        blocks: ["一聽到大隊接力", "得到冠軍的消息，", "全班都高興得", "手舞足蹈。"],
-        distractors: ["怒氣沖天。", "東倒西歪。"],
-        targetSentence: "一聽到大隊接力得到冠軍的消息，全班都高興得手舞足蹈。",
-        explanation: "「手舞足蹈」專門形容高興到了極點的動作，搭配獲得冠軍的喜悅最合適！",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_5",
-        lesson: "第三課：下課十分鐘",
-        type: "成語造句（得意忘形）",
-        pattern: "雖然……，但千萬不能得意忘形。",
-        example: "成語解釋：【得意忘形】形容人高興過度，舉止失去常態。",
-        prompt: "請使用第三課成語「得意忘形」，排列出正確的勸勉句子：",
-        blocks: ["雖然這次道館賽", "贏得勝利，", "但我們不能", "得意忘形，要繼續努力。"],
-        distractors: ["手舞足蹈，", "垂頭喪氣，"],
-        targetSentence: "雖然這次道館賽贏得勝利，但我們不能得意忘形，要繼續努力。",
-        explanation: "「得意忘形」提醒我們獲勝或表現好時要保持謙虛，不可太過驕傲大意。",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_6",
-        lesson: "第四課：留住今天的太陽",
-        type: "照樣造句（連貫句型：先……再……）",
-        pattern: "放學回家後，我先……，再去……。",
-        example: "課文情境：珍惜太陽下山前的時間，先專心完成作業。",
-        prompt: "請運用「先……再……」的先後順序句型完成造句：",
-        blocks: ["放學回家後，", "我先專心把作業寫完，", "再到公園", "跟朋友踢足球。"],
-        distractors: ["卻不寫", "最後才"],
-        targetSentence: "放學回家後，我先專心把作業寫完，再到公園跟朋友踢足球。",
-        explanation: "透過「先……再……」清楚表達時間管理與做事的先後次序！",
-        atkBonus: 5
-      },
-      {
-        id: "ch_b_7",
-        lesson: "第五課：火大了",
-        type: "成語運用（怒氣沖天 vs 東倒西歪）",
-        pattern: "……氣得怒氣沖天，把……吹得東倒西歪。",
-        example: "【怒氣沖天】形容非常憤怒；【東倒西歪】形容物體歪斜傾倒。",
-        prompt: "請結合第五課的語詞，組出描述噴火龍發脾氣的句子：",
-        blocks: ["噴火龍一時控制不住", "發脾氣，", "氣得怒氣沖天，", "把路牌都震得東倒西歪。"],
-        distractors: ["手舞足蹈，", "心平氣和，"],
-        targetSentence: "噴火龍一時控制不住發脾氣，氣得怒氣沖天，把路牌都震得東倒西歪。",
-        explanation: "同時活用第五課的「發脾氣」、「怒氣沖天」與「東倒西歪」！",
+        id: "ch_b_01",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「放學後，小言總是喜歡在公園『豆』留。」",
+        options: ["豆 ➔ 逗", "豆 ➔ 頭", "留 ➔ 流", "園 ➔ 圓"],
+        answer: "豆 ➔ 逗",
+        explanation: "「逗留」是指暫時停留，『逗』是辵（辶）部，不能寫成豆子的『豆』喔！",
         atkBonus: 6
       },
       {
-        id: "ch_b_8",
-        lesson: "第六課：我該怎麼辦?",
-        type: "條件與選擇句型（與其……不如……）",
-        pattern: "不小心做錯事時，與其……，不如……。",
-        example: "課文核心：面對問題不逃避，勇敢承認並想辦法解決。",
-        prompt: "請根據第六課課文精神，組出面對錯誤時的正確態度句子：",
-        blocks: ["不小心撞倒水杯時，", "與其慌張逃走，", "不如誠實道歉", "並負責清理乾淨。"],
-        distractors: ["假裝沒看見", "推給別人"],
-        targetSentence: "不小心撞倒水杯時，與其慌張逃走，不如誠實道歉並負責清理乾淨。",
-        explanation: "完美結合第六課的生字語詞「慌張」、「逃走」、「負責」與品格教育！",
+        id: "ch_b_02",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「同學心情不好時，我們可以多『觀』心他。」",
+        options: ["觀 ➔ 關", "觀 ➔ 官", "情 ➔ 晴", "他 ➔ 她"],
+        answer: "觀 ➔ 關",
+        explanation: "「關心」是指關懷掛念，應該用門部的『關』，而不是觀看的『觀』。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_03",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「媽媽答應小恩只要『乘乘』聽話，放假就帶他去遊樂園玩。」",
+        options: ["乘乘 ➔ 乖乖", "乘乘 ➔ 剩剩", "應 ➔ 映", "帶 ➔ 戴"],
+        answer: "乘乘 ➔ 乖乖",
+        explanation: "「乖乖聽話」的『乖』（8畫）中間是北，不要跟乘車的『乘』（10畫）搞混囉！",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_04",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「小羽因為太急著出門，所以『望』記拿便當盒了。」",
+        options: ["望 ➔ 忘", "記 ➔ 紀", "急 ➔ 及", "便 ➔ 變"],
+        answer: "望 ➔ 忘",
+        explanation: "「忘記」跟心智記憶有關，下面只有『亡＋心』＝『忘』，多了一個『月』是盼望的『望』。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_05",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「阿福常需要老師『題』醒，才能完成作業。」",
+        options: ["題 ➔ 提", "醒 ➔ 星", "常 ➔ 長", "業 ➔ 葉"],
+        answer: "題 ➔ 提",
+        explanation: "「提醒」是從旁指點讓人注意，要用手（扌）部的『提』；頁部的『題』是用在題目、問題。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_06",
+        lesson: "題庫卷一：改錯字辨析",
+        category: "🔍 改錯字特訓",
+        question: "請找出句子中的錯別字並選出正確的改法：\n「妹妹洗澡總是把水『衝』得到處都是，害我差點滑倒。」",
+        options: ["衝 ➔ 沖", "澡 ➔ 操", "處 ➔ 処", "滑 ➔ 骨"],
+        answer: "衝 ➔ 沖",
+        explanation: "用水流灌注或洗刷叫做「沖水」，是水（氵）部的『沖』；行部的『衝』則是用在衝鋒、橫衝直撞。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_07",
+        lesson: "題庫卷三：改錯字綜合辨析",
+        category: "🔍 改錯字特訓",
+        question: "「開『斑』會時，有人『題』出問『堤』，大家一起幫忙想『辨』法。」\n請問上面四個括號中的錯字，依序應該改成哪四個字？",
+        options: ["班、提、題、辦", "班、題、提、辦", "斑、提、題、辯", "班、提、題、瓣"],
+        answer: "班、提、題、辦",
+        explanation: "開「班」會（玉部）、手部「提」出、頁部問「題」、中間是力的想「辦」法！",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_08",
+        lesson: "題庫卷三：改錯字綜合辨析",
+        category: "🔍 改錯字特訓",
+        question: "「『瀧』舟比『塞』在晴『郎』的天氣進行，船上的人對『淮』了終點用力划。」\n請問括號中的四個錯字，依序應該改成哪四個字？",
+        options: ["龍、賽、朗、準", "龍、賽、廊、准", "籠、賽、朗、準", "龍、寒、朗、準"],
+        answer: "龍、賽、朗、準",
+        explanation: "「龍」舟比「賽」（貝部）、晴「朗」（月部）、對「準」（水部，下面有十）！",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_09",
+        lesson: "題庫卷五：改錯字綜合辨析",
+        category: "🔍 改錯字特訓",
+        question: "「話劇即將開始，工作人員發現布『慕』歪了，趕快找『付』責的人過來『楚』理。」\n請問括號中的三個錯字，依序應該改成哪三個字？",
+        options: ["幕、負、處", "墓、負、處", "幕、付、處", "慕、負、礎"],
+        answer: "幕、負、處",
+        explanation: "舞台布「幕」是巾部；「負」責是貝部；「處」理是虍部。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_10",
+        lesson: "題庫卷一 & 三：多音字辨別",
+        category: "🎵 多音字辨別",
+        question: "「機車『行』的老闆是個品『行』良好的人，路上的『行』人遇到困難時，他都會上前幫忙。」\n請問這三個「行」字的讀音依序是什麼？",
+        options: [
+          "ㄏㄤˊ（航）／ ㄒㄧㄥˊ（型）／ ㄒㄧㄥˊ（型）",
+          "ㄒㄧㄥˊ（型）／ ㄏㄤˊ（航）／ ㄒㄧㄥˊ（型）",
+          "ㄏㄤˊ（航）／ ㄒㄧㄥˋ（姓）／ ㄏㄤˊ（航）",
+          "ㄒㄧㄥˊ（型）／ ㄒㄧㄥˊ（型）／ ㄏㄤˊ（航）"
+        ],
+        answer: "ㄏㄤˊ（航）／ ㄒㄧㄥˊ（型）／ ㄒㄧㄥˊ（型）",
+        explanation: "機車「行」是指商店行號，讀作「ㄏㄤˊ」；品「行」與「行」人皆讀作「ㄒㄧㄥˊ」。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_11",
+        lesson: "題庫卷一 & 三 & 五：多音字辨別",
+        category: "🎵 多音字辨別",
+        question: "「為了緩解肚子的不舒服，他深吸一口氣然後慢慢『吐』氣，但最後還是忍不住嘔『吐』了。」\n請問這兩個「吐」字的讀音依序是什麼？",
+        options: [
+          "ㄊㄨˇ（土）／ ㄊㄨˋ（兔）",
+          "ㄊㄨˋ（兔）／ ㄊㄨˇ（土）",
+          "ㄊㄨˇ（土）／ ㄊㄨˇ（土）",
+          "ㄊㄨˋ（兔）／ ㄊㄨˋ（兔）"
+        ],
+        answer: "ㄊㄨˇ（土）／ ㄊㄨˋ（兔）",
+        explanation: "主動從嘴巴呼出氣體、吐絲、談吐讀作「ㄊㄨˇ」；腸胃不適嘔吐、吐血讀作「ㄊㄨˋ」。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_12",
+        lesson: "題庫卷三：多音字辨別",
+        category: "🎵 多音字辨別",
+        question: "「他玩碰碰車的時候不會『轉』彎，只會在原地『轉』圈。」\n請問這兩個「轉」字的讀音依序是什麼？",
+        options: [
+          "ㄓㄨㄢˇ ／ ㄓㄨㄢˋ",
+          "ㄓㄨㄢˋ ／ ㄓㄨㄢˇ",
+          "ㄓㄨㄢˇ ／ ㄓㄨㄢˇ",
+          "ㄓㄨㄢˋ ／ ㄓㄨㄢˋ"
+        ],
+        answer: "ㄓㄨㄢˇ ／ ㄓㄨㄢˋ",
+        explanation: "改變方向（轉彎、轉身）讀作三聲「ㄓㄨㄢˇ」；繞著中心打轉（轉圈、旋轉）讀作四聲「ㄓㄨㄢˋ」。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_13",
+        lesson: "題庫卷一 & 三：多音字辨別",
+        category: "🎵 多音字辨別",
+        question: "「在太陽的照耀下，花朵們『露』出美麗的光彩，小草上的『露』珠也閃閃發亮。」\n請問這兩個「露」字在教育部國語辭典中的標準讀音依序是什麼？",
+        options: [
+          "ㄌㄨˋ（路）／ ㄌㄨˋ（路）",
+          "ㄌㄡˋ（漏）／ ㄌㄡˋ（漏）",
+          "ㄌㄨˋ（路）／ ㄌㄡˋ（漏）",
+          "ㄌㄚˋ（辣）／ ㄌㄨˋ（路）"
+        ],
+        answer: "ㄌㄨˋ（路）／ ㄌㄨˋ（路）",
+        explanation: "在書面語詞「露出」、「露珠」、「露水」中，標準字音皆讀作「ㄌㄨˋ」（口語如「露餡」才讀ㄌㄡˋ）。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_14",
+        lesson: "題庫卷一：選詞填寫（成語情境）",
+        category: "🧩 選詞填寫",
+        question: "請依文意選出正確的成語填入順序：\n「小明剛結束一場讓他（①）的籃球比賽，他（②）想在老師來之前表演打球過程。他在講臺前（③）的表演著，不小心被椅子絆倒，這才從（④）的狀態中清醒過來。」\n【選項代號】A.暢快無比　B.得意忘形　C.突發奇想　D.手舞足蹈",
+        options: [
+          "① A ➔ ② C ➔ ③ D ➔ ④ B",
+          "① B ➔ ② C ➔ ③ D ➔ ④ A",
+          "① A ➔ ② D ➔ ③ C ➔ ④ B",
+          "① D ➔ ② A ➔ ③ B ➔ ④ C"
+        ],
+        answer: "① A ➔ ② C ➔ ③ D ➔ ④ B",
+        explanation: "①打完籃球覺得「暢快無比(A)」；②突然冒出點子是「突發奇想(C)」；③手腳比畫跳舞是「手舞足蹈(D)」；④太開心忘記規矩與環境是「得意忘形(B)」。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_15",
+        lesson: "題庫卷五：詞語配對（發考卷情境）",
+        category: "🧩 選詞填寫",
+        question: "「每次期考完發考卷時，班上的氣氛總是（①）。考得好的人會高興得（②）；考得差的人，就害怕考卷一拿回家，爸媽會（③）破口大罵。」\n請依序選出最適合填入 ①、②、③ 的語詞：",
+        options: [
+          "①幾家歡樂幾家愁 ／ ②手舞足蹈 ／ ③怒氣沖天",
+          "①得意忘形 ／ ②愁眉苦臉 ／ ③手舞足蹈",
+          "①手足無措 ／ ②幾家歡樂幾家愁 ／ ③得意忘形",
+          "①怒氣沖天 ／ ②手足無措 ／ ③愁眉苦臉"
+        ],
+        answer: "①幾家歡樂幾家愁 ／ ②手舞足蹈 ／ ③怒氣沖天",
+        explanation: "有人開心有人難過是「幾家歡樂幾家愁」；考得好高興跳起來是「手舞足蹈」；爸媽生氣大罵是「怒氣沖天」。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_16",
+        lesson: "題庫卷一 & 五：時間語詞辨析",
+        category: "☀️ 語詞理解",
+        question: "課本與考卷提到的時間相關語詞中，哪一個詞語能表示「中午」（適用於學校吃營養午餐的時間）？",
+        options: ["日正當中", "夜幕低垂", "夕陽西下", "旭日東昇"],
+        answer: "日正當中",
+        explanation: "「旭日東昇」是早晨、「日正當中」是正午（中午十二點左右）、「夕陽西下」是傍晚、「夜幕低垂」是夜晚。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_17",
+        lesson: "題庫卷一：標點符號（破折號）",
+        category: "✏️ 標點符號",
+        question: "破折號「——」有許多功用，下列哪一個句子中的破折號是指「表示話題或語意突然轉變」？",
+        options: [
+          "我正要去買菜——哇！店家居然沒開門。",
+          "「嗚——嗚——」警報聲又響起了。",
+          "「來買菜唷——」菜市場充滿叫賣聲。",
+          "我們班有三位幹部——班長、副班長和風紀股長。"
+        ],
+        answer: "我正要去買菜——哇！店家居然沒開門。",
+        explanation: "原本正要去買菜，卻突然發現店家沒開門，屬於「語意突然轉折」；「嗚——嗚——」與「來買菜唷——」則是表示聲音的延長。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_18",
+        lesson: "題庫卷一：標點符號（引號）",
+        category: "✏️ 標點符號",
+        question: "下列句子中的引號「 」，哪一個是用來表示『說話的內容』？",
+        options: [
+          "姐姐說：「先寫作業才可以看電視。」",
+          "希望大家都能做到「口說好話」。",
+          "愛聊天的阿福是個「小麻雀」。",
+          "你真是「聰明」啊！"
+        ],
+        answer: "姐姐說：「先寫作業才可以看電視。」",
+        explanation: "冒號後面接引號「先寫作業才可以看電視。」是引用姐姐說的話；其餘三項則是表示強調或特定稱謂。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_19",
+        lesson: "題庫卷一：寫作手法（間接描寫）",
+        category: "🖋️ 修辭與寫作",
+        question: "「間接描寫」是指要表達情緒時，不直接寫出心情詞語，而是利用「表情＋動作」來表現。下列哪個句子使用了這種寫作手法？",
+        options: [
+          "媽媽笑著點點頭。",
+          "弟弟很難過地哭出來。",
+          "我的心裡覺得很開心。",
+          "爸爸真的很生氣。"
+        ],
+        answer: "媽媽笑著點點頭。",
+        explanation: "「笑著」（表情）＋「點點頭」（動作），沒有直接寫出「滿意、高興」卻能讓讀者感受到情緒，這就是間接描寫！",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_20",
+        lesson: "題庫卷一 & 五：修辭技巧（擬人法）",
+        category: "🖋️ 修辭與寫作",
+        question: "「太陽伸出暖暖的手，拍拍小草。」把太陽當作人來描寫（擬人法）。下列哪一個句子也使用了相同的擬人法？",
+        options: [
+          "夕陽對我微微笑。",
+          "我是開朗的學生，最會踢足球。",
+          "我剛剛警告你，你就是不聽。",
+          "操場上每個角落都充滿歡樂的笑聲。"
+        ],
+        answer: "夕陽對我微微笑。",
+        explanation: "「夕陽對我微微笑」把夕陽賦予人的「微笑」動作，屬於擬人法。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_21",
+        lesson: "題庫卷一：部首辨識",
+        category: "📖 部首與字形",
+        question: "請仔細觀察字形，下列哪一個字的部首「不是」【貝】部？",
+        options: ["員（口部）", "負（貝部）", "責（貝部）", "賽（貝部）"],
+        answer: "員（口部）",
+        explanation: "「員」的部首是上面的【口】部！而「負」、「責」、「賽」都是【貝】部喔！",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_22",
+        lesson: "題庫卷五：部首辨識（部首字）",
+        category: "📖 部首與字形",
+        question: "請選出「字本身就是部首」的國字：",
+        options: ["行", "平", "死", "兄"],
+        answer: "行",
+        explanation: "「行」本身就是部首（行部）；「平」是干部、「死」是歹部、「兄」是儿部。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_23",
+        lesson: "題庫卷三 & 五：字義與語詞解釋",
+        category: "📖 部首與字形",
+        question: "在第二課「大家發言很『熱烈』」中，「熱烈」的意思是什麼？",
+        options: [
+          "情緒高昂、興奮激動，樂於參與發言",
+          "天氣非常炎熱",
+          "猛烈燃燒的大火",
+          "食物的味道或成分很濃郁"
+        ],
+        answer: "情緒高昂、興奮激動，樂於參與發言",
+        explanation: "形容討論或發言氣氛「熱烈」，是指大家情緒高昂、踴躍參與。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_24",
+        lesson: "題庫卷三：語詞情緒分類",
+        category: "☀️ 語詞理解",
+        question: "下列哪一個四字語詞所描述的「心情」，和其他三個明顯不同？",
+        options: ["怒氣沖天", "暢快無比", "手舞足蹈", "得意忘形"],
+        answer: "怒氣沖天",
+        explanation: "「怒氣沖天」是形容非常憤怒生氣；而「暢快無比」、「手舞足蹈」、「得意忘形」都是與高興、痛快有關的心情。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_25",
+        lesson: "題庫卷一 & 三：第一課文意測驗",
+        category: "📘 課文精熟",
+        question: "在第一課《你好，新朋友》中，誰會「帶落葉去旅行、聞百合的花香、看成群的綿羊」？",
+        options: ["微風", "小雲雀", "青山", "小草"],
+        answer: "微風",
+        explanation: "第一課中，微風喜歡四處旅行，帶著落葉去聞百合花香、看成群的綿羊。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_26",
+        lesson: "題庫卷一 & 五：第二課文意測驗",
+        category: "📘 課文精熟",
+        question: "依據第二課《我們的約定》一文，為什麼小豆子覺得「上課認真不聊天」這個規定有點困難？",
+        options: [
+          "因為他的好朋友阿福就坐在旁邊",
+          "因為班長小惠就坐在旁邊",
+          "因為他不想上課只想去操場",
+          "因為公約太多背不起來"
+        ],
+        answer: "因為他的好朋友阿福就坐在旁邊",
+        explanation: "課文中提到小豆子的好朋友阿福就坐在他旁邊，兩人常忍不住想講話，所以覺得「上課不聊天」有點難。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_27",
+        lesson: "題庫卷一 & 三：第三課文意測驗",
+        category: "📘 課文精熟",
+        question: "依據第三課《下課十分鐘》一文，為什麼操場上每個角落都充滿歡樂的笑聲？",
+        options: [
+          "因為大家可以利用下課，做自己想做、有興趣的活動",
+          "因為老師會在操場幫大家訓練長跑",
+          "因為同學們在操場比賽講笑話",
+          "因為同學們可以去操場看電影"
+        ],
+        answer: "因為大家可以利用下課，做自己想做、有興趣的活動",
+        explanation: "下課十分鐘雖然短暫，但每個人都能從事自己喜歡的活動，所以充滿歡笑。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_28",
+        lesson: "題庫卷一：第四課文意測驗",
+        category: "📘 課文精熟",
+        question: "在第四課《留住今天的太陽》中，下列哪一項「不是」作者為了快點回家所做的事情？",
+        options: [
+          "不理會同學的玩鬧",
+          "不被店家的叫賣聲吸引",
+          "不留在玩具店的窗前",
+          "不停下來聽公園的蟲叫聲"
+        ],
+        answer: "不理會同學的玩鬧",
+        explanation: "課文中作者放學回家路上，不被店家吸引、不在玩具店逗留、不停下來聽公園蟲鳴，努力跟太陽賽跑回家。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_29",
+        lesson: "題庫卷一 & 三：第五課文意測驗",
+        category: "📘 課文精熟",
+        question: "依據第五課《火大了》一文，生氣讓丁丁的龍角變成烏黑的「菱角」，最後他決定下次找不到東西時可以怎麼做？",
+        options: [
+          "先保持冷靜，請家人幫忙找一找",
+          "先把客廳的沙發通通搬起來",
+          "先請消防員到家裡滅火",
+          "先認定是哥哥把東西拿走的"
+        ],
+        answer: "先保持冷靜，請家人幫忙找一找",
+        explanation: "第五課教導我們遇到問題要先控制情緒、冷靜面對，並請家人幫忙尋找，而不是亂發脾氣。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_30",
+        lesson: "題庫卷一 & 三：第六課文意測驗",
+        category: "📘 課文精熟",
+        question: "依據第六課《我該怎麼辦?》一文，小紅在書桌上奔跑不小心撞倒水杯，造成了什麼後果？這課想教我們什麼？",
+        options: [
+          "翻倒了水弄溼卡片；教我們犯錯要勇於面對並想辦法處理",
+          "打破了花瓶；教我們做錯事要趕快逃走",
+          "弄破了作業本；教我們做錯事要先對別人發脾氣",
+          "弄壞了剪刀；教我們把責任推給小藍"
+        ],
+        answer: "翻倒了水弄溼卡片；教我們犯錯要勇於面對並想辦法處理",
+        explanation: "小紅撞倒杯子弄溼了卡片，最後在理性的引導下不再慌張逃避，而是勇於面對並修補卡片。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_31",
+        lesson: "題庫卷五：同音異字辨析",
+        category: "📖 部首與字形",
+        question: "下列哪一組語詞「 」中的注音寫成國字後，兩個國字是「完全相同」的？",
+        options: [
+          "「ㄊㄧˊ」目 ／ 「ㄊㄧˊ」供",
+          "參「ㄐㄧㄚ」 ／ 「ㄐㄧㄚ」法",
+          "「ㄌㄧㄥˊ」晨 ／ 「ㄌㄧㄥˊ」角",
+          "「ㄉㄠˋ」茶 ／ 手舞足「ㄉㄠˋ」"
+        ],
+        answer: "參「ㄐㄧㄚ」 ／ 「ㄐㄧㄚ」法",
+        explanation: "參「加」與「加」法都是『加』！題目(題)／提供(提)、凌晨(凌)／菱角(菱)、倒茶(倒)／手舞足蹈(蹈)皆不同。",
+        atkBonus: 6
+      },
+      {
+        id: "ch_b_32",
+        lesson: "題庫卷一 & 三：短語結構與造句",
+        category: "🧩 句型與短語",
+        question: "請選出符合「在（草地）上（飛奔）」短語結構（在＋地點＋上＋動詞）的選項：",
+        options: [
+          "在（操場）上（踢球）",
+          "從（沙發）下（拿出）",
+          "喝下（冰冰）的（泉水）",
+          "露出（溫暖）的（微笑）"
+        ],
+        answer: "在（操場）上（踢球）",
+        explanation: "「在（操場）上（踢球）」完全符合「在＋場所名詞＋上＋二字動詞」的短語結構！",
         atkBonus: 6
       }
     ],
 
-    // (c) 高階：閱讀測驗活動（結合第1~6課主題與語詞的深度素養閱讀）
+    // (c) 進階：主要以閱讀測驗為主（收錄題庫卷一～五及第1～6課統整閱讀，共 10 篇獨立閱讀測驗，每次進入隨機抽 5 題）
     readingQuestions: [
       {
-        id: "ch_c_1",
+        id: "ch_c_01",
+        lesson: "題庫卷一：閱讀測驗（把握今天）",
+        title: "〈把握每一個今天〉（上）",
+        passage:
+          "　　你可曾留意過每一個早晨？當我們張開雙眼，看到旭日東昇，漫漫長夜過去了，嶄新的一天又呈現在我們眼前了。在寬闊的道路上，鳥兒歌唱，花兒隨風搖曳，涼涼的風兒吹來，令人心曠神怡。\n" +
+          "　　在我們身邊的景物都是這樣的美麗，大家怎能讓它白白溜過，不去細細體會、欣賞一番呢？\n" +
+          "　　有很多人常將滿懷的希望寄託在「明天」，總想著「明天再說吧！」、「明天一定要好好努力……」就在無數個「明天」裡，輕易的就把「今天」捨棄掉。其實大家真正應該把握住的是「每一個今天」，不要浪費每一分、每一秒，生活才有意義。",
+        questions: [
+          {
+            q: "1. 根據這篇文章，作者認為許多人常犯什麼毛病，因而白白浪費了時間？",
+            options: [
+              "總是把希望寄託在「明天」，想著「明天再說吧」，結果輕易捨棄了「今天」",
+              "每天太早起床去看旭日東昇",
+              "花太多時間在道路上聽鳥兒唱歌",
+              "只記得昨天發生的事情"
+            ],
+            answer: 0,
+            explanation: "文章第三段提到許多人總想著「明天再說吧！」，在無數個明天裡輕易把「今天」捨棄掉。"
+          },
+          {
+            q: "2. 根據文章，我們真正應該好好把握的是什麼？",
+            options: ["每一個今天", "遙遠的明天", "還沒到的後天", "已經過去的昨天"],
+            answer: 0,
+            explanation: "文中明確指出：「其實大家真正應該把握住的是『每一個今天』，不要浪費每一分、每一秒。」"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_02",
+        lesson: "題庫卷一：閱讀測驗（一寸光陰一寸金）",
+        title: "〈把握每一個今天〉（下）",
+        passage:
+          "　　俗語說：「一寸光陰一寸金，寸金難買寸光陰。」這句話提醒我們時間是無比寶貴的，要好好把握時間，千萬不要事事拖延，最後卻一無所成。\n" +
+          "　　想想看，如果不懂得珍惜現在，已經虛度了多少寶貴的光陰，還剩多少可以揮霍的時光呢？如果能善用每一個今天，把該做的事情今日事今日畢，人生將是彩色的，也將有成功的一天。",
+        questions: [
+          {
+            q: "1. 文中引用俗語「一寸光陰一寸金」，請問這句話是用「金」來比喻光陰（時間）的什麼特質？",
+            options: [
+              "比喻時間像黃金一樣非常寶貴，應該好好珍惜",
+              "比喻時間可以拿去銀行換很多金幣",
+              "比喻太陽的光芒是金黃色的",
+              "比喻買手錶需要花很多錢"
+            ],
+            answer: 0,
+            explanation: "「一寸光陰一寸金」是以黃金的珍貴來比喻時間極為寶貴，不可白白浪費。"
+          },
+          {
+            q: "2. 根據文章脈絡，「如果不懂得珍惜現在，已經（　　）了多少寶貴的光陰」，括號中最適合填入哪一個詞語？",
+            options: ["虛度", "占用", "購買", "收藏"],
+            answer: 0,
+            explanation: "白白浪費時間、沒有好好利用光陰，稱為「虛度光陰」。"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_03",
+        lesson: "題庫卷二 & 四：閱讀測驗（臺灣傳統習俗）",
+        title: "〈嬰兒滿月的習俗〉",
+        passage:
+          "　　嬰兒出生滿一個月，叫做「滿月」或者「彌月」。在這一天，嬰兒家要準備油飯和雞酒，用來祭拜祖先與神明，並請客分享喜悅。\n" +
+          "　　外婆家在這天會送「頭尾禮」，所謂「頭尾」就是指嬰兒從頭到腳穿戴的衣著、鞋襪、身飾等。外婆家送來的衣服背後通常都會繡上「卍」字，象徵保佑寶寶平安長大的意義。此外，還會送紅龜粿、紅桃等吉祥糕點。\n" +
+          "　　親朋好友也會送來衣物或金飾祝賀，嬰兒家則會用油飯、雞酒、紅蛋來答謝大家的關心；現代的人也常用彌月蛋糕代替，或者邀請親朋好友前來吃滿月筵席，叫做「吃麻油雞酒」。",
+        questions: [
+          {
+            q: "1. 文中提到「吃麻油雞酒」的習俗，主要是為了慶祝什麼事情？",
+            options: [
+              "慶祝嬰兒出生滿一個月（滿月／彌月）",
+              "慶祝嬰兒滿一週歲（抓周）",
+              "慶祝嬰兒學會走路",
+              "慶祝家中有人金榜題名"
+            ],
+            answer: 0,
+            explanation: "文章第一段與第三段說明嬰兒出生滿一個月稱為滿月或彌月，邀請親友吃滿月筵席就叫「吃麻油雞酒」。"
+          },
+          {
+            q: "2. 外婆家在滿月這天會送「頭尾禮」，請問「頭尾」指的是什麼？衣服背後的「卍」字又有什麼意義？",
+            options: [
+              "指衣著、鞋襪、身飾等；繡上「卍」字象徵保平安",
+              "指雞頭和魚尾；象徵年年有餘",
+              "指嬰兒車和玩具；象徵走得很快",
+              "指學費和奶粉錢；象徵大富大貴"
+            ],
+            answer: 0,
+            explanation: "第二段指出「頭尾」就是指衣著、鞋襪、身飾等，衣服背後繡上「卍」字象徵保平安的意義。"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_04",
+        lesson: "題庫卷五：長篇閱讀理解（改寫自郝廣才《小紅帽來啦》）",
+        title: "〈海婆婆與小狼毛頭〉（上）",
+        passage:
+          "　　從前，山上住著一個老婆婆，大家都叫她海婆婆。有一天夕陽西下，海婆婆聽到一陣槍響，外面的狗兒汪汪大叫。她走到窗口一看，一隻母狼被獵人打中，獵人把母狼抬走後，海婆婆在牆邊發現一隻逃過獵人追捕的小灰狼，她趕緊把小狼抱進屋裡。\n" +
+          "　　小狼看了海婆婆一眼便放鬆警戒，慢慢喝起海婆婆準備的牛奶。海婆婆給小狼取了名字叫「毛頭」。在海婆婆的照顧下，毛頭一天天長大。\n" +
+          "　　有一天，海婆婆接到一封信，信上提到穿紅衣的小孫女「小紅帽」要來看她。海婆婆好開心，毛頭表面微笑，心裡卻沒有一絲喜悅，因為牠覺得海婆婆愛小紅帽勝過自己，牠氣呼呼的想：「外婆是我的！我要想一個好辦法趕走小紅帽！」",
+        questions: [
+          {
+            q: "1. 為什麼海婆婆聽到小孫女「小紅帽」要來時很開心，小狼毛頭心裡卻「沒有一絲喜悅」？",
+            options: [
+              "因為毛頭吃醋了，覺得海婆婆愛小紅帽勝過自己，怕失去海婆婆的愛",
+              "因為毛頭害怕小紅帽帶獵人上山抓牠",
+              "因為毛頭不喜歡喝海婆婆準備的牛奶",
+              "因為毛頭想要自己一個人去森林旅行"
+            ],
+            answer: 0,
+            explanation: "文中第三段提到：「因為牠覺得海婆婆愛小紅帽勝過自己」，想要海婆婆只愛牠一個。"
+          },
+          {
+            q: "2. 當小狼毛頭剛被海婆婆抱進屋裡時，為什麼會願意慢慢喝起牛奶？",
+            options: [
+              "因為牠看了海婆婆慈祥的眼神後便放鬆了警戒，感受到海婆婆的善意",
+              "因為獵人命令牠把牛奶喝完",
+              "因為小紅帽餵牠喝牛奶",
+              "因為牠以為牛奶是山泉水"
+            ],
+            answer: 0,
+            explanation: "第二段提到：「小狼看了海婆婆一眼便放鬆警戒，慢慢的喝起海婆婆準備的牛奶。」"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_05",
+        lesson: "題庫卷五：長篇閱讀理解（改寫自郝廣才《小紅帽來啦》）",
+        title: "〈海婆婆與小狼毛頭〉（下）",
+        passage:
+          "　　到了那一天，毛頭趁著海婆婆不在家，想出一個鬼主意：「我來假扮婆婆，嚇跑小紅帽！」\n" +
+          "　　小紅帽走到門口推開房門，看見躺在床上的外婆怎麼長出了大尖牙，鼻子全變了樣、胸前還長了毛髮？但小紅帽一句話也沒說。毛頭想要嚇唬她，就從床上跳起來大吼：「妳要乖乖聽話趕快回家，不然就會被吃掉！」結果毛頭跳太高，一頭撞到天花板，重重摔到地上，痛得露出痛苦的表情大叫！\n" +
+          "　　這時小紅帽突然指著毛頭開口說：「外婆，牠……！」聽到小紅帽的聲音，剛回來的海婆婆開心大叫：「寶貝，妳會說話了！」原來小紅帽出生以後從沒說過話，這次被毛頭一嚇，居然開口說話了！海婆婆不但沒有責怪毛頭，還溫柔的幫牠包紮傷口。毛頭這才明白海婆婆依然愛牠，小紅帽也原諒了毛頭，和牠成為好朋友。",
+        questions: [
+          {
+            q: "1. 毛頭假扮成外婆想從床上跳起來嚇跑小紅帽，結果發生了什麼意想不到的事？",
+            options: [
+              "毛頭一頭撞到天花板摔傷，反而讓原本從沒說過話的小紅帽開口說話了",
+              "小紅帽嚇得立刻逃回山下再也不敢來",
+              "海婆婆氣得把毛頭趕出家門",
+              "天花板掉下來把床壓壞了"
+            ],
+            answer: 0,
+            explanation: "文中提到毛頭跳起來撞到天花板摔倒大叫，小紅帽被這一幕驚嚇後竟然第一次開口說話了！"
+          },
+          {
+            q: "2. 海婆婆回來看到毛頭撞傷後，做出了什麼舉動讓毛頭明白「海婆婆還是愛牠的」？",
+            options: [
+              "沒有責怪毛頭，還關心地查看毛頭有沒有受傷並幫牠包紮傷口",
+              "做了一個大蛋糕給毛頭吃",
+              "送給毛頭一頂紅色的帽子",
+              "帶毛頭去森林裡找其他小狼玩"
+            ],
+            answer: 0,
+            explanation: "文章最後提到：「海婆婆沒有責怪毛頭，還幫牠包紮傷口，毛頭明白，婆婆還是愛牠的。」"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_06",
+        lesson: "題庫卷五：閱讀測驗（歷史故事：關門捉賊計）",
+        title: "〈長平之戰：關門捉賊計〉",
+        passage:
+          "　　戰國時代，秦國攻打趙國，在長平受到阻撓。趙國名將廉頗守在長平，帶領部隊堅強固守，不與秦軍正面交戰，兩軍對立了四個多月，秦軍始終拿不下長平。\n" +
+          "　　於是秦王採納了丞相范雎的建議，派人散布假消息讓趙王懷疑廉頗。趙王果然中計，調回老將廉頗，改派只會讀兵書卻缺乏實戰經驗的趙括與秦軍作戰。趙括一上任就改變「堅守不戰」的策略，主動與秦軍正面決戰。\n" +
+          "　　秦國大將白起故意假裝戰敗，讓趙括取得幾次小勝。趙括果然得意忘形，派人下戰書，這「正中秦國下懷」。隔天趙括率領大軍追趕假裝敗退的秦軍，一直追到秦壁，這時才發現自己的營區與糧食已被秦軍截斷，全軍遭到嚴密包圍，最終趙軍大敗。",
+        questions: [
+          {
+            q: "1. 名將廉頗原本守在長平四個多月讓秦軍無計可施，他採用的是什麼戰爭策略？",
+            options: [
+              "堅守不攻（堅強固守營壘，不與秦軍正面交戰）",
+              "猛烈主動攻擊秦軍大營",
+              "派間諜入侵秦國首都",
+              "假裝投降再偷襲秦王"
+            ],
+            answer: 0,
+            explanation: "第一段指出：「名將廉頗守在長平，他帶領部隊堅強固守，不與秦軍交戰，兩軍對立了四個多月，秦軍仍拿不下長平。」"
+          },
+          {
+            q: "2. 廉頗從長平被調走的計策是由誰向秦王獻策的？文中「正中秦國下懷」的「正中下懷」意思是什麼？",
+            options: [
+              "由范雎獻策；「正中下懷」意思是正合心意（完全符合秦國設下的圈套）",
+              "由趙括獻策；「正中下懷」意思是射箭瞄準胸口",
+              "由廉頗自己提出；「正中下懷」意思是心中充滿自信",
+              "由趙王提出；「正中下懷」意思是把戰書藏在懷裡"
+            ],
+            answer: 0,
+            explanation: "文中提到「秦王採納范雎的建議」；而趙括得意忘形主動決戰，正好落入白起誘敵包圍的計畫，所以是「正合我意（正中下懷）」。"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_07",
+        lesson: "題庫卷二 & 四：閱讀理解（發明故事）",
+        title: "〈魯班與妻子發明雨傘〉",
+        passage:
+          "　　相傳「傘」是由古代木匠魯班與他的妻子共同發明的。魯班非常喜歡思考與實驗，總是研究發想一些精巧、便利人們使用的器物。\n" +
+          "　　起初，魯班看到路人在大雨中淋得全身溼透，便在路邊蓋了許多亭子讓路人休息躲雨。但是魯班的妻子認為：這個方法仍然不足以解決人們邊走路邊擋雨的問題，因為人總不能一直待在亭子裡不走。\n" +
+          "　　於是魯班又想到：將竹子這種富有彈性的材料劈成許多細枝桿，照著荷葉的形狀紮了一個可以活動的架子；接著又將羊皮剪成圓形，覆蓋在竹架子上綁牢。後來他和妻子一同尋找更好的做法，讓竹架能自由收合，終於將它改造成可以隨時帶著走、遮蔽雨水與陽光的好工具——也就是今天的「傘」。",
+        questions: [
+          {
+            q: "1. 魯班一開始在路邊「蓋亭子」讓路人躲雨，為什麼他的妻子認為這個方法還不夠好？",
+            options: [
+              "因為亭子固定在原地，無法解決人們需要繼續趕路時擋雨的問題",
+              "因為蓋亭子要花太多木頭與石頭",
+              "因為亭子太小只能站一個人",
+              "因為荷葉比亭子更好看"
+            ],
+            answer: 0,
+            explanation: "文中第二段提到蓋亭子只能讓路人停下來躲雨，無法邊走邊擋雨，所以需要能隨身攜帶、自由收合的雨傘。"
+          },
+          {
+            q: "2. 魯班是觀察自然界中的什麼植物形狀，用竹子劈成細桿做出雨傘的架子？",
+            options: ["荷葉的形狀", "松樹的形狀", "百合花的形狀", "竹筍的形狀"],
+            answer: 0,
+            explanation: "第三段提到：「將竹子這種材料劈成許多細枝桿，照著荷葉的形狀，紮了一個架子。」"
+          }
+        ],
+        atkBonus: 8
+      },
+      {
+        id: "ch_c_08",
         lesson: "第一單元統整（第1～3課：校園新生活）",
         title: "〈三年甲班的班會約定〉",
         passage:
@@ -5580,15 +7079,20 @@ window.GAME_DATA = {
           "　　表決結果出爐後，有人提議落選、有人提議通過，真是「幾家歡樂幾家愁」。不過大家都明白，這些公約是為了讓班級更平安、更快樂，因此每個人都大聲答應會互相提醒、共同遵守。",
         questions: [
           {
-            q: "1. 在這場班會中，誰負責在黑板上把大家的意見「記錄」下來？",
-            options: ["林老師", "主席小安", "盡責的小妍", "發言的小宇"],
-            answer: 2,
-            explanation: "文章第二段提到：「主席小安站在講臺上主持會議，小妍則盡責的在黑板上做記錄。」"
+            q: "1. 在這場班會中，誰負責在黑板上把大家的意見「記錄」下來？訂定班級公約的主要目的是什麼？",
+            options: [
+              "由盡責的小妍做記錄；目的是學會「自己管理自己」，讓班級更平安快樂",
+              "由林老師做記錄；目的是處罰愛跑步的同學",
+              "由主席小安做記錄；目的是減少下課時間",
+              "由小宇做記錄；目的是練習寫黑板字"
+            ],
+            answer: 0,
+            explanation: "文中提到小妍負責記錄，而訂定班級公約是為了讓大家學會自我管理、互相提醒、共同遵守。"
           },
           {
-            q: "2. 文中提到「聽到上課鐘聲響起時，不能玩得得意忘形」，「得意忘形」在這裡的意思最接近下列何者？",
+            q: "2. 文中提到「聽到上課鐘聲響起時，不能玩得得意忘形」，「得意忘形」的意思最接近下列何者？",
             options: [
-              "高興過度而忘記了本來應該遵守的規矩與時間",
+              "高興過度而忘記了本來應該遵守的規矩與上課時間",
               "在操場上認真練習踢足球的樣子",
               "遇到問題時慌張害怕的樣子",
               "安靜坐在教室裡看書的樣子"
@@ -5600,7 +7104,7 @@ window.GAME_DATA = {
         atkBonus: 8
       },
       {
-        id: "ch_c_2",
+        id: "ch_c_09",
         lesson: "第二單元統整（第4課：留住今天的太陽）",
         title: "〈和夕陽賽跑的小傑〉",
         passage:
@@ -5611,30 +7115,30 @@ window.GAME_DATA = {
           {
             q: "1. 小傑以前為什麼常常到晚上還在邊打哈欠邊寫作業？",
             options: [
-              "因為學校作業太多寫不完",
-              "因為放學時喜歡在路上的玩具店逗留，沒有把握時間",
-              "因為他去消防隊幫忙滅火",
-              "因為他在學校幫老師擦黑板"
+              "因為放學時喜歡在路上的玩具店逗留，沒有把握時間提早回家",
+              "因為學校老師每天都出十本作業",
+              "因為他放學後去消防隊幫忙滅火",
+              "因為他在學校幫老師擦黑板到天黑"
             ],
-            answer: 1,
+            answer: 0,
             explanation: "第一段指出小傑以前放學總喜歡在玩具店「逗留」，回到家時太陽已經下山了。"
           },
           {
             q: "2. 文中說小傑決定「留住今天的太陽」，這句話真正的意思是什麼？",
             options: [
+              "把握太陽下山前的寶貴時間，專心把該做的事情提早完成",
               "用繩子把太陽綁在樹上不讓它下山",
-              "把握太陽下山前的寶貴時間，專心把該做的事情完成",
               "拿畫筆把太陽畫在圖畫紙上",
-              "請太陽公公走慢一點"
+              "用照相機把夕陽拍下來"
             ],
-            answer: 1,
-            explanation: "「留住今天的太陽」是比喻珍惜光陰、善用白天的時間提早完成作業，這樣太陽下山前就能擁有自己的空閒時間。"
+            answer: 0,
+            explanation: "「留住今天的太陽」是比喻珍惜光陰、善用白天的時間提早完成作業，這樣太陽下山前就能擁有充裕的時間。"
           }
         ],
         atkBonus: 8
       },
       {
-        id: "ch_c_3",
+        id: "ch_c_10",
         lesson: "第二單元統整（第5～6課：情緒與解決問題）",
         title: "〈彩排日的小插曲〉",
         passage:
@@ -5645,23 +7149,23 @@ window.GAME_DATA = {
           {
             q: "1. 當阿偉不小心撞倒水杯弄溼布幕時，他最後選擇「怎麼辦」？",
             options: [
+              "誠懇道歉，並負起責任拿乾布與吹風機幫忙處理乾淨",
               "趁大家沒注意時慌張逃走",
               "把錯推給道具組長小豪",
-              "誠懇道歉，並負起責任拿乾布與吹風機幫忙處理乾淨",
               "站在原地大哭大鬧發脾氣"
             ],
-            answer: 2,
+            answer: 0,
             explanation: "文中第三段提到阿偉沒有逃避，而是誠懇道歉並主動拿乾布與吹風機幫忙把布幕吹乾，展現負責的態度。"
           },
           {
             q: "2. 這個故事主要想告訴我們什麼道理？",
             options: [
-              "話劇比賽絕對不可以準備水杯",
               "遇到過錯與衝突時，一方勇於負責、另一方學習控制脾氣與原諒，就能化解問題",
+              "話劇比賽絕對不可以準備水杯",
               "扮演噴火龍的人一定會發脾氣",
               "布幕溼透了就只能丟掉不用再管它"
             ],
-            answer: 1,
+            answer: 0,
             explanation: "結合第五課「情緒管理（不亂發脾氣、懂得原諒）」與第六課「勇於負責解決問題」的核心主旨。"
           }
         ],
@@ -5671,252 +7175,810 @@ window.GAME_DATA = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. 數學道館題庫（康軒版三年級上學期 第 1 單元 ～ 第 4 單元）
-  //    完成訓練提升寶可夢【防禦力 DEF】與【最大生命 HP】
+  // 3. 數學道館題庫（康軒版三年級上學期 第 1～4 單元 ＆ 題庫試卷 6～10）
+  //    - 初階（每次隨機 10 題）：千位數（四位數）的加減運算為主（直式計算板）
+  //    - 中階（每次隨機 8 題）：以選擇題或填空為主（參考題庫卷 6～10：位值化聚、比大小、數線、毫米換算、乘法與估算）
+  //    - 進階（每次隨機 5 題）：主要以應用題為主（參考題庫卷 6～10 真實應用題）
   // --------------------------------------------------------------------------
   mathGym: {
+    tierCounts: { a: 10, b: 8, c: 5 },
     unitsInfo: [
       { id: 1, title: "單元一：10000以內的數", topics: "認識千位與萬位、讀寫與0的規則、使用錢幣、比大小、整數數線" },
-      { id: 2, title: "單元二：四位數的加減", topics: "四位數直式加法（連續進位）、四位數直式減法（整千與含0借位）、加減估算" },
+      { id: 2, title: "單元二：四位數的加減", topics: "千位數/四位數直式加法（連續進位）、千位數/四位數直式減法（整千與含0借位）、加減估算" },
       { id: 3, title: "單元三：毫米 (mm)", topics: "認識毫米(1cm=10mm)、直尺刻度報讀、單複名數換算、公分與毫米加減" },
       { id: 4, title: "單元四：乘法", topics: "二位數×一位數、三位數×一位數（含中間與末尾有0）、連乘兩步驟問題" }
     ],
 
-    // (a) 初階：乘法與基礎數感運算
-    basicQuestions: [
+    // (a) 初階：千位數的加減運算為主（收錄數exam6～10所有千位數加減題，共 24 題池 + 支援動態隨機生成，每次進入隨機抽 10 題）
+    verticalQuestions: [
       {
-        id: "ma_a_1",
-        unit: "單元四：乘法（整十與二位數乘一位數）",
-        question: "皮卡丘每天練習發射 24 次電光一閃，連續練習 3 天，一共發射了幾次？\n請計算：24 × 3 ＝ ？",
-        options: ["62", "72", "82", "64"],
-        answer: "72",
-        hint: "個位 4 × 3 = 12（寫 2 進 1），十位 2 × 3 = 6，加上進位的 1 等於 7，合起來是 72。",
+        id: "ma_a_01",
+        unit: "題庫卷八：千位數直式加法（連續進位）",
+        story: "請用直式算出下列千位數加法算式的結果：3397 ＋ 1826 ＝ ？",
+        op: "+",
+        num1: 3397,
+        num2: 1826,
+        answer: 5223,
+        hint: "個位 7+6=13（寫3進1）；十位 9+2+1=12（寫2進1）；百位 3+8+1=12（寫2進1）；千位 3+1+1=5 ➔ 5223。",
         defBonus: 4
       },
       {
-        id: "ma_a_2",
-        unit: "單元四：乘法（二位數進位乘法）",
-        question: "一顆超級寶可夢球售價 58 元，買 4 顆一共要付多少元？\n請計算：58 × 4 ＝ ？",
-        options: ["202 元", "222 元", "232 元", "242 元"],
-        answer: "232 元",
-        hint: "個位 8 × 4 = 32（寫 2 進 3），十位 5 × 4 = 20，20 + 3 = 23，得 232 元。",
+        id: "ma_a_02",
+        unit: "題庫卷八：整千數直式減法（連續借位）",
+        story: "【整千借位必考】請用直式算出：4000 － 1368 ＝ ？",
+        op: "-",
+        num1: 4000,
+        num2: 1368,
+        answer: 2632,
+        hint: "4000 向千位借 1 後：千位剩 3、百位變 9、十位變 9、個位變 10！個位 10-8=2，十位 9-6=3，百位 9-3=6，千位 3-1=2 ➔ 2632。",
         defBonus: 4
       },
       {
-        id: "ma_a_3",
-        unit: "單元四：乘法（三位數中間有 0 的乘法）",
-        question: "【常考陷阱題】每包能量方塊重 306 公克，買 4 包共重幾公克？\n請計算：306 × 4 ＝ ？",
-        options: ["124 公克", "1204 公克", "1224 公克", "1424 公克"],
-        answer: "1224 公克",
-        hint: "個位 6 × 4 = 24（寫 4 進 2）；十位 0 × 4 = 0，加上進位 2 得 2；百位 3 × 4 = 12，答案是 1224！",
+        id: "ma_a_03",
+        unit: "題庫卷九：千位數直式加法（連續進位）",
+        story: "請用直式算出下列千位數加法算式的結果：3677 ＋ 4189 ＝ ？",
+        op: "+",
+        num1: 3677,
+        num2: 4189,
+        answer: 7866,
+        hint: "個位 7+9=16（寫6進1）；十位 7+8+1=16（寫6進1）；百位 6+1+1=8；千位 3+4=7 ➔ 7866。",
         defBonus: 4
       },
       {
-        id: "ma_a_4",
-        unit: "單元四：乘法（三位數末尾有 0 的乘法）",
-        question: "道館訓練場每圈長 250 公尺，利歐路跑了 6 圈，共跑了幾公尺？\n請計算：250 × 6 ＝ ？",
-        options: ["1200 公尺", "1500 公尺", "1560 公尺", "1800 公尺"],
-        answer: "1500 公尺",
-        hint: "個位 0 × 6 = 0；十位 5 × 6 = 30（寫 0 進 3）；百位 2 × 6 = 12，12 + 3 = 15，得 1500 公尺。",
+        id: "ma_a_04",
+        unit: "題庫卷九：千位數直式減法（整百連續借位）",
+        story: "請用直式算出下列千位數減法算式的結果：7800 － 4831 ＝ ？",
+        op: "-",
+        num1: 7800,
+        num2: 4831,
+        answer: 2969,
+        hint: "個位向百位借位後 10-1=9；十位 9-3=6；百位剩 7 不夠減 8，向千位借 1 得 17-8=9；千位 6-4=2 ➔ 2969。",
         defBonus: 4
       },
       {
-        id: "ma_a_5",
-        unit: "單元四：乘法（三位數連續進位）",
-        question: "請算出下列乘法算式的答案：\n148 × 5 ＝ ？",
-        options: ["540", "640", "700", "740"],
-        answer: "740",
-        hint: "個位 8 × 5 = 40（寫0進4），十位 4 × 5 = 20，20+4=24（寫4進2），百位 1 × 5 + 2 = 7，得 740。",
+        id: "ma_a_05",
+        unit: "題庫卷十：千位數直式減法（中間有 0 借位）",
+        story: "【常考陷阱】請用直式算出：6011 － 2183 ＝ ？",
+        op: "-",
+        num1: 6011,
+        num2: 2183,
+        answer: 3828,
+        hint: "個位 11-3=8；十位剩 0 向百位借（百位是0先向千位借），十位 10-8=2，百位 9-1=8，千位 5-2=3 ➔ 3828。",
         defBonus: 4
       },
       {
-        id: "ma_a_6",
-        unit: "單元一：10000以內的數（讀寫與位值）",
-        question: "「四千零八十」用阿拉伯數字應該怎麼寫？",
-        options: ["4008", "4080", "4800", "408"],
-        answer: "4080",
-        hint: "4 個千（千位寫 4）、0 個百（百位寫 0）、8 個十（十位寫 8）、0 個一（個位寫 0）→ 4080。",
+        id: "ma_a_06",
+        unit: "題庫卷十：千位數直式加法（三次進位）",
+        story: "請用直式算出下列千位數加法算式的結果：3866 ＋ 2246 ＝ ？",
+        op: "+",
+        num1: 3866,
+        num2: 2246,
+        answer: 6112,
+        hint: "個位 6+6=12（寫2進1）；十位 6+4+1=11（寫1進1）；百位 8+2+1=11（寫1進1）；千位 3+2+1=6 ➔ 6112。",
         defBonus: 4
       },
       {
-        id: "ma_a_7",
-        unit: "單元一：10000以內的數（化聚）",
-        question: "「6 個千、15 個百、3 個十和 9 個一」合起來是多少？",
-        options: ["61539", "6539", "7539", "7509"],
-        answer: "7539",
-        hint: "注意！15 個百等於 1500（也就是 1 個千和 5 個百），6000 + 1500 + 30 + 9 = 7539！",
+        id: "ma_a_07",
+        unit: "題庫卷六：千位數加三位數直式加法",
+        story: "請用直式對齊位數算出：5319 ＋ 806 ＝ ？",
+        op: "+",
+        num1: 5319,
+        num2: 806,
+        answer: 6125,
+        hint: "個位 9+6=15（寫5進1）；十位 1+0+1=2；百位 3+8=11（寫1進1）；千位 5+1=6 ➔ 6125。",
         defBonus: 4
       },
       {
-        id: "ma_a_8",
-        unit: "單元三：毫米（單複名數換算）",
-        question: "妙蛙種子的藤鞭長「8 公分 6 毫米」，換算成毫米是多少毫米？",
-        options: ["14 毫米", "806 毫米", "86 毫米", "68 毫米"],
-        answer: "86 毫米",
-        hint: "1 公分 = 10 毫米，所以 8 公分 = 80 毫米，80 + 6 = 86 毫米。",
+        id: "ma_a_08",
+        unit: "題庫卷六：千位數減三位數直式減法",
+        story: "請用直式對齊位數算出：2015 － 207 ＝ ？",
+        op: "-",
+        num1: 2015,
+        num2: 207,
+        answer: 1808,
+        hint: "個位 15-7=8；十位剩 0 減 0 得 0；百位 0 不夠減 2，向千位借 1 得 10-2=8；千位剩 1 ➔ 1808。",
         defBonus: 4
       },
       {
-        id: "ma_a_9",
-        unit: "單元三：毫米（單複名數換算）",
-        question: "傑尼龜的龜殼厚度是「104 毫米」，也可以說是幾公分幾毫米？",
-        options: ["1 公分 4 毫米", "10 公分 4 毫米", "14 公分 0 毫米", "100 公分 4 毫米"],
-        answer: "10 公分 4 毫米",
-        hint: "每 10 毫米是 1 公分，100 毫米 = 10 公分，剩下 4 毫米，所以是 10 公分 4 毫米。",
+        id: "ma_a_09",
+        unit: "題庫卷七：千位數加三位數直式加法",
+        story: "請用直式對齊位數算出：4965 ＋ 826 ＝ ？",
+        op: "+",
+        num1: 4965,
+        num2: 826,
+        answer: 5791,
+        hint: "個位 5+6=11（寫1進1）；十位 6+2+1=9；百位 9+8=17（寫7進1）；千位 4+1=5 ➔ 5791。",
         defBonus: 4
       },
       {
         id: "ma_a_10",
-        unit: "單元一：10000以內的數（數線刻度）",
-        question: "在一條等分刻度的數線上，從 2600 往右數 3 格是 2900，請問往右再數 2 格是多少？",
-        options: ["3000", "3100", "3200", "2920"],
-        answer: "3100",
-        hint: "2600 到 2900 差 300，分成 3 格代表「每一格是 100」。從 2900 再往右 2 格就是 2900 + 200 = 3100。",
+        unit: "題庫卷七：千位數減三位數直式減法",
+        story: "請用直式對齊位數算出：7165 － 142 ＝ ？",
+        op: "-",
+        num1: 7165,
+        num2: 142,
+        answer: 7023,
+        hint: "個位 5-2=3；十位 6-4=2；百位 1-1=0；千位 7 ➔ 7023。",
         defBonus: 4
-      }
-    ],
-
-    // (b) 中階：四位數加減（以「直式」呈現，讓學生在直式格中書寫與計算）
-    verticalQuestions: [
+      },
       {
-        id: "ma_b_1",
-        unit: "單元二：四位數加法（一次進位）",
+        id: "ma_a_11",
+        unit: "題庫卷九：千位數加二位數直式加法",
+        story: "請注意位值對齊，用直式算出：3256 ＋ 44 ＝ ？",
+        op: "+",
+        num1: 3256,
+        num2: 44,
+        answer: 3300,
+        hint: "個位 6+4=10（寫0進1）；十位 5+4+1=10（寫0進1）；百位 2+1=3；千位 3 ➔ 3300。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_12",
+        unit: "題庫卷十：千位數加法（吉祥物票選）",
+        story: "動物園票選吉祥物，貓熊得 2569 票，無尾熊得 1691 票，兩隻動物共得幾票？\n請計算：2569 ＋ 1691 ＝ ？",
+        op: "+",
+        num1: 2569,
+        num2: 1691,
+        answer: 4260,
+        hint: "個位 9+1=10（寫0進1）；十位 6+9+1=16（寫6進1）；百位 5+6+1=12（寫2進1）；千位 2+1+1=4 ➔ 4260。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_13",
+        unit: "題庫卷十：千位數減法（零用錢比較）",
+        story: "姐姐有 3010 元，弟弟比姐姐少 889 元，弟弟有多少元？\n請計算：3010 － 889 ＝ ？",
+        op: "-",
+        num1: 3010,
+        num2: 889,
+        answer: 2121,
+        hint: "個位 10-9=1；十位剩 0 向千位借後變 10-8=2；百位 9-8=1；千位剩 2 ➔ 2121。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_14",
+        unit: "題庫卷八：千位數加法（借書統計）",
+        story: "小美去年借了 1243 本書，小明借了 1423 本書，兩人一共借了幾本書？\n請計算：1243 ＋ 1423 ＝ ？",
+        op: "+",
+        num1: 1243,
+        num2: 1423,
+        answer: 2666,
+        hint: "個位 3+3=6；十位 4+2=6；百位 2+4=6；千位 1+1=2 ➔ 2666。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_15",
+        unit: "題庫卷六：千位數加法（演唱會門票）",
+        story: "演唱會門票第一週賣出 7406 張，第二週比第一週多賣 1193 張，第二週賣出幾張？\n請計算：7406 ＋ 1193 ＝ ？",
+        op: "+",
+        num1: 7406,
+        num2: 1193,
+        answer: 8599,
+        hint: "個位 6+3=9；十位 0+9=9；百位 4+1=5；千位 7+1=8 ➔ 8599。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_16",
+        unit: "題庫卷九：千位數減法（閱讀頁數）",
+        story: "一本小說有 1022 頁，姐姐已經看了 237 頁，還剩下多少頁沒看？\n請計算：1022 － 237 ＝ ？",
+        op: "-",
+        num1: 1022,
+        num2: 237,
+        answer: 785,
+        hint: "個位 12-7=5；十位剩 1 向千位借後變 11-3=8；百位 9-2=7；千位剩 0（填 0785 或 785 皆可）➔ 0785。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_17",
+        unit: "題庫卷九：千位數加法（服飾售價）",
+        story: "一件上衣 1399 元，一件褲子比上衣貴 1200 元，一件褲子是多少元？\n請計算：1399 ＋ 1200 ＝ ？",
+        op: "+",
+        num1: 1399,
+        num2: 1200,
+        answer: 2599,
+        hint: "個位 9+0=9；十位 9+0=9；百位 3+2=5；千位 1+1=2 ➔ 2599。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_18",
+        unit: "題庫卷七：千位數減法（全校男女生人數）",
+        story: "全校總共有 2314 個學生，其中男生有 1129 人，女生有多少人？\n請計算：2314 － 1129 ＝ ？",
+        op: "-",
+        num1: 2314,
+        num2: 1129,
+        answer: 1185,
+        hint: "個位 14-9=5；十位剩 0 向百位借 1 得 10-2=8；百位剩 2-1=1；千位 2-1=1 ➔ 1185。",
+        defBonus: 4
+      },
+      {
+        id: "ma_a_19",
+        unit: "單元二：千位數加法（一次進位）",
         story: "寶可夢中心昨天治療了 2348 隻寶可夢，今天治療了 1526 隻，兩天共治療幾隻？",
         op: "+",
         num1: 2348,
         num2: 1526,
         answer: 3874,
-        hint: "從個位算起：8+6=14（個位寫4，進1到十位）；十位 4+2+1=7；百位 3+5=8；千位 2+1=3 → 3874。",
-        defBonus: 6
+        hint: "從個位算起：8+6=14（個位寫4，進1到十位）；十位 4+2+1=7；百位 3+5=8；千位 2+1=3 ➔ 3874。",
+        defBonus: 4
       },
       {
-        id: "ma_b_2",
-        unit: "單元二：四位數加法（連續進位）",
+        id: "ma_a_20",
+        unit: "單元二：千位數加法（連續進位）",
         story: "訓練家背包裡有 3685 點經驗能量，完成道館任務又獲得 2749 點，現在共有幾點？",
         op: "+",
         num1: 3685,
         num2: 2749,
         answer: 6434,
-        hint: "個位 5+9=14（寫4進1）；十位 8+4+1=13（寫3進1）；百位 6+7+1=14（寫4進1）；千位 3+2+1=6 → 6434。",
-        defBonus: 6
+        hint: "個位 5+9=14（寫4進1）；十位 8+4+1=13（寫3進1）；百位 6+7+1=14（寫4進1）；千位 3+2+1=6 ➔ 6434。",
+        defBonus: 4
       },
       {
-        id: "ma_b_3",
-        unit: "單元二：四位數減法（連續退位）",
-        story: "卡比獸原本有 5423 點體力，承受了對手強力的招式後扣掉 1658 點，還剩幾點體力？",
+        id: "ma_a_21",
+        unit: "單元二：千位數減法（連續退位）",
+        story: "卡比獸原本有 5423 點體力，承受了對手招式扣掉 1658 點，還剩幾點體力？",
         op: "-",
         num1: 5423,
         num2: 1658,
         answer: 3765,
-        hint: "個位 3 減 8 不夠，向十位借 1 當 10（13-8=5）；十位剩 1 減 5 不夠，向百位借（11-5=6）；百位剩 3 減 6 不夠，向千位借（13-6=7）；千位 4-1=3 → 3765。",
-        defBonus: 6
+        hint: "個位 13-8=5；十位 11-5=6；百位 13-6=7；千位 4-1=3 ➔ 3765。",
+        defBonus: 4
       },
       {
-        id: "ma_b_4",
-        unit: "單元二：四位數減法（被減數中間有 0 的借位）",
-        story: "【期中考必考】小智帶了 4032 元去商店，買了一組 1568 元的道館徽章盒，還剩下多少元？",
+        id: "ma_a_22",
+        unit: "單元二：千位數減法（中間有 0 借位）",
+        story: "小智帶了 4032 元去商店，買了一組 1568 元的道館徽章盒，還剩下多少元？",
         op: "-",
         num1: 4032,
         num2: 1568,
         answer: 2464,
-        hint: "個位 12-8=4；十位剩 2 不夠減 6，百位是 0，要向千位 4 借 1 變成 10 個百，再借 1 個百給十位（百位剩 9，十位變 12）：十位 12-6=6，百位 9-5=4，千位 3-1=2 → 2464。",
-        defBonus: 6
+        hint: "個位 12-8=4；十位 12-6=6；百位 9-5=4；千位 3-1=2 ➔ 2464。",
+        defBonus: 4
       },
       {
-        id: "ma_b_5",
-        unit: "單元二：四位數減法（整千數連續借位）",
-        story: "【魔王級借位題】柳谷鎮道館修建基金共有 6000 元，已經支付材料費 2475 元，還剩下多少元？",
+        id: "ma_a_23",
+        unit: "單元二：整千數減法（連續退位）",
+        story: "柳溪道館修建基金共有 6000 元，已經支付材料費 2475 元，還剩下多少元？",
         op: "-",
         num1: 6000,
         num2: 2475,
         answer: 3525,
-        hint: "6000 向千位借 1 後：千位剩 5、百位變 9、十位變 9、個位變 10！個位 10-5=5，十位 9-7=2，百位 9-4=5，千位 5-2=3 → 3525。",
-        defBonus: 7
+        hint: "6000 借位後：個位 10-5=5，十位 9-7=2，百位 9-4=5，千位 5-2=3 ➔ 3525。",
+        defBonus: 4
       },
       {
-        id: "ma_b_6",
-        unit: "單元二：四位數加法（和為整千/五位數內）",
+        id: "ma_a_24",
+        unit: "單元二：千位數加法（十位進百位）",
         story: "火系道館有 4560 顆火之石，水系道館有 3845 顆水之石，兩館共有幾顆屬性石？",
         op: "+",
         num1: 4560,
         num2: 3845,
         answer: 8405,
-        hint: "個位 0+5=5；十位 6+4=10（寫0進1）；百位 5+8+1=14（寫4進1）；千位 4+3+1=8 → 8405。",
+        hint: "個位 0+5=5；十位 6+4=10（寫0進1）；百位 5+8+1=14（寫4進1）；千位 4+3+1=8 ➔ 8405。",
+        defBonus: 4
+      }
+    ],
+
+    // (b) 中階：以選擇題或填空為主（參考題庫卷 6～10 出題，共 32 題池，每次進入隨機抽 8 題）
+    middleQuestions: [
+      {
+        id: "ma_b_01",
+        qType: "choice",
+        unit: "題庫卷八：10000以內的數（化聚）",
+        question: "【選擇題】3 個千、8 個百、20 個十和 18 個一合起來是多少？",
+        options: ["3018", "3838", "4008", "4018"],
+        answer: "4018",
+        hint: "3000 + 800 + 200（20個十）+ 18 = 4018！",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_02",
+        qType: "fill",
+        unit: "題庫卷九：10000以內的數（化聚填空）",
+        question: "【填空題】2 個千、14 個百、5 個十和 8 個一，合起來是多少？\n請填入正確數字：",
+        placeholder: "請輸入四位數答案",
+        answer: "3458",
+        hint: "14 個百是 1400，所以 2000 + 1400 + 50 + 8 = 3458。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_03",
+        qType: "choice",
+        unit: "題庫卷十：10000以內的數（化聚）",
+        question: "【選擇題】8 個千、1 個百和 16 個十合起來是多少？",
+        options: ["8116", "8160", "8260", "8360"],
+        answer: "8260",
+        hint: "16 個十是 160，8000 + 100 + 160 = 8260。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_04",
+        qType: "fill",
+        unit: "題庫卷十：10000以內的數（讀寫填空）",
+        question: "【填空題】「九千零四」用阿拉伯數字記成多少？",
+        placeholder: "請輸入阿拉伯數字",
+        answer: "9004",
+        hint: "9 個千、0 個百、0 個十、4 個一 ➔ 9004。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_05",
+        qType: "fill",
+        unit: "題庫卷六：10000以內的數（讀寫填空）",
+        question: "【填空題】「九千五百零四」用阿拉伯數字記作多少？",
+        placeholder: "請輸入阿拉伯數字",
+        answer: "9504",
+        hint: "千位 9、百位 5、十位 0、個位 4 ➔ 9504。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_06",
+        qType: "choice",
+        unit: "題庫卷十：10000以內的數（位值判斷）",
+        question: "【選擇題】個位數字是 5，十位數字是 6，千位數字是 2 的四位數可能是多少？",
+        options: ["2056", "2065", "5603", "5630"],
+        answer: "2065",
+        hint: "千位是 2、十位是 6、個位是 5，只有 2065 符合條件！",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_07",
+        qType: "choice",
+        unit: "題庫卷六：10000以內的數（極值相差）",
+        question: "【選擇題】把「最大的四位數」減「最小的三位數」，答案是多少？",
+        options: ["9999", "9899", "10099", "9998"],
+        answer: "9899",
+        hint: "最大的四位數是 9999，最小的三位數是 100，9999 － 100 ＝ 9899。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_08",
+        qType: "choice",
+        unit: "題庫卷十：10000以內的數（三位數極值差）",
+        question: "【選擇題】「最大的三位數」和「最小的三位數」相差多少？",
+        options: ["199", "900", "899", "999"],
+        answer: "899",
+        hint: "最大的三位數是 999，最小的三位數是 100，999 － 100 ＝ 899。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_09",
+        qType: "fill",
+        unit: "題庫卷六：數字卡排大小（填空題）",
+        question: "【填空題】用 0、7、2、8 四張數字卡排成「最大的四位數」是多少？",
+        placeholder: "請輸入四位數",
+        answer: "8720",
+        hint: "要排成最大的四位數，從最高位（千位）開始由大排到小：8 ➔ 7 ➔ 2 ➔ 0，即 8720。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_10",
+        qType: "fill",
+        unit: "題庫卷六：數字卡排大小（填空題）",
+        question: "【填空題】用 0、7、2、8 四張數字卡排成「最小的四位數」（千位不能是 0）是多少？",
+        placeholder: "請輸入四位數",
+        answer: "2078",
+        hint: "千位不能放 0，所以千位放除 0 以外最小的 2，百位放 0，十位放 7，個位放 8 ➔ 2078。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_11",
+        qType: "fill",
+        unit: "題庫卷八：數列規律（填空題）",
+        question: "【填空題】按照順序填填看：\n7215 ➔ 7205 ➔ ( ？ ) ➔ 7185 ➔ 7175\n請問括號裡應該填入什麼數字？",
+        placeholder: "請輸入數字",
+        answer: "7195",
+        hint: "每次往後減少 10，7205 減 10 等於 7195。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_12",
+        qType: "fill",
+        unit: "題庫卷十：數線移動（填空題）",
+        question: "【填空題】蝸牛從數線上刻度 2 的位置，先往右移 6 格，又往左移 3 格，最後會停在哪一個數字？",
+        placeholder: "請輸入數字",
+        answer: "5",
+        hint: "往右移是加，往左移是減：2 ＋ 6 ＝ 8，8 － 3 ＝ 5。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_13",
+        qType: "fill",
+        unit: "題庫卷九：數線移動（填空題）",
+        question: "【填空題】小鴨停在數線 9 的位置，先向左走 7 格，再向右走 3 格，最後會停在哪一個數字？",
+        placeholder: "請輸入數字",
+        answer: "5",
+        hint: "9 向左走 7 格到 2（9-7=2），再向右走 3 格到 5（2+3=5）。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_14",
+        qType: "choice",
+        unit: "題庫卷七：四位數比大小",
+        question: "【選擇題】小明有 7040 元，小倫有 73★0 元，小彤有 6★94 元，小嘉有 7402 元。請問誰的錢最多？",
+        options: ["小明", "小倫", "小彤", "小嘉"],
+        answer: "小嘉",
+        hint: "比較千位與百位：小嘉千位是 7、百位是 4（7402），比 7040、73★0、6★94 都還要大！",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_15",
+        qType: "choice",
+        unit: "題庫卷十：加減法估算",
+        question: "【選擇題】估算看看，小王有 1300 元，買了一本 299 元的書，大約還剩下多少元？",
+        options: ["1100 元", "1000 元", "900 元", "800 元"],
+        answer: "1000 元",
+        hint: "299 元非常接近 300 元，1300 － 300 ＝ 1000 元。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_16",
+        qType: "choice",
+        unit: "題庫卷七：加法估算",
+        question: "【選擇題】估估看「799 ＋ 492」的結果最接近哪一個數？",
+        options: ["1000", "1100", "1200", "1300"],
+        answer: "1300",
+        hint: "799 大約是 800，492 大約是 500，800 ＋ 500 ＝ 1300。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_17",
+        qType: "fill",
+        unit: "題庫卷十：西元年與民國年換算（填空題）",
+        question: "【填空題】西元年是「民國年 ＋ 1911」，那麼民國 101 年是西元幾年？",
+        placeholder: "請輸入西元年份",
+        answer: "2012",
+        hint: "101 ＋ 1911 ＝ 2012 年。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_18",
+        qType: "fill",
+        unit: "題庫卷七：錢幣化聚（填空題）",
+        question: "【填空題】媽媽的錢包裡有 4 張 1000 元、15 張 100 元、5 個 10 元和 7 個 1 元，媽媽的錢包裡共有多少元？",
+        placeholder: "請輸入總金額",
+        answer: "5557",
+        hint: "4000 ＋ 1500 ＋ 50 ＋ 7 ＝ 5557 元。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_19",
+        qType: "choice",
+        unit: "題庫卷八：毫米與公分換算",
+        question: "【選擇題】70 毫米是多少公分？",
+        options: ["700 公分", "70 公分", "7 公分", "5 公分"],
+        answer: "7 公分",
+        hint: "10 毫米 ＝ 1 公分，所以 70 毫米 ＝ 7 公分。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_20",
+        qType: "fill",
+        unit: "題庫卷九 & 十：公分與毫米換算（填空題）",
+        question: "【填空題】6 公分 5 毫米 ＝ ( ？ ) 毫米",
+        placeholder: "請輸入毫米數",
+        answer: "65",
+        hint: "1 公分 ＝ 10 毫米，6 公分 ＝ 60 毫米，60 ＋ 5 ＝ 65 毫米。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_21",
+        qType: "choice",
+        unit: "題庫卷十 & 七：長度比大小",
+        question: "【選擇題】甲線長 55 毫米，乙線長 6 公分 2 毫米，丙線長 5 公分 8 毫米，請問哪一條線最短？",
+        options: ["甲線", "乙線", "丙線", "一樣長"],
+        answer: "甲線",
+        hint: "全部換成毫米來比較：甲＝55毫米，乙＝62毫米，丙＝58毫米，所以甲線（55毫米）最短！",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_22",
+        qType: "choice",
+        unit: "題庫卷六：生活中的長度量感",
+        question: "【選擇題】一本國小三年級數學課本的「厚度」大約是多少？",
+        options: ["80 公分", "80 毫米", "8 公分", "8 毫米"],
+        answer: "8 毫米",
+        hint: "數學課本厚度不到 1 公分（10 毫米），大約是 8 毫米。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_23",
+        qType: "choice",
+        unit: "題庫卷八：毫米減法計算",
+        question: "【選擇題】黃色蠟筆的長是 32 毫米，紫色蠟筆比黃色蠟筆短 13 毫米，請問紫色蠟筆長多少毫米？",
+        options: ["18 毫米", "19 毫米", "20 毫米", "45 毫米"],
+        answer: "19 毫米",
+        hint: "32 － 13 ＝ 19 毫米。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_24",
+        qType: "fill",
+        unit: "題庫卷八：公分與毫米加法（填空題）",
+        question: "【填空題】45 毫米 ＋ 5 公分 6 毫米 ＝ ( ？ ) 毫米",
+        placeholder: "請輸入總毫米數",
+        answer: "101",
+        hint: "5 公分 6 毫米 ＝ 56 毫米，45 毫米 ＋ 56 毫米 ＝ 101 毫米。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_25",
+        qType: "choice",
+        unit: "題庫卷八：乘法估算",
+        question: "【選擇題】估算「29 × 5」，請選出最接近正確答案的選項：",
+        options: ["100", "120", "130", "150"],
+        answer: "150",
+        hint: "29 最接近 30，30 × 5 ＝ 150。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_26",
+        qType: "choice",
+        unit: "題庫卷八 & 九：三位數乘法估算",
+        question: "【選擇題】估估看，「499 × 5」的答案最接近哪一個數？",
+        options: ["2000", "2500", "3000", "3500"],
+        answer: "2500",
+        hint: "499 非常接近 500，500 × 5 ＝ 2500。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_27",
+        qType: "choice",
+        unit: "題庫卷八：二位數乘以一位數",
+        question: "【選擇題】一個鉛筆盒 95 元，買 3 個要多少元？",
+        options: ["285 元", "275 元", "265 元", "255 元"],
+        answer: "285 元",
+        hint: "95 × 3 ＝ 285 元（個位 5×3=15 寫5進1，十位 9×3+1=28）。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_28",
+        qType: "choice",
+        unit: "題庫卷七：二位數乘以一位數",
+        question: "【選擇題】一顆西瓜分成 16 片，有 5 顆西瓜，一共可以分成多少片？",
+        options: ["80 片", "70 片", "60 片", "54 片"],
+        answer: "80 片",
+        hint: "16 × 5 ＝ 80 片（個位 6×5=30 寫0進3，十位 1×5+3=8）。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_29",
+        qType: "fill",
+        unit: "題庫卷十：三位數中間有 0 的乘法（填空題）",
+        question: "【填空題】請計算：607 × 3 ＝ ( ？ )",
+        placeholder: "請輸入計算結果",
+        answer: "1821",
+        hint: "個位 7×3=21（寫1進2）；十位 0×3+2=2；百位 6×3=18 ➔ 1821。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_30",
+        qType: "fill",
+        unit: "題庫卷八：三位數乘以一位數（填空題）",
+        question: "【填空題】請計算：375 × 8 ＝ ( ？ )",
+        placeholder: "請輸入計算結果",
+        answer: "3000",
+        hint: "個位 5×8=40（寫0進4）；十位 7×8+4=60（寫0進6）；百位 3×8+6=30 ➔ 3000。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_31",
+        qType: "fill",
+        unit: "題庫卷六：三位數中間有 0 的乘法（填空題）",
+        question: "【填空題】請計算：506 × 9 ＝ ( ？ )",
+        placeholder: "請輸入計算結果",
+        answer: "4554",
+        hint: "個位 6×9=54（寫4進5）；十位 0×9+5=5；百位 5×9=45 ➔ 4554。",
+        defBonus: 6
+      },
+      {
+        id: "ma_b_32",
+        qType: "choice",
+        unit: "題庫卷七：直角、鈍角與銳角觀念",
+        question: "【選擇題】關於「角」與「長方形」的敘述，下列哪一個是正確的？",
+        options: [
+          "比直角大的角稱為鈍角，比直角小的角稱為銳角，且長方形有 4 個直角",
+          "角的大小會隨著兩邊畫得越長而變得越大",
+          "比直角大的角稱為銳角，比直角小的角稱為鈍角",
+          "正方形有 4 個直角，但長方形只有 2 個直角"
+        ],
+        answer: "比直角大的角稱為鈍角，比直角小的角稱為銳角，且長方形有 4 個直角",
+        hint: "角的大小只與兩邊張開的程度有關，與邊長無關；大於直角是鈍角、小於直角是銳角，正方形和長方形都有 4 個直角。",
         defBonus: 6
       }
     ],
 
-    // (c) 高階：第 1 到 4 單元的素養題與應用題解答
+    // (c) 進階：主要以應用題為主（收錄題庫卷 6～10 真實應用題，共 16 題池，每次進入隨機抽 5 題）
     wordProblems: [
       {
-        id: "ma_c_1",
-        unit: "單元一：10000以內的數（數字卡片素養推理）",
-        title: "【密碼鎖推理】古老遺跡的寶箱密碼",
+        id: "ma_c_01",
+        unit: "題庫卷十：連乘兩步驟應用題",
+        title: "【玩具店倍數問題】玩偶、玩具車與機器人",
         question:
-          "古老遺跡的寶箱上有四張數字卡：【 7 】、【 0 】、【 3 】、【 9 】。\n" +
-          "石碑上寫著：「請用這四張卡片排成一個『最大的四位數』和一個『最小的四位數』（千位不能是 0），請問這兩個數相差多少？」",
-        stepsHint: "① 最大四位數：從大排到小 → 9730\n② 最小四位數：千位不能放0，所以千位放3，接著放0、7、9 → 3079\n③ 兩數相差：9730 － 3079 ＝ 6651",
-        options: ["6651", "9351", "6751", "5951"],
-        answer: "6651",
+          "一個玩偶賣 70 元，一臺玩具汽車的價錢是玩偶的 3 倍，一個機器人的價錢是玩具汽車的 4 倍。\n" +
+          "請問一個機器人賣多少元？",
+        stepsHint: "① 先算玩具汽車的價錢：70 × 3 ＝ 210（元）\n② 再算機器人的價錢：210 × 4 ＝ 840（元）",
+        options: ["840 元", "490 元", "630 元", "810 元"],
+        answer: "840 元",
         defBonus: 8
       },
       {
-        id: "ma_c_2",
-        unit: "單元二：四位數加減（購物折抵素養題）",
-        title: "【百貨週年慶】寶可夢訓練家裝備採購",
+        id: "ma_c_02",
+        unit: "題庫卷十：連乘兩步驟應用題",
+        title: "【麵包店採購】購買 4 盒蛋塔",
         question:
-          "寶可夢百貨舉辦「滿 5000 元現折 600 元」活動。\n" +
-          "小夏買了一個 2850 元的圖鑑手錶，和一個 2480 元的探險背包，請問折扣後她實際要付多少元？",
-        stepsHint: "① 先算原價總和：2850 ＋ 2480 ＝ 5330 元\n② 因為 5330 元有超過 5000 元，可折抵 600 元\n③ 實付金額：5330 － 600 ＝ 4730 元",
-        options: ["5330 元", "4730 元", "4830 元", "4630 元"],
-        answer: "4730 元",
+          "麵包店賣蛋塔，一盒裝 9 個，1 個蛋塔賣 35 元，媽媽買了 4 盒，一共要付多少元？",
+        stepsHint: "① 先算一盒蛋塔多少元：35 × 9 ＝ 315（元）\n② 再算 4 盒一共多少元：315 × 4 ＝ 1260（元）\n（或先算共有 9 × 4 ＝ 36 個，再算 35 × 36 ＝ 1260 元）",
+        options: ["1260 元", "1160 元", "1350 元", "1400 元"],
+        answer: "1260 元",
         defBonus: 8
       },
       {
-        id: "ma_c_3",
-        unit: "單元三：毫米（紙帶黏合重疊素養題）",
-        title: "【經典必考】道館彩帶黏合問題",
+        id: "ma_c_03",
+        unit: "題庫卷八：連乘兩步驟應用題",
+        title: "【服飾店倍數】上衣、褲子與外套",
         question:
-          "文心館主拿了兩條長皆為「8 公分 5 毫米」的祈福紙帶，將兩條紙帶頭尾相接黏在一起，中間重疊黏合的部分長「15 毫米」。\n" +
-          "請問黏好之後的紙帶總長是幾公分幾毫米？",
-        stepsHint: "① 兩條紙帶原本合起來：8公分5毫米 ＋ 8公分5毫米 ＝ 16公分10毫米 ＝ 17公分（170毫米）\n② 扣掉重疊部分 15 毫米（1公分5毫米）：170毫米 － 15毫米 ＝ 155毫米 ＝ 15公分5毫米",
-        options: ["17 公分 0 毫米", "15 公分 5 毫米", "16 公分 5 毫米", "18 公分 5 毫米"],
-        answer: "15 公分 5 毫米",
+          "一件上衣是 110 元，一件褲子的價錢是上衣的 2 倍，一件外套的價錢是褲子的 3 倍。\n" +
+          "請問一件外套是多少元？",
+        stepsHint: "① 先算一件褲子多少元：110 × 2 ＝ 220（元）\n② 再算一件外套多少元：220 × 3 ＝ 660（元）",
+        options: ["660 元", "550 元", "330 元", "880 元"],
+        answer: "660 元",
         defBonus: 8
       },
       {
-        id: "ma_c_4",
-        unit: "單元三：毫米（斷尺測量素養題）",
-        title: "【實驗室測量】殘尺上的進化之石",
+        id: "ma_c_04",
+        unit: "題庫卷八：連乘兩步驟應用題",
+        title: "【糖果禮盒】共有幾顆糖果？",
         question:
-          "數理博士用一把斷掉前端的直尺測量「雷之石」的長度。雷之石的左端對齊刻度「3 公分 8 毫米」，右端對齊刻度「9 公分 3 毫米」。\n" +
-          "請問這顆雷之石的實際長度是多少？",
-        stepsHint: "終點刻度 － 起點刻度：\n9 公分 3 毫米 － 3 公分 8 毫米\n＝ 8 公分 13 毫米 － 3 公分 8 毫米\n＝ 5 公分 5 毫米（55 毫米）",
-        options: ["6 公分 5 毫米", "5 公分 5 毫米", "5 公分 8 毫米", "13 公分 1 毫米"],
-        answer: "5 公分 5 毫米",
+          "一袋糖果有 30 顆，一盒裝 6 袋，爸爸買了 9 盒，一共會有幾顆糖果？",
+        stepsHint: "① 先算一盒有幾顆糖果：30 × 6 ＝ 180（顆）\n② 再算 9 盒共有幾顆：180 × 9 ＝ 1620（顆）",
+        options: ["1620 顆", "1520 顆", "1800 顆", "1440 顆"],
+        answer: "1620 顆",
         defBonus: 8
       },
       {
-        id: "ma_c_5",
-        unit: "單元四：乘法（兩步驟連乘素養題）",
-        title: "【補給箱清點】寶可夢中心樹果禮盒",
+        id: "ma_c_05",
+        unit: "題庫卷九：連乘兩步驟應用題",
+        title: "【校慶布置】3 層樓教室的氣球總數",
         question:
-          "寶可夢中心訂購了「橙橙果禮盒」準備分給訓練家。每小袋裝 15 顆橙橙果，每禮盒有 6 小袋，喬伊小姐一共訂購了 4 禮盒。\n" +
-          "請問全部一共有幾顆橙橙果？",
-        stepsHint: "① 先算 1 禮盒有幾顆：15 × 6 ＝ 90 顆\n② 再算 4 禮盒共有幾顆：90 × 4 ＝ 360 顆",
-        options: ["240 顆", "300 顆", "360 顆", "420 顆"],
-        answer: "360 顆",
+          "內湖國小一間教室布置 20 顆氣球，每層樓有 5 間教室，3 層樓共要布置幾顆氣球呢？",
+        stepsHint: "① 先算一層樓要布置幾顆氣球：20 × 5 ＝ 100（顆）\n② 再算 3 層樓共要幾顆：100 × 3 ＝ 300（顆）",
+        options: ["300 顆", "200 顆", "150 顆", "600 顆"],
+        answer: "300 顆",
         defBonus: 8
       },
       {
-        id: "ma_c_6",
-        unit: "單元二＆四整合：加減與估算應用",
-        title: "【門票與找錢】柳谷特訓營報名",
+        id: "ma_c_06",
+        unit: "題庫卷七：連乘兩步驟應用題",
+        title: "【升旗典禮】全三年級學生總人數",
         question:
-          "柳谷特訓營每張門票售價 308 元，小智和 4 位朋友（共 5 人）一起報名參加，他們拿了 2 張 1000 元鈔票付錢，請問售票員應該找回多少元？",
-        stepsHint: "① 注意人數！小智和 4 位朋友共 5 人：308 × 5 ＝ 1540 元\n② 2 張 1000 元鈔票是 2000 元\n③ 找回金額：2000 － 1540 ＝ 460 元",
-        options: ["768 元", "460 元", "560 元", "492 元"],
-        answer: "460 元",
+          "三年級有 7 個班級，升旗時每班排成 4 排，每排有 7 人，請問全三年級共有多少人？",
+        stepsHint: "① 先算一個班級有幾人：7 × 4 ＝ 28（人）\n② 再算 7 個班級共有幾人：28 × 7 ＝ 196（人）",
+        options: ["196 人", "186 人", "176 人", "216 人"],
+        answer: "196 人",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_07",
+        unit: "題庫卷六：連乘兩步驟應用題",
+        title: "【中秋禮盒】媽媽買 4 盒蛋黃酥",
+        question:
+          "一盒蛋黃酥有 6 顆，每顆賣 50 元，媽媽買了 4 盒，一共花了多少元？",
+        stepsHint: "① 先算一盒蛋黃酥多少元：50 × 6 ＝ 300（元）\n② 再算 4 盒共多少元：300 × 4 ＝ 1200（元）",
+        options: ["1200 元", "900 元", "1000 元", "1500 元"],
+        answer: "1200 元",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_08",
+        unit: "題庫卷八：公分與毫米重疊應用題",
+        title: "【竹竿相接】重疊部分的總長度",
+        question:
+          "將兩根分別長「32 公分 3 毫米」與「41 公分 1 毫米」的竹竿接起來，中間重疊綁在一起的部分長「6 公分」。\n" +
+          "請問接起來後的竹竿共長幾公分幾毫米？",
+        stepsHint: "① 先把兩根竹竿長度加起來：32公分3毫米 ＋ 41公分1毫米 ＝ 73公分4毫米\n② 減去中間重疊的 6 公分：73公分4毫米 － 6公分 ＝ 67公分4毫米",
+        options: ["67 公分 4 毫米", "73 公分 4 毫米", "79 公分 4 毫米", "66 公分 4 毫米"],
+        answer: "67 公分 4 毫米",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_09",
+        unit: "題庫卷十：公分與毫米重疊應用題",
+        title: "【木棍相接】扣掉重疊長度的計算",
+        question:
+          "兩根棍子分別長「46 公分 8 毫米」與「23 公分」，把兩根棍子頭尾相接綁起來，重疊的部分長「6 公分 3 毫米」。\n" +
+          "請問接起來的棍子共長幾公分幾毫米？",
+        stepsHint: "① 先算兩根棍子原本合起來：46公分8毫米 ＋ 23公分 ＝ 69公分8毫米\n② 扣掉重疊部分 6 公分 3 毫米：69公分8毫米 － 6公分3毫米 ＝ 63公分5毫米",
+        options: ["63 公分 5 毫米", "69 公分 8 毫米", "76 公分 1 毫米", "62 公分 5 毫米"],
+        answer: "63 公分 5 毫米",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_10",
+        unit: "題庫卷八：公分與毫米退位減法應用題",
+        title: "【編織圍巾】妹妹今天織了多長？",
+        question:
+          "姐姐和妹妹一個人織一條圍巾，今天姐姐織了「39 公分 5 毫米」，比妹妹多織了「13 公分 6 毫米」。\n" +
+          "請問妹妹今天織了幾公分幾毫米？",
+        stepsHint: "① 列式：39公分5毫米 － 13公分6毫米\n② 5毫米不夠減6毫米，向39公分借1公分（10毫米）變成 38公分15毫米\n③ 38公分15毫米 － 13公分6毫米 ＝ 25公分9毫米",
+        options: ["25 公分 9 毫米", "26 公分 1 毫米", "26 公分 9 毫米", "53 公分 1 毫米"],
+        answer: "25 公分 9 毫米",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_11",
+        unit: "題庫卷七：毫米換算與相差應用題",
+        title: "【運動會加油棒】兩人的加油棒相差幾毫米？",
+        question:
+          "小鳳的加油棒長「12 公分 6 毫米」，小盈的加油棒長「186 毫米」，請問兩人的加油棒長度相差幾毫米？",
+        stepsHint: "① 先將小鳳的加油棒換算成毫米：12 公分 6 毫米 ＝ 126 毫米\n② 兩者相減：186 毫米 － 126 毫米 ＝ 60 毫米",
+        options: ["60 毫米", "50 毫米", "6 毫米", "70 毫米"],
+        answer: "60 毫米",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_12",
+        unit: "題庫卷七：千位數兩步驟減法應用題",
+        title: "【學校人數統計】男學生與女學生相差多少人？",
+        question:
+          "全校總共有 2314 個學生，其中男生有 1129 人，剩下的是女生。\n" +
+          "請問男學生跟女學生相差多少人？",
+        stepsHint: "① 先算女學生有多少人：2314 － 1129 ＝ 1185（人）\n② 再算女生和男生相差幾人：1185 － 1129 ＝ 56（人）",
+        options: ["56 人", "1185 人", "66 人", "46 人"],
+        answer: "56 人",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_13",
+        unit: "題庫卷八：編號推理素養應用題",
+        title: "【開心農場】綿羊拍照活動入場券",
+        question:
+          "開心農場舉辦活動，入場券編號從 1000 到 5000，只要「末三碼是 168」的人，就可以參加與綿羊拍照的活動。\n" +
+          "請問可以參加拍照活動的編號中，「最大編號」與「最小編號」相差多少？",
+        stepsHint: "① 1000 到 5000 中，末三碼是 168 的編號有：1168、2168、3168、4168\n② 最大編號是 4168，最小編號是 1168\n③ 兩者相差：4168 － 1168 ＝ 3000",
+        options: ["3000", "4000", "2000", "3168"],
+        answer: "3000",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_14",
+        unit: "題庫卷六：三位數乘法與預算判斷應用題",
+        title: "【購買棒球帽】準備 1500 元夠不夠？",
+        question:
+          "棒球帽一頂賣 859 元，小丸子想要買 2 頂棒球帽，如果她準備了 1500 元，請問夠不夠買？還差或還剩多少元？",
+        stepsHint: "① 先算買 2 頂棒球帽要多少元：859 × 2 ＝ 1718（元）\n② 比較：1718 元 ＞ 1500 元，所以「不夠」！\n③ 還差：1718 － 1500 ＝ 218（元）",
+        options: [
+          "不夠，還差 218 元（2 頂共要 1718 元）",
+          "夠，還剩下 218 元",
+          "不夠，還差 118 元（2 頂共要 1618 元）",
+          "剛好夠用，剩下 0 元"
+        ],
+        answer: "不夠，還差 218 元（2 頂共要 1718 元）",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_15",
+        unit: "題庫卷八：數字卡極值差應用題",
+        title: "【數字卡推理】最大四位數與最小四位數的差",
+        question:
+          "用【 1 】、【 0 】、【 3 】、【 7 】四張數字卡排成的四位數中，最大的四位數與最小的四位數相差多少？",
+        stepsHint: "① 最大的四位數（由大到小）：7310\n② 最小的四位數（千位不能為0）：1037\n③ 兩數相差：7310 － 1037 ＝ 6273",
+        options: ["6273", "7173", "6373", "5973"],
+        answer: "6273",
+        defBonus: 8
+      },
+      {
+        id: "ma_c_16",
+        unit: "題庫卷八 & 七：乘法與找錢應用題",
+        title: "【超市購物】買餅乾與遊樂園門票",
+        question:
+          "一盒餅乾賣 101 元，小玉帶了 1000 元去買 5 盒，請問一共花了多少元？老闆要找回多少元？",
+        stepsHint: "① 先算買 5 盒餅乾一共花多少元：101 × 5 ＝ 505（元）\n② 再算找回多少元：1000 － 505 ＝ 495（元）",
+        options: [
+          "一共花了 505 元，找回 495 元",
+          "一共花了 550 元，找回 450 元",
+          "一共花了 505 元，找回 595 元",
+          "一共花了 515 元，找回 485 元"
+        ],
+        answer: "一共花了 505 元，找回 495 元",
         defBonus: 8
       }
     ]

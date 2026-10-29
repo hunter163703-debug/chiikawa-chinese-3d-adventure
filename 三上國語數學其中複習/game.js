@@ -116,6 +116,27 @@
       this.playTone(659.25, 0.10, "square", 0.09, 0.22);
       this.playTone(783.99, 0.32, "square", 0.11, 0.33);
     }
+    playLevelUp() {
+      this.playTone(440, 0.08, "square", 0.09, 0);
+      this.playTone(554.37, 0.08, "square", 0.09, 0.08);
+      this.playTone(659.25, 0.08, "square", 0.09, 0.16);
+      this.playTone(880, 0.28, "square", 0.11, 0.24);
+    }
+    playHatch() {
+      this.playTone(523.25, 0.09, "triangle", 0.09, 0);
+      this.playTone(659.25, 0.09, "triangle", 0.09, 0.09);
+      this.playTone(783.99, 0.09, "triangle", 0.09, 0.18);
+      this.playTone(1046.5, 0.12, "square", 0.10, 0.27);
+      this.playTone(1318.5, 0.32, "square", 0.11, 0.39);
+    }
+    playGymComplete() {
+      this.playTone(523.25, 0.10, "square", 0.09, 0);
+      this.playTone(659.25, 0.10, "square", 0.09, 0.10);
+      this.playTone(783.99, 0.10, "square", 0.09, 0.20);
+      this.playTone(1046.5, 0.14, "square", 0.10, 0.30);
+      this.playTone(783.99, 0.10, "square", 0.09, 0.44);
+      this.playTone(1046.5, 0.36, "square", 0.12, 0.54);
+    }
     speak(text) {
       if (!("speechSynthesis" in window)) return;
       try {
@@ -135,7 +156,7 @@
   const SFX = new SoundSystem();
 
   // --------------------------------------------------------------------------
-  // 2. 圖片資源載入 (assets/classic/* 與 assets/trainer.png & PMD / PokeAPI)
+  // 2. 圖片資源載入 & Infinite Pokémon (skills-v0.2.0) 像素合成獸圖像引擎
   // --------------------------------------------------------------------------
   const IMAGES = {};
   function preloadAssets() {
@@ -159,83 +180,466 @@
   }
   preloadAssets();
 
+  // 寶可夢圖像：參考 The Spriters Resource《寶可夢 金／銀》(Game Boy Color) 像素圖，
+  // 使用 PokeAPI 收錄的第二世代金版透明背景精靈圖（正面 / 背面）
+  const GEN2_SPRITE_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ii";
   function getPortraitUrl(id4) {
-    return `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${id4}/Normal.png`;
+    const id = parseInt(id4, 10) || 25;
+    return getGen2SpriteUrl(id, false);
+  }
+  function getGen2SpriteUrl(id, back = false) {
+    return back
+      ? `${GEN2_SPRITE_BASE}/gold/transparent/back/${id}.png`
+      : `${GEN2_SPRITE_BASE}/gold/transparent/${id}.png`;
   }
   function getStaticSpriteUrl(id, back = false) {
     return back
-      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${id}.png`
-      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+      ? `${GEN2_SPRITE_BASE}/crystal/transparent/back/${id}.png`
+      : `${GEN2_SPRITE_BASE}/crystal/transparent/${id}.png`;
   }
   function getAnimSpriteUrl(id, back = false) {
-    return back
-      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/${id}.gif`
-      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`;
+    return getGen2SpriteUrl(id, back);
+  }
+  function getSpriteUrl(id) {
+    return getGen2SpriteUrl(id || 25, false);
+  }
+
+  // 100% 移植自 Shellishack/infinite-pokemon (skills-v0.2.0) game/client/content-art.ts
+  const PIXEL_ART_CACHE = new Map();
+  function generatePixelCreatureDataUrl(art, back = false) {
+    if (!art) return "";
+    const key = `${JSON.stringify(art)}:${back ? "back" : "front"}`;
+    if (PIXEL_ART_CACHE.has(key)) return PIXEL_ART_CACHE.get(key);
+
+    const p = art.primary || "#6fa66a";
+    const a = art.accent || "#f5cf6b";
+    const o = "#263038";
+    const belly = "#f4f2e6";
+    const rects = [];
+    const r = (x, y, w, h, fill) =>
+      rects.push(`<rect x="${back ? 16 - x - w : x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`);
+
+    r(4, 14, 8, 1, "rgba(24,32,36,0.22)");
+    if (art.wings) {
+      r(1, 5, 3, 5, a);
+      r(12, 5, 3, 5, a);
+    }
+    if (art.horns) {
+      r(4, 1, 2, 2, a);
+      r(10, 1, 2, 2, a);
+    }
+
+    const form = art.form || "quadruped";
+    if (form === "bird") {
+      r(4, 4, 8, 7, p);
+      r(5, 2, 6, 4, p);
+      r(11, 4, 3, 2, a);
+      r(5, 11, 2, 3, a);
+      r(9, 11, 2, 3, a);
+    } else if (form === "fish") {
+      r(3, 5, 9, 6, p);
+      r(12, 4, 3, 8, a);
+      r(6, 3, 4, 2, a);
+      r(5, 8, 5, 2, belly);
+    } else if (form === "serpent") {
+      r(3, 3, 5, 4, p);
+      r(6, 6, 5, 4, p);
+      r(4, 9, 6, 4, p);
+      r(9, 11, 4, 2, a);
+    } else if (form === "golem") {
+      r(3, 3, 10, 9, p);
+      r(2, 6, 2, 5, a);
+      r(12, 6, 2, 5, a);
+      r(4, 12, 3, 2, o);
+      r(9, 12, 3, 2, o);
+    } else if (form === "sprite") {
+      r(5, 3, 6, 7, p);
+      r(4, 5, 8, 4, p);
+      r(6, 10, 4, 3, a);
+    } else {
+      // quadruped
+      r(4, 5, 8, 6, p);
+      r(3, 3, 5, 4, p);
+      r(5, 8, 5, 3, belly);
+      r(4, 11, 2, 3, p);
+      r(10, 11, 2, 3, p);
+      r(12, 6, 2, 3, a);
+    }
+
+    if (art.pattern === "stripes") {
+      r(6, 5, 1, 4, a);
+      r(9, 5, 1, 4, a);
+    } else if (art.pattern === "spots") {
+      r(6, 6, 2, 2, a);
+      r(9, 8, 2, 2, a);
+    } else if (art.pattern === "crest") {
+      r(6, 1, 4, 2, a);
+    }
+
+    if (!back) {
+      r(5, 4, 1, 2, o);
+      r(9, 4, 1, 2, o);
+    }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">${rects.join("")}</svg>`;
+    const url = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    PIXEL_ART_CACHE.set(key, url);
+    return url;
+  }
+
+  function getDefaultArtForPokemon(catOrPoke) {
+    if (catOrPoke.art) return catOrPoke.art;
+    const typeStr = String(catOrPoke.typeEn || catOrPoke.type || "NORMAL").toUpperCase();
+    const formMap = {
+      ELECTRIC: "sprite",
+      FIRE: "bird",
+      WATER: "fish",
+      GRASS: "quadruped",
+      ROCK: "golem",
+      STEEL: "golem",
+      DRAGON: "serpent",
+      FLYING: "bird",
+      BUG: "sprite",
+      FAIRY: "quadruped",
+      PSYCHIC: "sprite"
+    };
+    return {
+      form: formMap[typeStr] || "quadruped",
+      primary: catOrPoke.typeColor || "#6fa66a",
+      accent: "#fde047",
+      pattern: (catOrPoke.id || 1) % 3 === 0 ? "crest" : (catOrPoke.id || 1) % 2 === 0 ? "stripes" : "spots",
+      horns: Boolean((catOrPoke.id || 1) % 2 === 0),
+      wings: typeStr.includes("FLY") || typeStr.includes("DRAGON") || typeStr.includes("FIRE")
+    };
+  }
+
+  // 依 52Poke 的最低等級規則進化；不再使用合成或突破石改變物種。
+  function tryLevelEvolution(poke) {
+    if (!poke || !DATA.evolutionRules) return null;
+    const rule = DATA.evolutionRules[String(poke.id)];
+    if (!rule || poke.level < rule.level) return null;
+    const target = DATA.pokemonCatalog.find((p) => p.id === rule.to);
+    if (!target) return null;
+    const previousName = poke.name;
+    poke.id = target.id;
+    poke.id4 = target.id4;
+    poke.speciesKey = target.speciesKey || `sp_${target.id}`;
+    poke.name = target.name;
+    poke.enName = target.enName;
+    poke.type = target.type;
+    poke.typeEn = target.typeEn || poke.typeEn;
+    poke.typeColor = target.typeColor || poke.typeColor;
+    poke.basicMove = target.basicMove || poke.basicMove;
+    poke.specialMove = target.move || poke.specialMove;
+    poke.baseSpeciesId = target.id;
+    poke.maxHp += 8;
+    poke.hp = poke.maxHp;
+    poke.atk += 4;
+    poke.def += 4;
+    addJournalEntry(`✨ 【${previousName}】達到 Lv.${poke.level}，進化成【${poke.name}】！`);
+    return { previousName, name: poke.name, level: poke.level };
+  }
+
+  function getPokemonDisplayUrl(poke, mode = "portrait") {
+    if (!poke) return getGen2SpriteUrl(25, false);
+    const id = poke.baseSpeciesId || poke.id || 25;
+    return getGen2SpriteUrl(id, mode === "back");
+  }
+
+  function getPokemonFallbackUrl(poke, mode = "portrait") {
+    if (!poke) return getStaticSpriteUrl(25, false);
+    const id = poke.baseSpeciesId || poke.id || 25;
+    return getStaticSpriteUrl(id, mode === "back");
   }
 
   // --------------------------------------------------------------------------
-  // 3. 玩家存檔與遊戲狀態 (GameState)
+  // 3. 玩家存檔、寶可夢特性、經驗值升級 (Level-Up) 與突破進化系統
   // --------------------------------------------------------------------------
   let selectedStarterId = 25; // 預設皮卡丘 (25: 皮卡丘, 6: 噴火龍, 1: 妙蛙種子)
 
+  const TRAIT_KEYS = Object.keys(DATA.traits || {
+    hearty: 1, bold: 1, gentle: 1, curious: 1, swift: 1, elusive: 1, sturdy: 1, radiant: 1
+  });
+
+  function pickTraitsForSeed(seedNum, presetTraits = null) {
+    if (Array.isArray(presetTraits) && presetTraits.length > 0) {
+      return presetTraits.slice(0, 2);
+    }
+    const t1 = TRAIT_KEYS[Math.abs(seedNum) % TRAIT_KEYS.length];
+    const t2 = TRAIT_KEYS[Math.abs(seedNum * 7 + 3) % TRAIT_KEYS.length];
+    return t1 === t2 ? [t1] : [t1, t2];
+  }
+
+  function formatTraitBadges(traits) {
+    if (!Array.isArray(traits) || traits.length === 0) return "";
+    return traits
+      .map((tKey) => {
+        const tObj = DATA.traits && DATA.traits[tKey];
+        const label = tObj ? tObj.name.split(" ")[0] : tKey;
+        const tip = tObj ? tObj.desc : "";
+        return `<span class="trait-badge" title="${tip}">✦${label}</span>`;
+      })
+      .join("");
+  }
+
+  function getNextLevelExp(lv = 1) {
+    return 20 + Math.max(0, (lv || 1) - 1) * 5;
+  }
+
+  function ensurePokemonFields(p) {
+    if (!p) return p;
+    if (!p.uid) p.uid = "pk_" + Date.now() + "_" + Math.floor(Math.random() * 99999);
+    if (typeof p.xp !== "number") p.xp = typeof p.exp === "number" ? p.exp : 0;
+    if (typeof p.xpToNext !== "number") p.xpToNext = 20;
+    if (!Array.isArray(p.traits) || p.traits.length === 0) {
+      p.traits = pickTraitsForSeed((p.id || 25) + (p.level || 1));
+    }
+    if (typeof p.generation !== "number") p.generation = p.isHybrid ? 1 : 0;
+    if (typeof p.breakthroughStage !== "number") p.breakthroughStage = 0;
+    if (typeof p.breedAfterStep !== "number") p.breedAfterStep = 0;
+    if (!p.art) p.art = getDefaultArtForPokemon(p);
+    return p;
+  }
+
   function createPokemonInstance(catId, customLv = null, isStarter = false) {
-    const cat = DATA.pokemonCatalog.find((p) => p.id === catId) || DATA.pokemonCatalog[0];
-    const lv = customLv !== null ? customLv : cat.minLv;
+    const cat = DATA.pokemonCatalog.find((p) => p.id === catId || p.speciesKey === catId) || DATA.pokemonCatalog[0];
+    const lv = customLv !== null ? customLv : cat.minLv || 1;
+    const traits = pickTraitsForSeed((cat.id || 25) * 13 + lv, cat.traits);
+    const hasHearty = traits.includes("hearty");
+    const hasSturdy = traits.includes("sturdy");
+    const hasRadiant = traits.includes("radiant");
+    const traitHp = (hasHearty ? 8 : 0) + (hasSturdy ? 4 : 0);
+    const traitAtk = hasRadiant ? 2 : 0;
+    const traitDef = (hasSturdy ? 3 : 0) + (hasRadiant ? 2 : 0);
+
     // 主角初始寶可夢剛領取時為 Lv.1（未受訓初階狀態），必須先去國語/數學道館訓練才能打贏野外怪獸！
     if (isStarter) {
-      return {
+      const startHp = cat.baseHp + Math.round(traitHp * 0.5);
+      return ensurePokemonFields({
         uid: "pk_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
         id: cat.id,
         id4: cat.id4,
+        speciesKey: cat.speciesKey || `sp_${cat.id}`,
         name: cat.name,
         enName: cat.enName,
         type: cat.type,
-        typeEn: cat.typeEn,
-        typeColor: cat.typeColor,
+        typeEn: cat.typeEn || "NORMAL",
+        typeColor: cat.typeColor || "#f3d363",
         level: 1,
-        maxHp: cat.baseHp,
-        hp: cat.baseHp,
-        atk: cat.baseAtk,
-        def: cat.baseDef,
+        xp: 0,
+        xpToNext: 20,
+        maxHp: startHp,
+        hp: startHp,
+        atk: cat.baseAtk + traitAtk,
+        def: cat.baseDef + traitDef,
         atkTrained: 0,
         defTrained: 0,
+        traits,
+        generation: cat.generation || 0,
+        isHybrid: Boolean(cat.isHybrid),
+        breakthroughStage: 0,
+        breedAfterStep: 0,
+        art: cat.art || getDefaultArtForPokemon(cat),
         basicMove: cat.basicMove || "撞擊",
         specialMove: cat.move || "十萬伏特",
         maxAttackPp: 35,
         attackPp: 35,
         maxSpecialPp: cat.specialPp || 25,
         specialPp: cat.specialPp || 25
-      };
+      });
     }
-    // 野生或收服後的寶可夢依等級計算加上玩家目前的道館加成
-    const scale = 1 + (lv - cat.minLv) * 0.08;
+
+    // 野生或收服後的寶可夢依等級計算加上玩家目前的道館加成與特性加成
+    const scale = 1 + Math.max(0, lv - (cat.minLv || 1)) * 0.08;
     const bonusAtk = state ? Math.round((state.atkBonus || 0) * 0.6) : 0;
     const bonusDef = state ? Math.round((state.defBonus || 0) * 0.6) : 0;
-    const maxHp = Math.round(cat.baseHp * scale) + bonusDef * 2;
-    return {
+    const maxHp = Math.round(cat.baseHp * scale) + bonusDef * 2 + traitHp;
+    return ensurePokemonFields({
       uid: "pk_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
       id: cat.id,
       id4: cat.id4,
+      speciesKey: cat.speciesKey || `sp_${cat.id}`,
       name: cat.name,
       enName: cat.enName,
       type: cat.type,
-      typeEn: cat.typeEn,
-      typeColor: cat.typeColor,
+      typeEn: cat.typeEn || "NORMAL",
+      typeColor: cat.typeColor || "#6fa66a",
       level: lv,
+      xp: 0,
+      xpToNext: 20,
       maxHp: maxHp,
       hp: maxHp,
-      atk: Math.round(cat.baseAtk * scale) + bonusAtk,
-      def: Math.round(cat.baseDef * scale) + bonusDef,
+      atk: Math.round(cat.baseAtk * scale) + bonusAtk + traitAtk,
+      def: Math.round(cat.baseDef * scale) + bonusDef + traitDef,
       atkTrained: bonusAtk,
       defTrained: bonusDef,
+      traits,
+      generation: cat.generation || 0,
+      isHybrid: Boolean(cat.isHybrid),
+      breakthroughStage: 0,
+      breedAfterStep: 0,
+      art: cat.art || getDefaultArtForPokemon(cat),
       basicMove: cat.basicMove || "撞擊",
       specialMove: cat.move || "特殊招式",
       maxAttackPp: 35,
       attackPp: 35,
       maxSpecialPp: cat.specialPp || 20,
       specialPp: cat.specialPp || 20
+    });
+  }
+
+  function addJournalEntry(text) {
+    if (!state.journal) state.journal = [];
+    state.journal.unshift(`${formatNowTime().split(" ")[1] || ""} ${text}`);
+    state.journal = state.journal.slice(0, 20);
+  }
+
+  function getCoinMultiplier() {
+    const amuletCount = (state && state.items && state.items["amulet-coin"]) || 0;
+    return 1 + amuletCount * 0.5;
+  }
+
+  function getExpMultiplier(poke) {
+    const hasCurious = poke && Array.isArray(poke.traits) && poke.traits.includes("curious");
+    const luckyEggs = (state && state.items && state.items["lucky-egg"]) || 0;
+    return (hasCurious ? 1.25 : 1.0) + luckyEggs * 0.25;
+  }
+
+  // 為商店與背包道具產生精緻像素/向量 SVG 圖示（當離線或外部圖片載入失敗時亦可呈現高質感圖示）
+  function getItemFallbackSvgUrl(it) {
+    const id = (it && it.id) || "poke-ball";
+    let bodySvg = "";
+    if (id === "rare-candy" || id === "exp-candy-s" || id === "exp-candy-l") {
+      const c1 = id === "exp-candy-l" ? "#f472b6" : id === "exp-candy-s" ? "#c084fc" : "#60a5fa";
+      const c2 = id === "exp-candy-l" ? "#db2777" : id === "exp-candy-s" ? "#7e22ce" : "#2563eb";
+      bodySvg = `
+        <polygon points="6,20 14,14 14,26" fill="${c1}" stroke="#1e293b" stroke-width="2"/>
+        <polygon points="34,12 26,18 26,6" fill="${c1}" stroke="#1e293b" stroke-width="2"/>
+        <circle cx="20" cy="16" r="8" fill="${c1}" stroke="#1e293b" stroke-width="2"/>
+        <path d="M15,13 Q20,10 24,15" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <circle cx="22" cy="18" r="2.5" fill="${c2}"/>
+      `;
+    } else if (id === "lucky-egg") {
+      bodySvg = `
+        <ellipse cx="20" cy="17" rx="9" ry="11.5" fill="#f8fafc" stroke="#1e293b" stroke-width="2"/>
+        <ellipse cx="18" cy="14" rx="5" ry="7" fill="#ffffff"/>
+        <path d="M14,21 Q20,25 26,20" stroke="#cbd5e1" stroke-width="2" fill="none"/>
+      `;
+    } else if (id === "amulet-coin") {
+      bodySvg = `
+        <path d="M15,10 Q20,3 25,10" stroke="#ef4444" stroke-width="2.2" fill="none"/>
+        <rect x="13" y="10" width="14" height="17" rx="7" fill="#facc15" stroke="#1e293b" stroke-width="2"/>
+        <rect x="16" y="13" width="4" height="8" rx="2" fill="#fef08a"/>
+        <circle cx="20" cy="13" r="1.6" fill="#78350f"/>
+      `;
+    } else if (id === "sweet-honey") {
+      bodySvg = `
+        <rect x="11" y="11" width="18" height="16" rx="5" fill="#f59e0b" stroke="#1e293b" stroke-width="2"/>
+        <ellipse cx="20" cy="10" rx="8" ry="3.5" fill="#fef08a" stroke="#1e293b" stroke-width="2"/>
+        <ellipse cx="20" cy="10" rx="5" ry="2" fill="#93c5fd"/>
+        <path d="M14,16 Q20,19 26,16" stroke="#fde047" stroke-width="2.5" fill="none"/>
+      `;
+    } else if (id === "evo-stone") {
+      bodySvg = `
+        <polygon points="20,4 29,12 26,26 14,28 11,14" fill="#bef264" stroke="#1e293b" stroke-width="2"/>
+        <polygon points="20,7 26,13 20,24 15,15" fill="#ecfccb"/>
+        <circle cx="18" cy="13" r="2" fill="#ffffff"/>
+      `;
+    } else if (id === "master-ball" || id === "poke-ball" || id === "great-ball" || id === "ultra-ball") {
+      const topFill = id === "master-ball" ? "#9333ea" : id === "great-ball" ? "#2563eb" : id === "ultra-ball" ? "#334155" : "#ef4444";
+      const accent = id === "master-ball" ? "#f472b6" : id === "great-ball" ? "#ef4444" : id === "ultra-ball" ? "#facc15" : "#ef4444";
+      bodySvg = `
+        <circle cx="20" cy="16" r="11" fill="#ffffff" stroke="#1e293b" stroke-width="2"/>
+        <path d="M9,16 A11,11 0 0,1 31,16 Z" fill="${topFill}" stroke="#1e293b" stroke-width="2"/>
+        <circle cx="13" cy="10" r="2.5" fill="${accent}"/>
+        <circle cx="27" cy="10" r="2.5" fill="${accent}"/>
+        <line x1="9" y1="16" x2="31" y2="16" stroke="#1e293b" stroke-width="2.5"/>
+        <circle cx="20" cy="16" r="3.5" fill="#ffffff" stroke="#1e293b" stroke-width="2"/>
+      `;
+    } else {
+      bodySvg = `
+        <rect x="13" y="7" width="14" height="20" rx="4" fill="${(it && it.color) || "#a855f7"}" stroke="#1e293b" stroke-width="2"/>
+        <rect x="16" y="4" width="8" height="4" rx="1" fill="#e2e8f0" stroke="#1e293b" stroke-width="1.8"/>
+        <rect x="16" y="12" width="8" height="8" rx="2" fill="#ffffff" opacity="0.85"/>
+      `;
+    }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 34">${bodySvg}</svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+  // 寶可夢獲得經驗值與升級邏輯 (參考 infinite-pokemon world.ts + 幸運蛋倍率 + 階段突破)
+  function gainPokemonExp(poke, rawExp, showBattleBanner = false) {
+    if (!poke) return { leveledUp: false, levelsGained: 0 };
+    ensurePokemonFields(poke);
+    const mult = getExpMultiplier(poke);
+    const expGain = Math.max(1, Math.round(rawExp * mult));
+    poke.xp = (poke.xp || 0) + expGain;
+
+    let levelsGained = 0;
+    let totalHpGain = 0;
+    let totalAtkGain = 0;
+    let totalDefGain = 0;
+    let breakthroughMsg = "";
+
+    while (poke.xp >= (poke.xpToNext || 20)) {
+      poke.xp -= poke.xpToNext || 20;
+      poke.level += 1;
+      levelsGained += 1;
+
+      const hpUp = 5 + (poke.isHybrid ? 2 : 0);
+      const atkUp = 3 + (poke.isHybrid ? 1 : 0);
+      const defUp = 3 + (poke.isHybrid ? 1 : 0);
+
+      poke.maxHp += hpUp;
+      poke.hp = Math.min(poke.maxHp, poke.hp + hpUp + 4);
+      poke.atk += atkUp;
+      poke.def += defUp;
+
+      totalHpGain += hpUp;
+      totalAtkGain += atkUp;
+      totalDefGain += defUp;
+
+      const evolved = tryLevelEvolution(poke);
+      if (evolved) breakthroughMsg = `✨ ${evolved.previousName} → ${evolved.name}！達到官方等級進化條件。`;
+    }
+
+    if (levelsGained > 0) {
+      SFX.playLevelUp();
+      addJournalEntry(`⬆️ 【${poke.name}】升上了 Lv.${poke.level}！（HP+${totalHpGain} · ATK+${totalAtkGain} · DEF+${totalDefGain}）`);
+      if (showBattleBanner) {
+        const banner = document.getElementById("battleLevelUpBanner");
+        if (banner) {
+          banner.style.display = "block";
+          banner.innerHTML = `
+            <div style="font-size:2.6cqw;font-weight:900;">🎉 LEVEL UP！${poke.name} 升至 Lv.${poke.level}！</div>
+            <div style="font-size:2cqw;font-weight:800;margin-top:0.3cqw;">
+              ❤️ 最大HP +${totalHpGain} ｜ ⚔️ 攻擊力 +${totalAtkGain} ｜ 🛡️ 防禦力 +${totalDefGain}
+            </div>
+            ${breakthroughMsg ? `<div style="font-size:1.85cqw;color:#7e22ce;font-weight:900;margin-top:0.3cqw;">${breakthroughMsg}</div>` : ""}
+          `;
+          setTimeout(() => {
+            banner.style.display = "none";
+          }, 3000);
+        }
+      }
+    }
+
+    return {
+      leveledUp: levelsGained > 0,
+      levelsGained,
+      expGain,
+      totalHpGain,
+      totalAtkGain,
+      totalDefGain,
+      breakthroughMsg
     };
   }
+
+  const SAVE_SLOT_KEYS = [
+    "G3_POKEMON_WILLOW_SLOT_1",
+    "G3_POKEMON_WILLOW_SLOT_2",
+    "G3_POKEMON_WILLOW_SLOT_3"
+  ];
 
   function getDefaultState() {
     return {
@@ -245,14 +649,27 @@
       x: 16,
       y: 12,
       facing: "south",
+      steps: 0,
       activeIndex: 0,
       party: [],
       storage: [],
       caughtIds: [],
+      customSpecies: [],      // 培育屋合成出的新寶可夢物種
+      egg: null,              // 培育屋正在孵化的合成蛋 { parentNames, stepsRemaining, childSpecies }
+      defeatedTrainers: [],   // 已擊敗的路線訓練家
+      defeatedGuardians: [],  // 已擊敗的路標石守護者
+      journal: ["歡迎來到若葉鎮！先前往國語與數學道館特訓，讓寶可夢依照等級進化！"],
       visitedRegions: ["0,0"],
-      collectedChests: [], // 已開啟的寶箱 ID
-      coins: 150,          // 初始金幣 ₽150
+      collectedChests: [],    // 已開啟的寶箱 ID
+      coins: 150,             // 初始金幣 ₽150
+      shopPurchased: {},      // 記錄各商店道具今日已購買次數
       items: {
+        "rare-candy": 0,
+        "lucky-egg": 0,
+        "amulet-coin": 0,
+        "sweet-honey": 0,
+        "evo-stone": 0,
+        "master-ball": 0,
         "poke-ball": 5,
         "great-ball": 1,
         "ultra-ball": 0,
@@ -263,7 +680,9 @@
         "ether": 1,
         "repel": 0,
         "power-charm": 0,
-        "guard-charm": 0
+        "guard-charm": 0,
+        "exp-candy-s": 2,     // 初始贈送 2 顆經驗糖果 S 讓學生體驗升級！
+        "exp-candy-l": 0
       },
       ownedBicycle: false,
       ridingBicycle: false,
@@ -273,28 +692,94 @@
       chineseScore: 0,
       mathScore: 0,
       completedQuestions: [],
-      badges: { chinese: false, math: false }
+      badges: { chinese: false, math: false },
+      lastSavedAt: "尚未存檔"
     };
   }
 
   let state = loadGame();
 
-  function loadGame() {
+  function loadGame(customKey = SAVE_KEY) {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      const raw = localStorage.getItem(customKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.initialized && Array.isArray(parsed.party) && parsed.party.length > 0) {
-          return Object.assign(getDefaultState(), parsed);
+          const merged = Object.assign(getDefaultState(), parsed);
+          merged.items = Object.assign(getDefaultState().items, parsed.items || {});
+          merged.shopPurchased = Object.assign({}, parsed.shopPurchased || {});
+          merged.party = (merged.party || []).map(ensurePokemonFields);
+          merged.storage = (merged.storage || []).map(ensurePokemonFields);
+          return merged;
         }
       }
     } catch (e) {}
     return getDefaultState();
   }
 
-  function saveGame() {
+  function formatNowTime() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function saveGame(showManualToast = false) {
     try {
+      state.lastSavedAt = formatNowTime();
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      const badge = document.getElementById("saveStatusBadge");
+      if (badge) {
+        const shortTime = state.lastSavedAt.split(" ")[1] || state.lastSavedAt;
+        badge.textContent = `💾 已存檔 ${shortTime}`;
+      }
+      if (showManualToast) {
+        SFX.playHeal();
+        showToast(`💾 進度已成功儲存！（${state.lastSavedAt}）`);
+      }
+    } catch (e) {}
+  }
+
+  function saveToSlot(slotIdx) {
+    const key = SAVE_SLOT_KEYS[slotIdx];
+    if (!key) return;
+    try {
+      state.lastSavedAt = formatNowTime();
+      localStorage.setItem(key, JSON.stringify(state));
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      SFX.playHeal();
+      updateAllHUD();
+      showToast(`💾 已將【${state.trainerName}】的冒險進度存入「存檔槽 ${slotIdx + 1}」！`);
+    } catch (e) {}
+  }
+
+  function loadFromSlot(slotIdx) {
+    const key = SAVE_SLOT_KEYS[slotIdx];
+    if (!key) return false;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.initialized && Array.isArray(parsed.party) && parsed.party.length > 0) {
+        state = Object.assign(getDefaultState(), parsed);
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        camX = state.x * TILE_SIZE;
+        camY = state.y * TILE_SIZE;
+        SFX.playHeal();
+        updateAllHUD();
+        showToast(`📂 已成功讀取「存檔槽 ${slotIdx + 1}」— 訓練家【${state.trainerName}】的進度！`);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function deleteSlot(slotIdx) {
+    const key = SAVE_SLOT_KEYS[slotIdx];
+    if (!key) return;
+    try {
+      localStorage.removeItem(key);
+      SFX.playClick();
+      showToast(`🗑️ 已清除「存檔槽 ${slotIdx + 1}」的紀錄。`);
     } catch (e) {}
   }
 
@@ -666,6 +1151,22 @@
     // 繪製四方出口路標提示
     drawExitIndicators(ctx, reg, sx, sy);
 
+    // 若平板/觸控點選了地面目標點，繪製目標引導光圈
+    if (walkTarget && walkTarget.regionId === state.regionId) {
+      const tx = walkTarget.x * TILE_SIZE + 8 - sx;
+      const ty = walkTarget.y * TILE_SIZE + 8 - sy;
+      const pulse = 5 + Math.sin(animTick * 0.25) * 2;
+      ctx.save();
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tx, ty, pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(250, 204, 21, 0.32)";
+      ctx.fill();
+      ctx.restore();
+    }
+
     // 繪製主角訓練家 (使用新生成的 assets/trainer.png)
     drawPlayerTrainer(ctx, state.x * TILE_SIZE + 8 - sx, state.y * TILE_SIZE + 12 - sy);
 
@@ -747,7 +1248,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // 6. 角色移動、地圖切換、碰撞與互動系統 (Move & Interact)
+  // 6. 角色移動、平板觸控尋路、地圖切換、碰撞與互動系統 (Move & Interact)
   // --------------------------------------------------------------------------
   const DIR_DELTAS = {
     north: [0, -1],
@@ -755,6 +1256,105 @@
     west: [-1, 0],
     east: [1, 0]
   };
+
+  let walkTarget = null;
+  let autoWalkInterval = null;
+
+  function stopAutoWalk() {
+    walkTarget = null;
+    if (autoWalkInterval) {
+      clearInterval(autoWalkInterval);
+      autoWalkInterval = null;
+    }
+  }
+
+  function startAutoWalkTo(gx, gy, interactObj = null) {
+    if (isAnyModalOpen()) return;
+    walkTarget = {
+      regionId: state.regionId,
+      x: Math.max(-1, Math.min(MAP_COLS, gx)),
+      y: Math.max(-1, Math.min(MAP_ROWS, gy)),
+      interactObj
+    };
+    if (autoWalkInterval) clearInterval(autoWalkInterval);
+    stepTowardWalkTarget();
+    if (walkTarget) {
+      autoWalkInterval = setInterval(stepTowardWalkTarget, state.ridingBicycle ? 95 : 135);
+    }
+  }
+
+  function stepTowardWalkTarget() {
+    if (!walkTarget || isAnyModalOpen() || walkTarget.regionId !== state.regionId) {
+      stopAutoWalk();
+      return;
+    }
+    const dx = walkTarget.x - state.x;
+    const dy = walkTarget.y - state.y;
+    const dist = Math.abs(dx) + Math.abs(dy);
+
+    // 若已抵達目標點，或已走到目標互動物件旁邊
+    if (dist === 0 || (walkTarget.interactObj && dist <= 1)) {
+      const obj = walkTarget.interactObj;
+      if (dx !== 0 || dy !== 0) {
+        state.facing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "east" : "west") : (dy > 0 ? "south" : "north");
+      }
+      stopAutoWalk();
+      if (obj) {
+        triggerObjectInteraction(obj);
+      }
+      updateContextBar();
+      return;
+    }
+
+    const reg = getCurrentRegion();
+    const primaryDir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "east" : "west") : (dy > 0 ? "south" : "north");
+    const secondaryDir =
+      Math.abs(dx) >= Math.abs(dy)
+        ? dy !== 0
+          ? dy > 0
+            ? "south"
+            : "north"
+          : null
+        : dx !== 0
+        ? dx > 0
+          ? "east"
+          : "west"
+        : null;
+
+    const canStep = (dir) => {
+      if (!dir) return false;
+      const [sx, sy] = DIR_DELTAS[dir];
+      const nx = state.x + sx;
+      const ny = state.y + sy;
+      if (nx < 0 || nx >= MAP_COLS || ny < 0 || ny >= MAP_ROWS) return true; // 出口
+      const isDoor = (reg.objects || []).some((o) => o.kind === "door" && o.x === nx && o.y === ny);
+      if (isDoor) return true;
+      return !isSolidTile(reg, nx, ny);
+    };
+
+    const prevX = state.x;
+    const prevY = state.y;
+
+    if (canStep(primaryDir)) {
+      movePlayer(primaryDir, true);
+    } else if (secondaryDir && canStep(secondaryDir)) {
+      movePlayer(secondaryDir, true);
+    } else {
+      // 若被障礙物擋住但目標是互動物件且距離 <= 2，直接觸發互動
+      if (walkTarget && walkTarget.interactObj && dist <= 2) {
+        const obj = walkTarget.interactObj;
+        stopAutoWalk();
+        triggerObjectInteraction(obj);
+        return;
+      }
+      stopAutoWalk();
+      return;
+    }
+
+    if (state.x === prevX && state.y === prevY) {
+      stopAutoWalk();
+    }
+  }
 
   function isAnyModalOpen() {
     return (
@@ -815,8 +1415,14 @@
     return null;
   }
 
-  function movePlayer(dir) {
-    if (isAnyModalOpen()) return;
+  function movePlayer(dir, fromAutoWalk = false) {
+    if (isAnyModalOpen()) {
+      stopAutoWalk();
+      return;
+    }
+    if (!fromAutoWalk) {
+      stopAutoWalk();
+    }
     state.facing = dir;
     const [dx, dy] = DIR_DELTAS[dir] || [0, 0];
     const nx = state.x + dx;
@@ -825,18 +1431,22 @@
 
     // 檢查是否走出地圖邊界（切換至相鄰的 5 大地圖）
     if (nx < 0 && reg.exits && reg.exits.west) {
+      stopAutoWalk();
       travelToRegion(reg.exits.west.target, reg.exits.west.x, reg.exits.west.y);
       return;
     }
     if (nx >= MAP_COLS && reg.exits && reg.exits.east) {
+      stopAutoWalk();
       travelToRegion(reg.exits.east.target, reg.exits.east.x, reg.exits.east.y);
       return;
     }
     if (ny < 0 && reg.exits && reg.exits.north) {
+      stopAutoWalk();
       travelToRegion(reg.exits.north.target, reg.exits.north.x, reg.exits.north.y);
       return;
     }
     if (ny >= MAP_ROWS && reg.exits && reg.exits.south) {
+      stopAutoWalk();
       travelToRegion(reg.exits.south.target, reg.exits.south.x, reg.exits.south.y);
       return;
     }
@@ -844,6 +1454,7 @@
     // 檢查是否踏入建築大門
     const doorObj = (reg.objects || []).find((o) => o.kind === "door" && o.x === nx && o.y === ny);
     if (doorObj) {
+      stopAutoWalk();
       state.x = nx;
       state.y = ny;
       triggerObjectInteraction(doorObj);
@@ -858,22 +1469,207 @@
 
     state.x = nx;
     state.y = ny;
+    state.steps = (state.steps || 0) + 1;
     SFX.playStep();
 
     if (state.repelSteps > 0) {
       state.repelSteps--;
     }
 
+    // 培育屋合成蛋步數孵化推進 (參考 infinite-pokemon world.ts stepEgg)
+    if (stepEggHatch()) {
+      saveGame();
+      updateAllHUD();
+      return;
+    }
+
     // 檢查是否踏入深草叢 (tile === 3) 觸發野生寶可夢遭遇戰
     const steppedTile = reg.tiles[ny * MAP_COLS + nx];
     if (steppedTile === 3 && state.repelSteps <= 0) {
       if (Math.random() < 0.24) {
+        stopAutoWalk();
         startWildEncounter(reg.id);
       }
     }
 
     saveGame();
-    updateContextBar();
+    updateAllHUD();
+  }
+
+  // --------------------------------------------------------------------------
+  // 培育屋合成演算法與孵蛋系統 (參考 infinite-pokemon game/engine/content.ts)
+  // --------------------------------------------------------------------------
+  let nurserySelA = null;
+  let nurserySelB = null;
+  let nurseryCustomName = "";
+
+  function buildSynthesizedSpecies(parentA, parentB, customName = "") {
+    ensurePokemonFields(parentA);
+    ensurePokemonFields(parentB);
+
+    // 結合雙親中文名稱與英文名稱 (例如：皮卡丘 + 噴火龍 => 皮卡火龍)
+    const nameA = parentA.name.replace(/·.*$/, "").trim();
+    const nameB = parentB.name.replace(/·.*$/, "").trim();
+    const prefix = nameA.slice(0, Math.max(1, Math.ceil(nameA.length / 2)));
+    const suffix = nameB.slice(Math.floor(nameB.length / 2));
+    const defaultZhName = (prefix + suffix === nameA || prefix + suffix === nameB)
+      ? `${nameA.slice(0, 2)}${nameB.slice(-1)}獸`
+      : `${prefix}${suffix}`;
+    const finalName = (customName && customName.trim()) ? customName.trim() : defaultZhName;
+
+    const enA = (parentA.enName || "Pika").slice(0, 4);
+    const enB = (parentB.enName || "drake").slice(-4).toLowerCase();
+    const enName = `${enA}${enB}`;
+
+    // 雙屬性融合
+    const typesArr = Array.from(
+      new Set(
+        [parentA.type, parentB.type]
+          .join(" / ")
+          .split("/")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    ).slice(0, 2);
+    const combinedType = typesArr.join(" / ") || "一般";
+
+    // 繼承雙親特性 (最多 2 個) + 世代計算
+    const combinedTraits = Array.from(
+      new Set([...(parentA.traits || []), ...(parentB.traits || []), "radiant"])
+    ).slice(0, 2);
+    const generation = 1 + Math.max(parentA.generation || 0, parentB.generation || 0);
+
+    // 結合雙親像素外型特徵 (form 來自親代 A，配色、翅膀、角、花紋融合雙親)
+    const artA = parentA.art || getDefaultArtForPokemon(parentA);
+    const artB = parentB.art || getDefaultArtForPokemon(parentB);
+    const patterns = ["stripes", "spots", "crest"];
+    const childArt = {
+      form: artA.form || "quadruped",
+      primary: artA.primary || parentA.typeColor || "#6fa66a",
+      accent: artB.accent !== artA.primary ? (artB.primary || artB.accent || "#f5cf6b") : "#fde047",
+      pattern: patterns[(generation + (parentA.level || 5) + (parentB.level || 5)) % patterns.length],
+      horns: Boolean(artA.horns || artB.horns || generation >= 2),
+      wings: Boolean(artA.wings || artB.wings || combinedType.includes("飛") || combinedType.includes("龍") || combinedType.includes("火"))
+    };
+
+    // 合成後代初始等級與繼承能力值加成
+    const childLv = Math.max(5, Math.round(((parentA.level || 5) + (parentB.level || 5)) * 0.55));
+    const inheritedHp = Math.round(((parentA.maxHp || 40) + (parentB.maxHp || 40)) * 0.58) + generation * 8;
+    const inheritedAtk = Math.round(((parentA.atk || 15) + (parentB.atk || 15)) * 0.58) + generation * 4;
+    const inheritedDef = Math.round(((parentA.def || 14) + (parentB.def || 14)) * 0.58) + generation * 4;
+
+    const moveA = parentA.specialMove || "十萬伏特";
+    const moveB = parentB.specialMove || "噴射火焰";
+    const hybridMove = moveA === moveB ? `${moveA}・極` : `${moveA.slice(0, 2)}${moveB.slice(-2)}`;
+
+    const hybridId = 1000 + ((state.customSpecies ? state.customSpecies.length : 0) + 1);
+    return {
+      id: hybridId,
+      id4: String(hybridId).padStart(4, "0"),
+      speciesKey: `hybrid-${parentA.speciesKey || parentA.id}-${parentB.speciesKey || parentB.id}-g${generation}`,
+      name: finalName,
+      enName,
+      type: combinedType,
+      typeEn: parentA.typeEn || "NORMAL",
+      typeColor: childArt.primary,
+      regionId: state.regionId || "0,0",
+      minLv: childLv,
+      baseHp: inheritedHp,
+      baseAtk: inheritedAtk,
+      baseDef: inheritedDef,
+      move: hybridMove,
+      basicMove: parentB.basicMove || parentA.basicMove || "神速撞擊",
+      specialPp: 22,
+      traits: combinedTraits,
+      generation,
+      isHybrid: true,
+      customSprite: true,
+      parentNames: [parentA.name, parentB.name],
+      art: childArt,
+      desc: `【第 ${generation} 代培育屋合成寶可夢】由親代【${parentA.name}】與【${parentB.name}】跨種合成誕生！兼備雙親的屬性、特性與道館修練潛能！`
+    };
+  }
+
+  function hatchCurrentEgg() {
+    if (!state.egg || !state.egg.childSpecies) return null;
+    const sp = state.egg.childSpecies;
+    if (!state.customSpecies) state.customSpecies = [];
+    if (!state.customSpecies.some((c) => c.id === sp.id)) {
+      state.customSpecies.push(sp);
+    }
+    if (!state.caughtIds.includes(sp.id)) {
+      state.caughtIds.push(sp.id);
+    }
+
+    const childPoke = ensurePokemonFields({
+      uid: "pk_hybrid_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
+      id: sp.id,
+      id4: sp.id4,
+      speciesKey: sp.speciesKey,
+      name: sp.name,
+      enName: sp.enName,
+      type: sp.type,
+      typeEn: sp.typeEn,
+      typeColor: sp.typeColor,
+      level: sp.minLv || 5,
+      xp: 0,
+      xpToNext: 20,
+      maxHp: sp.baseHp,
+      hp: sp.baseHp,
+      atk: sp.baseAtk,
+      def: sp.baseDef,
+      atkTrained: Math.round((state.atkBonus || 0) * 0.5),
+      defTrained: Math.round((state.defBonus || 0) * 0.5),
+      traits: sp.traits || ["radiant", "bold"],
+      generation: sp.generation || 1,
+      isHybrid: true,
+      customSprite: true,
+      parentNames: sp.parentNames || [],
+      breakthroughStage: 1,
+      breedAfterStep: (state.steps || 0) + 20,
+      art: sp.art,
+      basicMove: sp.basicMove || "神速撞擊",
+      specialMove: sp.move || "雙重星爆",
+      maxAttackPp: 35,
+      attackPp: 35,
+      maxSpecialPp: 22,
+      specialPp: 22
+    });
+
+    const inParty = state.party.length < 6;
+    if (inParty) {
+      state.party.push(childPoke);
+    } else {
+      state.storage.push(childPoke);
+    }
+
+    state.egg = null;
+    SFX.playHatch();
+    addJournalEntry(`🐣 合成蛋孵化成功！誕生了第 ${childPoke.generation} 代合成獸【${childPoke.name} Lv.${childPoke.level}】！`);
+    saveGame();
+    updateAllHUD();
+    return { childPoke, inParty };
+  }
+
+  function stepEggHatch() {
+    if (!state.egg) return false;
+    state.egg.stepsRemaining = Math.max(0, (state.egg.stepsRemaining || 1) - 1);
+    if (state.egg.stepsRemaining > 0) return false;
+
+    const res = hatchCurrentEgg();
+    if (res && res.childPoke) {
+      const p = res.childPoke;
+      openDialogueModal(
+        `🐣 喀嚓！培育屋合成蛋孵化了！`,
+        `恭喜你！由【${(p.parentNames || []).join(" × ")}】合成的精靈蛋成功孵化出第 ${p.generation} 代合成寶可夢——\n\n✨ 【${p.name} · Lv.${p.level}】（${p.type}系）\n⚔️ 攻擊力：${p.atk} ｜ 🛡️ 防禦力：${p.def} ｜ ❤️ HP：${p.maxHp}\n🌟 融合絕招：${p.specialMove} ｜ 已加入你的${res.inParty ? "隨身出戰隊伍" : "電腦倉庫"}！`,
+        [
+          { label: "🐾 查看寶可夢隊伍", onClick: () => openMenuModal("party") },
+          { label: "🧬 繼續合成新寶可夢", onClick: () => openMenuModal("nursery") }
+        ]
+      );
+      return true;
+    }
+    return false;
   }
 
   function travelToRegion(targetRegionId, spawnX = null, spawnY = null) {
@@ -904,7 +1700,7 @@
   function triggerObjectInteraction(obj) {
     if (!obj) obj = getFacingObject();
     if (!obj) {
-      showToast("💡 請走到道館大門、寶可夢商店、寶箱或 NPC 旁再按 E 互動！");
+      showToast("💡 請走到道館大門、培育屋飼育員、訓練家、寶箱或路標石旁再按 E / A 互動！");
       return;
     }
 
@@ -935,6 +1731,7 @@
       if (obj.bonusItem) {
         state.items[obj.bonusItem] = (state.items[obj.bonusItem] || 0) + (obj.bonusCount || 1);
       }
+      addJournalEntry(`🎁 開啟了【${obj.name}】，獲得 ₽${coinGain}！`);
       saveGame();
       updateAllHUD();
       openDialogueModal(
@@ -959,13 +1756,47 @@
         openDialogueModal(obj.name, obj.text, [
           { label: "🏪 開啟寶可夢商店購買道具", onClick: () => openMenuModal("shop") }
         ]);
+      } else if (obj.role === "breeder") {
+        openDialogueModal(obj.name, obj.text, [
+          { label: "🧬 開啟培育屋（寶可夢跨種合成與孵蛋）", onClick: () => openMenuModal("nursery") }
+        ]);
+      } else if (obj.role === "trainer") {
+        const trainerKey = `${state.regionId}:${obj.id}`;
+        const alreadyWon = (state.defeatedTrainers || []).includes(trainerKey);
+        openDialogueModal(
+          `⚔️ ${obj.name} ${alreadyWon ? "（✅ 已擊敗過）" : "（🔥 路線訓練家挑戰）"}`,
+          `${obj.text}\n\n💡 擊敗路線訓練家可獲得豐厚獎金（₽）、傷藥補給與大量戰鬥經驗值（EXP）！要與我進行寶可夢對戰嗎？`,
+          [
+            {
+              label: `⚔️ 與 ${obj.name.split(" ")[0]} 進行訓練家對戰！`,
+              onClick: () => startTrainerBattle(obj)
+            }
+          ]
+        );
       } else {
         openDialogueModal(obj.name, obj.text);
       }
       return;
     }
 
-    if (obj.kind === "sign" || obj.kind === "waystone" || obj.kind === "fence") {
+    if (obj.kind === "waystone") {
+      SFX.playClick();
+      const guardianKey = `${state.regionId}:${obj.id}`;
+      const defeated = (state.defeatedGuardians || []).includes(guardianKey);
+      openDialogueModal(
+        `🗿 ${obj.name || "古老路標石"} ${defeated ? "（👑 已擊敗守護者）" : "（⚡ 可召喚石碑守護者 BOSS）"}`,
+        `${obj.text || getCurrentRegion().description}\n\n✨ 石碑中沉睡著本區域的【遠古守護者寶可夢】！挑戰成功可獲得高額金幣 ₽120+、經驗糖果 S 與大量升級經驗值 EXP！`,
+        [
+          {
+            label: "⚡ 召喚並挑戰【石碑守護者 BOSS】！",
+            onClick: () => startGuardianBattle(obj)
+          }
+        ]
+      );
+      return;
+    }
+
+    if (obj.kind === "sign" || obj.kind === "fence") {
       SFX.playClick();
       openDialogueModal(obj.name || "路標告示", obj.text || getCurrentRegion().description);
     }
@@ -977,7 +1808,7 @@
     const bodyEl = document.getElementById("menuModalBody");
     titleEl.textContent = title;
     bodyEl.innerHTML = `
-      <p class="dialogue-text" style="font-size:20px;line-height:1.5;color:#1e293b;margin-bottom:16px;">${text}</p>
+      <p class="dialogue-text" style="font-size:20px;line-height:1.5;color:#1e293b;margin-bottom:16px;white-space:pre-line;">${text}</p>
       <div class="button-row" id="dialogueExtraBtns" style="justify-content:flex-end;"></div>
     `;
     const btnRow = document.getElementById("dialogueExtraBtns");
@@ -1002,6 +1833,7 @@
   function healAllParty(showMsg = true) {
     SFX.playHeal();
     state.party.forEach((p) => {
+      ensurePokemonFields(p);
       p.hp = p.maxHp;
       p.attackPp = p.maxAttackPp || 35;
       p.specialPp = p.maxSpecialPp || 25;
@@ -1014,15 +1846,80 @@
   }
 
   // --------------------------------------------------------------------------
-  // 7. GBA 經典回合制對戰與約 60% 機率收服系統 (.gba-battle)
+  // 7. GBA 經典回合制對戰系統 (100% 參考 infinite-pokemon skills-v0.2.0)
+  //    - 支援 3 種對戰模式：野生遭遇戰 (wild)、訓練家對戰 (trainer)、石碑守護者戰 (guardian)
+  //    - 支援 18 屬性相剋倍率 (1.6x 效果絕佳 / 0.7x 效果不佳)、特性加成、PP 耗盡掙扎 (Struggle)
+  //    - 支援對戰勝利獲得 EXP 經驗值、即時升級慶祝橫幅與隊員瀕死自動換人 (resolveFaint)
   // --------------------------------------------------------------------------
   let currentBattle = null;
+
+  function normalizeElementKey(typeStr) {
+    const s = String(typeStr || "").toUpperCase();
+    if (s.includes("ELECTRIC") || s.includes("電")) return "ELECTRIC";
+    if (s.includes("FIRE") || s.includes("火")) return "FIRE";
+    if (s.includes("WATER") || s.includes("水")) return "WATER";
+    if (s.includes("GRASS") || s.includes("草")) return "GRASS";
+    if (s.includes("ROCK") || s.includes("岩")) return "ROCK";
+    if (s.includes("GROUND") || s.includes("地")) return "GROUND";
+    if (s.includes("ICE") || s.includes("冰")) return "ICE";
+    if (s.includes("FLY") || s.includes("飛")) return "FLYING";
+    if (s.includes("BUG") || s.includes("蟲")) return "BUG";
+    if (s.includes("FAIRY") || s.includes("妖")) return "FAIRY";
+    if (s.includes("FIGHT") || s.includes("格鬥")) return "FIGHTING";
+    if (s.includes("DRAGON") || s.includes("龍")) return "DRAGON";
+    if (s.includes("PSYCHIC") || s.includes("超能")) return "PSYCHIC";
+    if (s.includes("STEEL") || s.includes("鋼")) return "STEEL";
+    if (s.includes("DARK") || s.includes("惡") || s.includes("幽靈") || s.includes("毒")) return "DARK";
+    return "NORMAL";
+  }
+
+  function getTypeEffectiveness(attackerType, defenderType) {
+    const atkKey = normalizeElementKey(attackerType);
+    const defKey = normalizeElementKey(defenderType);
+    const chart = (DATA.typeAffinities && DATA.typeAffinities[atkKey]) || { strong: [], weak: [] };
+    if (chart.strong.includes(defKey)) {
+      return { mult: 1.6, label: "🔥 效果絕佳！(1.6x)", color: "#dc2626" };
+    }
+    if (chart.weak.includes(defKey)) {
+      return { mult: 0.7, label: "🛡️ 效果不太好… (0.7x)", color: "#64748b" };
+    }
+    return { mult: 1.0, label: "⚡ 一般相性 (1.0x)", color: "#1e40af" };
+  }
+
+  function playEncounterTransition() {
+    const transEl = document.getElementById("encounterTransition");
+    if (!transEl) return;
+    transEl.style.display = "block";
+    // 重新觸發 CSS 動畫
+    transEl.innerHTML = transEl.innerHTML;
+    SFX.playAttack();
+    setTimeout(() => {
+      transEl.style.display = "none";
+    }, 720);
+  }
+
+  function openBattleWindow(battleConfig, introMessage) {
+    currentBattle = battleConfig;
+    const banner = document.getElementById("battleLevelUpBanner");
+    if (banner) banner.style.display = "none";
+    const moveInfo = document.getElementById("battleMoveInfo");
+    if (moveInfo) moveInfo.style.display = "none";
+
+    playEncounterTransition();
+
+    document.getElementById("gbaBattle").classList.remove("hidden");
+    document.getElementById("battleSubMenu").style.display = "none";
+    document.getElementById("battleMainCommands").style.display = "grid";
+
+    renderBattleHUD();
+    setBattleMessage(introMessage);
+  }
 
   function startWildEncounter(regionId) {
     const lead = getLeadPokemon();
     if (!lead) return;
     const reg = DATA.regions[regionId] || getCurrentRegion();
-    const pool = DATA.pokemonCatalog.filter((p) => p.regionId === regionId);
+    const pool = DATA.pokemonCatalog.filter((p) => p.regionId === regionId && p.id < 900);
     const chosenCat =
       pool.length > 0
         ? pool[Math.floor(Math.random() * pool.length)]
@@ -1030,61 +1927,159 @@
 
     const [minLv, maxLv] = reg.levelRange || [3, 5];
     const enemyLv = minLv + Math.floor(Math.random() * (maxLv - minLv + 1));
-    const scale = 1 + (enemyLv - chosenCat.minLv) * 0.1;
+    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.1;
+    const enemyTraits = pickTraitsForSeed(chosenCat.id * 11 + enemyLv, chosenCat.traits);
 
     const enemy = {
       id: chosenCat.id,
       id4: chosenCat.id4,
       name: chosenCat.name,
+      enName: chosenCat.enName,
       type: chosenCat.type,
+      typeEn: chosenCat.typeEn || "NORMAL",
       level: enemyLv,
-      maxHp: Math.round(chosenCat.baseHp * scale),
-      hp: Math.round(chosenCat.baseHp * scale),
+      maxHp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
+      hp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
       atk: Math.round(chosenCat.baseAtk * scale),
       def: Math.round(chosenCat.baseDef * scale),
+      traits: enemyTraits,
+      art: chosenCat.art || null,
       move: chosenCat.move || "撞擊",
       defeated: false
     };
 
-    currentBattle = {
-      regionId,
-      regionName: reg.name,
-      enemy,
-      busy: false
-    };
-
-    // 播放閃光遭遇過場
-    const transEl = document.getElementById("encounterTransition");
-    transEl.style.display = "block";
-    SFX.playAttack();
-    setTimeout(() => {
-      transEl.style.display = "none";
-    }, 450);
-
-    document.getElementById("gbaBattle").classList.remove("hidden");
-    document.getElementById("battleSubMenu").style.display = "none";
-    document.getElementById("battleMainCommands").style.display = "grid";
-
-    renderBattleHUD();
-
     const untrainedWarning =
       lead.level <= 1 || (lead.atk < reg.recAtk && lead.def < reg.recDef)
-        ? `\n⚠️ 警告：你的【${lead.name} Lv.${lead.level}】(⚔️${lead.atk}/🛡️${lead.def}) 尚未完成足夠的道館訓練，難以戰勝 Lv.${enemy.level} 的對手！`
+        ? `\n⚠️ 警告：你的【${lead.name} Lv.${lead.level}】(⚔️${lead.atk}/🛡️${lead.def}) 尚未完成足夠的道館訓練，建議先回道館特訓！`
         : "";
 
-    setBattleMessage(
-      `🌿 在【${reg.name}】遇到了野生的【${enemy.name} Lv.${enemy.level}】！${untrainedWarning}`
+    openBattleWindow(
+      {
+        kind: "wild",
+        regionId,
+        regionName: reg.name,
+        enemy,
+        busy: false
+      },
+      `🌿 在【${reg.name}】遇到了野生的【${enemy.name} Lv.${enemy.level}】（特性：${enemyTraits.map((t) => (DATA.traits[t]?.name || t).split(" ")[0]).join("/")}）！${untrainedWarning}`
+    );
+  }
+
+  function startTrainerBattle(npcObj) {
+    const lead = getLeadPokemon();
+    if (!lead) return;
+    const reg = getCurrentRegion();
+    const pool = DATA.pokemonCatalog.filter((p) => p.regionId === reg.id && p.id < 900);
+    const chosenCat = pool.length > 0 ? pool[pool.length - 1] : DATA.pokemonCatalog[4];
+    const [, maxLv] = reg.levelRange || [3, 5];
+    const enemyLv = maxLv + 1;
+    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.11;
+    const enemyTraits = ["bold", "sturdy"];
+
+    const enemy = {
+      id: chosenCat.id,
+      id4: chosenCat.id4,
+      name: `${npcObj.name.split(" ")[0]}的${chosenCat.name}`,
+      baseSpeciesId: chosenCat.id,
+      type: chosenCat.type,
+      typeEn: chosenCat.typeEn || "NORMAL",
+      level: enemyLv,
+      maxHp: Math.round(chosenCat.baseHp * scale) + 10,
+      hp: Math.round(chosenCat.baseHp * scale) + 10,
+      atk: Math.round(chosenCat.baseAtk * scale) + 3,
+      def: Math.round(chosenCat.baseDef * scale) + 3,
+      traits: enemyTraits,
+      art: chosenCat.art || null,
+      move: chosenCat.move || "全力一擊",
+      defeated: false
+    };
+
+    openBattleWindow(
+      {
+        kind: "trainer",
+        trainerKey: `${reg.id}:${npcObj.id}`,
+        trainerName: npcObj.name,
+        regionId: reg.id,
+        regionName: reg.name,
+        enemy,
+        busy: false
+      },
+      `⚔️ 路線訓練家【${npcObj.name}】派出了王牌【${enemy.name} Lv.${enemy.level}】！\n（訓練家對戰無法逃跑或收服，獲勝可贏得豐厚獎金與大量 EXP！）`
+    );
+  }
+
+  function startGuardianBattle(waystoneObj) {
+    const lead = getLeadPokemon();
+    if (!lead) return;
+    const reg = getCurrentRegion();
+    const extraPool = DATA.pokemonCatalog.filter((p) => p.id < 900 && p.regionId === reg.id);
+    const chosenCat =
+      extraPool.length > 0
+        ? extraPool[extraPool.length - 1]
+        : DATA.pokemonCatalog.filter((p) => p.regionId === reg.id).slice(-1)[0] || DATA.pokemonCatalog[0];
+
+    const [, maxLv] = reg.levelRange || [3, 5];
+    const enemyLv = maxLv + 2;
+    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.12;
+
+    const enemy = {
+      id: chosenCat.id,
+      id4: chosenCat.id4,
+      name: `守護者・${chosenCat.name}`,
+      type: chosenCat.type,
+      typeEn: chosenCat.typeEn || "DRAGON",
+      level: enemyLv,
+      maxHp: Math.round(chosenCat.baseHp * scale) + 18,
+      hp: Math.round(chosenCat.baseHp * scale) + 18,
+      atk: Math.round(chosenCat.baseAtk * scale) + 4,
+      def: Math.round(chosenCat.baseDef * scale) + 4,
+      traits: ["radiant", "hearty"],
+      art: chosenCat.art || getDefaultArtForPokemon(chosenCat),
+      move: chosenCat.move || "遠古星爆",
+      defeated: false
+    };
+
+    openBattleWindow(
+      {
+        kind: "guardian",
+        guardianKey: `${reg.id}:${waystoneObj.id}`,
+        regionId: reg.id,
+        regionName: reg.name,
+        enemy,
+        busy: false
+      },
+      `🗿 古老路標石綻放光芒！【${enemy.name} Lv.${enemy.level}】降臨了！\n擊敗石碑守護者後，除了獲得 ₽120+ 獎金與經驗糖果，還能投球收服牠！`
     );
   }
 
   function renderBattleHUD() {
     if (!currentBattle) return;
     const lead = getLeadPokemon();
+    if (!lead) return;
+    ensurePokemonFields(lead);
     const enemy = currentBattle.enemy;
 
+    const modeBadge = document.getElementById("battleModeBadge");
+    if (modeBadge) {
+      if (currentBattle.kind === "trainer") {
+        modeBadge.textContent = `⚔️ 訓練家對戰：${currentBattle.trainerName.split(" ")[0]}`;
+        modeBadge.style.borderColor = "#f97316";
+      } else if (currentBattle.kind === "guardian") {
+        modeBadge.textContent = `🗿 石碑守護者 BOSS 戰`;
+        modeBadge.style.borderColor = "#c084fc";
+      } else {
+        modeBadge.textContent = `🌿 野生遭遇戰 · ${currentBattle.regionName.split(" ")[0]}`;
+        modeBadge.style.borderColor = "#facc15";
+      }
+    }
+
+    const eTraitTxt = (enemy.traits || [])
+      .map((t) => (DATA.traits[t]?.name || t).split(" ")[0])
+      .join("/");
     document.getElementById("battleEnemyName").textContent = enemy.name;
     document.getElementById("battleEnemyLv").textContent = `Lv.${enemy.level}`;
-    document.getElementById("battleEnemyStats").textContent = `⚔️ATK ${enemy.atk} · 🛡️DEF ${enemy.def} · ${enemy.type}系`;
+    document.getElementById("battleEnemyStats").textContent =
+      `⚔️${enemy.atk} · 🛡️${enemy.def} · ${enemy.type}系${eTraitTxt ? ` · ✦${eTraitTxt}` : ""}`;
     const ePct = Math.max(0, Math.min(100, (enemy.hp / enemy.maxHp) * 100));
     const eBar = document.getElementById("battleEnemyHpBar");
     eBar.style.width = `${ePct}%`;
@@ -1092,25 +2087,39 @@
     document.getElementById("battleEnemyHpTxt").textContent = `${enemy.hp} / ${enemy.maxHp}`;
 
     const eImg = document.getElementById("battleEnemySprite");
-    eImg.src = getAnimSpriteUrl(enemy.id, false);
+    eImg.src = getPokemonDisplayUrl(enemy, "front");
     eImg.onerror = () => {
-      eImg.src = getStaticSpriteUrl(enemy.id, false);
+      eImg.src = getPokemonFallbackUrl(enemy, "front");
     };
-    eImg.style.opacity = enemy.defeated ? "0.6" : "1";
+    eImg.style.opacity = enemy.defeated ? "0.55" : "1";
 
-    document.getElementById("battlePlayerName").textContent = lead.name;
+    const pTraitTxt = (lead.traits || [])
+      .map((t) => (DATA.traits[t]?.name || t).split(" ")[0])
+      .join("/");
+    document.getElementById("battlePlayerName").textContent =
+      `${lead.name}${lead.generation ? ` (G${lead.generation})` : ""}`;
     document.getElementById("battlePlayerLv").textContent = `Lv.${lead.level}`;
-    document.getElementById("battlePlayerStats").textContent = `⚔️ATK ${lead.atk} · 🛡️DEF ${lead.def} · ${lead.type}系`;
+    document.getElementById("battlePlayerStats").textContent =
+      `⚔️${lead.atk} · 🛡️${lead.def} · ${lead.type}系${pTraitTxt ? ` · ✦${pTraitTxt}` : ""}`;
+
     const pPct = Math.max(0, Math.min(100, (lead.hp / lead.maxHp) * 100));
     const pBar = document.getElementById("battlePlayerHpBar");
     pBar.style.width = `${pPct}%`;
     pBar.style.background = pPct < 25 ? "#e05848" : pPct < 50 ? "#e8c840" : "#58b888";
     document.getElementById("battlePlayerHpTxt").textContent = `${lead.hp} / ${lead.maxHp}`;
 
+    // 更新 GBA 經驗值條 (.gba-xp)
+    const xpMax = lead.xpToNext || 20;
+    const xpPct = Math.max(0, Math.min(100, ((lead.xp || 0) / xpMax) * 100));
+    const xpBar = document.getElementById("battlePlayerXpBar");
+    const xpTxt = document.getElementById("battlePlayerXpTxt");
+    if (xpBar) xpBar.style.width = `${xpPct}%`;
+    if (xpTxt) xpTxt.textContent = `${lead.xp || 0}/${xpMax}`;
+
     const pImg = document.getElementById("battlePlayerSprite");
-    pImg.src = getAnimSpriteUrl(lead.id, true);
+    pImg.src = getPokemonDisplayUrl(lead, "back");
     pImg.onerror = () => {
-      pImg.src = getStaticSpriteUrl(lead.id, true);
+      pImg.src = getPokemonFallbackUrl(lead, "back");
     };
   }
 
@@ -1119,16 +2128,56 @@
     if (el) el.textContent = msg;
   }
 
+  function updateMoveInfoBox(moveKind) {
+    const infoEl = document.getElementById("battleMoveInfo");
+    if (!infoEl || !currentBattle) return;
+    const lead = getLeadPokemon();
+    const enemy = currentBattle.enemy;
+    if (!lead || !enemy) return;
+
+    if (moveKind === "basic") {
+      infoEl.innerHTML = `
+        <strong>💥 ${lead.basicMove}</strong>
+        <span>PP：${lead.attackPp} / ${lead.maxAttackPp}</span>
+        <span>屬性：一般 (NORMAL)</span>
+        <span style="color:#1e40af;">⚡ 穩定物理招式 (1.0x)</span>
+      `;
+    } else if (moveKind === "special") {
+      const eff = getTypeEffectiveness(lead.typeEn || lead.type, enemy.typeEn || enemy.type);
+      infoEl.innerHTML = `
+        <strong>✨ ${lead.specialMove}</strong>
+        <span>PP：${lead.specialPp} / ${lead.maxSpecialPp}</span>
+        <span>屬性：${lead.type}系</span>
+        <span style="color:${eff.color};">${eff.label}</span>
+      `;
+    } else if (moveKind === "struggle") {
+      infoEl.innerHTML = `
+        <strong style="color:#dc2626;">💢 掙扎 (Struggle)</strong>
+        <span>PP：耗盡無限制</span>
+        <span>效果：全力反擊但自身承受 1/4 反作用力傷害</span>
+      `;
+    } else if (moveKind === "gym-boost") {
+      infoEl.innerHTML = `
+        <strong>💡 道館知識蓄力</strong>
+        <span>恢復 20% HP 並提升下一擊命中與氣勢！</span>
+      `;
+    }
+  }
+
   function showBattleSubMenu(type) {
     if (!currentBattle || currentBattle.busy) return;
     SFX.playClick();
     const mainCmds = document.getElementById("battleMainCommands");
     const subMenu = document.getElementById("battleSubMenu");
+    const moveInfo = document.getElementById("battleMoveInfo");
+    const msgBox = document.getElementById("battleMessage");
     const lead = getLeadPokemon();
     const enemy = currentBattle.enemy;
 
     if (type === "main") {
       subMenu.style.display = "none";
+      if (moveInfo) moveInfo.style.display = "none";
+      if (msgBox) msgBox.style.width = "56%";
       mainCmds.style.display = "grid";
       return;
     }
@@ -1138,29 +2187,58 @@
 
     if (type === "fight") {
       if (enemy.defeated) {
+        if (currentBattle.kind === "trainer") {
+          closeBattle();
+          return;
+        }
         setBattleMessage(`🎯 【${enemy.name}】已經被擊敗（HP 0）！請點選「BAG 背包/投球」丟出精靈球嘗試收服（約 60% 機率）！`);
         showBattleSubMenu("bag");
         return;
       }
-      subMenu.innerHTML = `
-        <button data-move="basic">${lead.basicMove} <small>(PP ${lead.attackPp}/${lead.maxAttackPp})</small></button>
-        <button data-move="special">${lead.specialMove} <small>(PP ${lead.specialPp}/${lead.maxSpecialPp})</small></button>
-        <button data-move="gym-boost" style="color:#1d4ed8;">💡 道館知識蓄力 (+攻防)</button>
-        <button data-move="cancel" style="color:#64748b;">↩ 返回 (CANCEL)</button>
-      `;
+
+      const bothZeroPp = (lead.attackPp || 0) <= 0 && (lead.specialPp || 0) <= 0;
+      const eff = getTypeEffectiveness(lead.typeEn || lead.type, enemy.typeEn || enemy.type);
+
+      if (moveInfo) {
+        moveInfo.style.display = "flex";
+        if (msgBox) msgBox.style.width = "28%";
+        updateMoveInfoBox(bothZeroPp ? "struggle" : "special");
+      }
+
+      if (bothZeroPp) {
+        subMenu.innerHTML = `
+          <button data-move="struggle" style="color:#dc2626;grid-column:1/-1;">💢 掙扎 Struggle (PP 已耗盡，捨身攻擊)</button>
+          <button data-move="gym-boost" style="color:#1d4ed8;">💡 道館知識蓄力 (+HP)</button>
+          <button data-move="cancel" style="color:#64748b;">↩ 返回 (CANCEL)</button>
+        `;
+      } else {
+        subMenu.innerHTML = `
+          <button data-move="basic">${lead.basicMove} <small>(PP ${lead.attackPp}/${lead.maxAttackPp})</small></button>
+          <button data-move="special">${lead.specialMove} <small style="color:${eff.color};">(PP ${lead.specialPp}/${lead.maxSpecialPp} · ${eff.mult}x)</small></button>
+          <button data-move="gym-boost" style="color:#1d4ed8;">💡 道館知識蓄力 (+HP)</button>
+          <button data-move="cancel" style="color:#64748b;">↩ 返回 (CANCEL)</button>
+        `;
+      }
+
       subMenu.querySelectorAll("button[data-move]").forEach((btn) => {
+        const mv = btn.getAttribute("data-move");
+        btn.addEventListener("pointerenter", () => {
+          if (mv !== "cancel") updateMoveInfoBox(mv);
+        });
         btn.onclick = () => {
-          const mv = btn.getAttribute("data-move");
           if (mv === "cancel") showBattleSubMenu("main");
           else executePlayerMove(mv);
         };
       });
     } else if (type === "bag") {
-      const usableIds = ["poke-ball", "great-ball", "ultra-ball", "potion", "super-potion", "hyper-potion", "ether"];
+      if (moveInfo) moveInfo.style.display = "none";
+      if (msgBox) msgBox.style.width = "56%";
+      const usableIds = ["poke-ball", "great-ball", "ultra-ball", "potion", "super-potion", "hyper-potion", "ether", "exp-candy-s"];
       const buttonsHtml = usableIds
         .filter((id) => (state.items[id] || 0) > 0)
         .map((id) => {
           const item = DATA.shopItems.find((it) => it.id === id);
+          if (!item) return "";
           return `<button data-item="${id}">${item.name.split(" ")[0]} ×${state.items[id]}</button>`;
         })
         .join("");
@@ -1176,6 +2254,8 @@
         };
       });
     } else if (type === "party") {
+      if (moveInfo) moveInfo.style.display = "none";
+      if (msgBox) msgBox.style.width = "56%";
       subMenu.innerHTML =
         state.party
           .map(
@@ -1208,13 +2288,14 @@
     if (!currentBattle || currentBattle.busy) return;
     const lead = getLeadPokemon();
     const enemy = currentBattle.enemy;
+    ensurePokemonFields(lead);
 
     showBattleSubMenu("main");
     currentBattle.busy = true;
 
     if (moveKind === "gym-boost") {
       SFX.playHeal();
-      const healAmt = Math.max(6, Math.round(lead.maxHp * 0.2));
+      const healAmt = Math.max(6, Math.round(lead.maxHp * 0.22));
       lead.hp = Math.min(lead.maxHp, lead.hp + healAmt);
       renderBattleHUD();
       setBattleMessage(`✨ 【${lead.name}】回想國語文道館與數學道館所學，恢復了 ${healAmt} 點 HP！`);
@@ -1222,21 +2303,40 @@
       return;
     }
 
+    const isStruggle = moveKind === "struggle";
     const isSpecial = moveKind === "special";
     if (isSpecial && lead.specialPp <= 0) {
       currentBattle.busy = false;
       setBattleMessage(`⚠️ 【${lead.specialMove}】的 PP 已經用完了！請使用普通招式或以太回復。`);
       return;
     }
+    if (!isStruggle && !isSpecial && lead.attackPp <= 0) {
+      currentBattle.busy = false;
+      setBattleMessage(`⚠️ 【${lead.basicMove}】的 PP 已經用完了！請選擇其他招式。`);
+      return;
+    }
+
     if (isSpecial) lead.specialPp = Math.max(0, lead.specialPp - 1);
-    else lead.attackPp = Math.max(0, lead.attackPp - 1);
+    else if (!isStruggle) lead.attackPp = Math.max(0, lead.attackPp - 1);
 
-    const moveName = isSpecial ? lead.specialMove : lead.basicMove;
-    const mult = isSpecial ? 1.35 : 1.0;
+    const moveName = isStruggle ? "掙扎 (Struggle)" : isSpecial ? lead.specialMove : lead.basicMove;
 
-    // 重要：若主角尚未去國語道館訓練（ATK 遠低於野生怪獸 DEF），只能造成 1~2 點微弱傷害！
-    const rawDmg = lead.atk * mult - enemy.def * 0.72;
-    const dmg = rawDmg <= 1 ? Math.max(1, Math.floor(Math.random() * 2) + 1) : Math.max(3, Math.round(rawDmg + Math.random() * 4));
+    // 計算屬性相剋與特性倍率 (100% 對齊 infinite-pokemon skills-v0.2.0)
+    const eff = isSpecial
+      ? getTypeEffectiveness(lead.typeEn || lead.type, enemy.typeEn || enemy.type)
+      : { mult: 1.0, label: "" };
+    const traitBoldMult = (lead.traits || []).includes("bold") ? 1.15 : 1.0;
+    const enemyGentleMult = (enemy.traits || []).includes("gentle") ? 0.88 : 1.0;
+    const critChance = (lead.traits || []).includes("swift") ? 0.24 : 0.08;
+    const isCrit = Math.random() < critChance;
+    const critMult = isCrit ? 1.35 : 1.0;
+
+    const baseMult = isStruggle ? 0.95 : isSpecial ? 1.32 * eff.mult : 1.0;
+    const rawDmg = (lead.atk * baseMult * traitBoldMult * critMult - enemy.def * 0.7) * enemyGentleMult;
+    const dmg =
+      rawDmg <= 1
+        ? Math.max(1, Math.floor(Math.random() * 2) + 1)
+        : Math.max(3, Math.round(rawDmg + Math.random() * 4));
 
     const pWrap = document.getElementById("battlePlayerSpriteWrap");
     const eWrap = document.getElementById("battleEnemySpriteWrap");
@@ -1249,28 +2349,86 @@
     }, 180);
 
     enemy.hp = Math.max(0, enemy.hp - dmg);
+
+    // 若使用掙扎 (Struggle)，承受 1/4 最大 HP 反作用力傷害
+    let recoilNote = "";
+    if (isStruggle) {
+      const recoil = Math.max(1, Math.round(lead.maxHp / 4));
+      lead.hp = Math.max(1, lead.hp - recoil);
+      recoilNote = `（承受掙扎反作用力 ${recoil} 點傷害）`;
+    }
+
     renderBattleHUD();
+    updateAllHUD();
+
+    const effNote = isSpecial && eff.mult !== 1.0 ? ` ${eff.label}` : "";
+    const critNote = isCrit ? " 💥會心一擊！" : "";
 
     if (enemy.hp <= 0) {
       enemy.defeated = true;
       currentBattle.busy = false;
       SFX.playCorrect();
-      const coinDrop = enemy.level * 8;
+
+      // 勝利獎勵計算：金幣 + 傷藥掉落 + 戰鬥經驗值 EXP (對齊 infinite-pokemon world.ts)
+      const isGuardian = currentBattle.kind === "guardian";
+      const isTrainer = currentBattle.kind === "trainer";
+      const coinDrop = isGuardian ? 120 + enemy.level * 6 : isTrainer ? 50 + enemy.level * 8 : 35 + enemy.level * 5;
+      const expReward = isGuardian ? 35 : isTrainer ? 24 : 14 + Math.floor(enemy.level / 2);
+
       state.coins = (state.coins || 0) + coinDrop;
+      state.items["potion"] = Math.min(30, (state.items["potion"] || 0) + 1);
+      if (isGuardian) {
+        state.items["exp-candy-s"] = (state.items["exp-candy-s"] || 0) + 1;
+        if (currentBattle.guardianKey && !state.defeatedGuardians.includes(currentBattle.guardianKey)) {
+          state.defeatedGuardians.push(currentBattle.guardianKey);
+        }
+      }
+      if (isTrainer && currentBattle.trainerKey && !state.defeatedTrainers.includes(currentBattle.trainerKey)) {
+        state.defeatedTrainers.push(currentBattle.trainerKey);
+      }
+
+      // 賦予經驗值並檢查是否升級
+      const lvResult = gainPokemonExp(lead, expReward, true);
+      // 隊伍其他成員也獲得 50% 共享經驗值
+      state.party.forEach((member, idx) => {
+        if (idx !== state.activeIndex && member.hp > 0) {
+          gainPokemonExp(member, Math.max(4, Math.round(expReward * 0.5)), false);
+        }
+      });
+
       saveGame();
       updateAllHUD();
       renderBattleHUD();
+
+      const lvUpTxt = lvResult.leveledUp
+        ? `\n🆙 【${lead.name}】獲得 +${lvResult.expGain} EXP，升上了 Lv.${lead.level}！（HP+${lvResult.totalHpGain}/ATK+${lvResult.totalAtkGain}/DEF+${lvResult.totalDefGain}）`
+        : `\n✨ 【${lead.name}】獲得 +${lvResult.expGain} EXP（距離升級還差 ${(lead.xpToNext || 20) - (lead.xp || 0)} EXP）！`;
+
+      if (isTrainer) {
+        addJournalEntry(`🏆 擊敗了路線訓練家【${currentBattle.trainerName}】，贏得 ₽${coinDrop}！`);
+        setBattleMessage(
+          `🎉 【${lead.name}】使出「${moveName}」${critNote}${effNote}造成 ${dmg} 點傷害，擊敗了訓練家【${currentBattle.trainerName}】的寶可夢！\n🪙 獲得獎金 ₽${coinDrop} 與 傷藥 ×1！${lvUpTxt}`
+        );
+        setTimeout(() => {
+          closeBattle();
+          showToast(`🏆 訓練家對戰勝利！獲得 ₽${coinDrop} 與 +${lvResult.expGain} EXP！`);
+        }, 2600);
+        return;
+      }
+
       setBattleMessage(
-        `🎉 【${lead.name}】使出「${moveName}」造成 ${dmg} 點傷害，成功擊敗了【${enemy.name}】（獲得戰鬥金幣 ₽${coinDrop}）！\n👉 現在請點選「BAG 背包/投球」丟出精靈球嘗試收服（收服機率約 60%）！`
+        `🎉 【${lead.name}】使出「${moveName}」${critNote}${effNote}造成 ${dmg} 點傷害，擊敗了【${enemy.name}】（獲得金幣 ₽${coinDrop}、傷藥×1${isGuardian ? "、經驗糖果S×1" : ""}）！${lvUpTxt}\n👉 現在請點選「BAG 背包/投球」丟出精靈球收服牠（或點 RUN 離開）！`
       );
       return;
     }
 
     const weakHint =
       dmg <= 2
-        ? `\n（💡 傷害太低了！你的寶可夢還沒去「📕國語文道館」訓練提升攻擊力！）`
+        ? `\n（💡 傷害太低了！建議去「📕國語文道館」特訓或餵食「經驗糖果」升級！）`
         : "";
-    setBattleMessage(`⚡ 【${lead.name}】使出「${moveName}」，對【${enemy.name}】造成了 ${dmg} 點傷害！${weakHint}`);
+    setBattleMessage(
+      `⚡ 【${lead.name}】使出「${moveName}」${critNote}${effNote}，對【${enemy.name}】造成了 ${dmg} 點傷害！${recoilNote}${weakHint}`
+    );
 
     setTimeout(() => {
       enemyTurnAttack();
@@ -1281,8 +2439,15 @@
     if (!currentBattle) return;
     const lead = getLeadPokemon();
     const enemy = currentBattle.enemy;
-    if (enemy.defeated) {
+    if (!lead || enemy.defeated) {
+      if (currentBattle) currentBattle.busy = false;
+      return;
+    }
+
+    // 檢查我方靈巧 (elusive) 特性閃避
+    if ((lead.traits || []).includes("elusive") && Math.random() < 0.14) {
       currentBattle.busy = false;
+      setBattleMessage(`💨 【${enemy.name}】使出「${enemy.move}」，但【${lead.name}】憑藉「✦靈巧」特性華麗閃開了攻擊！`);
       return;
     }
 
@@ -1296,8 +2461,12 @@
       setTimeout(() => pWrap.classList.remove("hit"), 420);
     }, 180);
 
-    // 若主角尚未去數學道館訓練（DEF 遠低於野生怪獸 ATK），會受到重創！
-    const rawEnemyDmg = enemy.atk * 1.1 - lead.def * 0.68;
+    const eff = getTypeEffectiveness(enemy.typeEn || enemy.type, lead.typeEn || lead.type);
+    const enemyBoldMult = (enemy.traits || []).includes("bold") ? 1.12 : 1.0;
+    const playerGentleMult = (lead.traits || []).includes("gentle") ? 0.85 : 1.0;
+
+    // 若主角尚未去數學道館訓練（DEF 遠低於怪獸 ATK），會受到較高傷害
+    const rawEnemyDmg = (enemy.atk * 1.08 * eff.mult * enemyBoldMult - lead.def * 0.68) * playerGentleMult;
     const eDmg = Math.max(2, Math.round(rawEnemyDmg + Math.random() * 3));
     lead.hp = Math.max(0, lead.hp - eDmg);
     renderBattleHUD();
@@ -1305,8 +2474,24 @@
 
     if (lead.hp <= 0) {
       SFX.playWrong();
+      // 檢查隊伍中是否還有其他健康的寶可夢可自動接替出戰 (對齊 infinite-pokemon resolveFaint)
+      const nextHealthyIdx = state.party.findIndex((p, idx) => idx !== state.activeIndex && p.hp > 0);
+      if (nextHealthyIdx !== -1) {
+        const faintedName = lead.name;
+        state.activeIndex = nextHealthyIdx;
+        const nextLead = getLeadPokemon();
+        saveGame();
+        renderBattleHUD();
+        updateAllHUD();
+        currentBattle.busy = false;
+        setBattleMessage(
+          `💥 【${faintedName}】體力不支倒下了！\n🔄 隊伍中的【${nextLead.name} Lv.${nextLead.level}】立即挺身而出接替戰鬥！請選擇行動！`
+        );
+        return;
+      }
+
       setBattleMessage(
-        `💥 【${enemy.name} Lv.${enemy.level}】使出「${enemy.move}」造成 ${eDmg} 點傷害！【${lead.name}】體力不支倒下了！\n🏥 你被送回柳溪醫療所恢復體力。請先去「📕國語文道館」與「📘數學道館」訓練變強後再來挑戰！`
+        `💥 【${enemy.name} Lv.${enemy.level}】使出「${enemy.move}」造成 ${eDmg} 點傷害！【${lead.name}】倒下了！\n🏥 你被送回柳溪醫療所恢復體力。請先去「📕國語文道館」與「📘數學道館」訓練或餵食經驗糖果變強後再來挑戰！`
       );
       setTimeout(() => {
         closeBattle();
@@ -1315,8 +2500,8 @@
         state.y = 12;
         healAllParty(false);
         openDialogueModal(
-          "💡 木木博士的提醒：請先到兩大道館訓練！",
-          `你的【${lead.name}】（Lv.${lead.level} · ⚔️ATK ${lead.atk} · 🛡️DEF ${lead.def}）目前能力還太初階，打不贏野外的【${enemy.name} Lv.${enemy.level}】！\n\n請先在柳溪城鎮進入：\n1. 「📕 國語文道館」提升寶可夢的【攻擊力 ⚔️ATK】\n2. 「📘 數學道館」提升寶可夢的【防禦力 🛡️DEF 與 HP】\n能力提升後，就能輕鬆打敗並收服各個地圖的寶可夢囉！`,
+          "💡 空木博士的提醒：先強化升級，達到等級條件就會進化！",
+          `你的【${lead.name}】（Lv.${lead.level} · ⚔️ATK ${lead.atk} · 🛡️DEF ${lead.def}）目前能力還不足以擊敗【${enemy.name} Lv.${enemy.level}】！\n\n你可以透過以下方式大幅強化戰力：\n1. 進入「📕 國語文道館」提升【攻擊力 ⚔️ATK 與等級】\n2. 進入「📘 數學道館」提升【防禦力 🛡️DEF 與最大 HP】\n3. 在「🐾 隊伍」餵食經驗糖果升級，達到進化等級後會自動進化！`,
           [
             { label: "📕 前往國語文道館 (+ATK)", onClick: () => openChineseGym("a") },
             { label: "📘 前往數學道館 (+DEF)", onClick: () => openMathGym("a") }
@@ -1327,8 +2512,9 @@
     }
 
     currentBattle.busy = false;
+    const effTxt = eff.mult > 1 ? "（效果絕佳！）" : eff.mult < 1 ? "（效果不太好）" : "";
     setBattleMessage(
-      `💢 野生的【${enemy.name}】使出「${enemy.move}」，對【${lead.name}】造成 ${eDmg} 點傷害！請選擇下一回合行動！`
+      `💢 【${enemy.name}】使出「${enemy.move}」${effTxt}，對【${lead.name}】造成 ${eDmg} 點傷害！請選擇下一回合行動！`
     );
   }
 
@@ -1342,11 +2528,16 @@
     showBattleSubMenu("main");
 
     if (item.effect === "capture") {
-      // 重要規則：必須先打敗對手（或將對手削弱至極低血量）才能成功收服；即使打敗對手，收服基礎機率設定在約六成（62%）！
-      if (!enemy.defeated && enemy.hp > enemy.maxHp * 0.35) {
+      if (currentBattle.kind === "trainer") {
+        SFX.playWrong();
+        setBattleMessage("⚠️ 不能收服其他訓練家的寶可夢喔！");
+        return;
+      }
+      // 大師球 (guaranteedCapture) 可無視血量直接 100% 收服！一般球則需打敗對手或削弱至 35% 以下
+      if (!item.guaranteedCapture && !enemy.defeated && enemy.hp > enemy.maxHp * 0.35) {
         SFX.playWrong();
         setBattleMessage(
-          `⚠️ 【${enemy.name}】現在還精力充沛（HP ${enemy.hp}/${enemy.maxHp}），直接丟球會被彈開！請先用「FIGHT 戰鬥」打敗或削弱牠再投球！`
+          `⚠️ 【${enemy.name}】現在還精力充沛（HP ${enemy.hp}/${enemy.maxHp}），直接丟球會被彈開！請先用「FIGHT 戰鬥」打敗或削弱牠（或投擲大師球）！`
         );
         return;
       }
@@ -1359,31 +2550,40 @@
       const ballEl = document.getElementById("battleThrownBall");
       ballEl.style.display = "block";
       SFX.playBallThrow();
-      setBattleMessage(`🔴 你丟出了【${item.name}】！（基礎收服成功率約 ${Math.round(item.power * 100)}%）……咕嚕……咕嚕……`);
+      const elusivePenalty = (enemy.traits || []).includes("elusive") ? 0.08 : 0;
+      const baseRate = item.guaranteedCapture
+        ? 1.0
+        : Math.max(0.25, (enemy.defeated ? item.power : item.power * 0.65) - elusivePenalty);
+      setBattleMessage(
+        `🟣 你丟出了【${item.name}】！（收服成功率 ${item.guaranteedCapture ? "100% 必定成功！" : `約 ${Math.round(baseRate * 100)}%`}）……咕嚕……咕嚕……`
+      );
 
       setTimeout(() => {
         ballEl.style.display = "none";
-        // 打敗後基礎收服率：精靈球 62% (~六成)、超級球 76%、高級球 88%
-        const rate = enemy.defeated ? item.power : item.power * 0.65;
-        const success = Math.random() < rate;
+        const success = item.guaranteedCapture ? true : Math.random() < baseRate;
 
         if (success) {
           SFX.playCaptureSuccess();
-          const newPoke = createPokemonInstance(enemy.id, enemy.level, false);
+          const bonusLv = (state.items["rare-candy"] || 0) * 2;
+          const newPoke = createPokemonInstance(enemy.baseSpeciesId || enemy.id, enemy.level + bonusLv, false);
           if (state.party.length < 6) {
             state.party.push(newPoke);
           } else {
             state.storage.push(newPoke);
           }
-          if (!state.caughtIds.includes(enemy.id)) {
-            state.caughtIds.push(enemy.id);
+          const catchId = enemy.baseSpeciesId || enemy.id;
+          if (!state.caughtIds.includes(catchId)) {
+            state.caughtIds.push(catchId);
           }
+          // 收服成功也給予出戰隊長 +10 EXP！
+          gainPokemonExp(lead, 10, true);
+          addJournalEntry(`🔴 成功收服了【${newPoke.name} Lv.${newPoke.level}】！`);
           saveGame();
           updateAllHUD();
           setBattleMessage(
-            `✨ 喀嚓！太棒了！你成功收服了【${enemy.name} Lv.${enemy.level}】！\n（已加入你的${state.party.length <= 6 ? "出戰隊伍" : "寶可夢倉庫"}與圖鑑！）`
+            `✨ 喀嚓！太棒了！你成功收服了【${newPoke.name} Lv.${newPoke.level}】！\n（已加入你的${state.party.length <= 6 ? "出戰隊伍" : "寶可夢倉庫"}與圖鑑，出戰夥伴同時獲得 +10 EXP！）`
           );
-          showToast(`🎉 成功收服【${enemy.name} Lv.${enemy.level}】！`);
+          showToast(`🎉 成功收服【${newPoke.name} Lv.${newPoke.level}】！`);
           setTimeout(() => {
             closeBattle();
           }, 1900);
@@ -1392,7 +2592,7 @@
           currentBattle.busy = false;
           if (enemy.defeated) {
             setBattleMessage(
-              `💨 哎呀！差一點點！【${enemy.name}】從球裡掙脫了！（即使打敗對手，收服機率約為六成，還沒有逃走，可再從 BAG 丟一顆球試試！）`
+              `💨 哎呀！差一點點！【${enemy.name}】從球裡掙脫了！（即使打敗對手，收服機率約為六成，牠還沒有逃走，可再從 BAG 丟一顆球試試！）`
             );
           } else {
             setBattleMessage(`💨 【${enemy.name}】掙脫了精靈球！先把牠的 HP 打到 0 再投球成功率更高喔！`);
@@ -1400,6 +2600,17 @@
           }
         }
       }, 1500);
+      return;
+    }
+
+    if (item.effect === "exp-candy" || item.effect === "rare-candy" || item.effect === "lucky-egg") {
+      state.items[itemId]--;
+      const xpAmt = item.effect === "rare-candy" ? (lead.xpToNext || 20) * 2 : item.effect === "lucky-egg" ? 30 : item.power || 20;
+      gainPokemonExp(lead, xpAmt, true);
+      saveGame();
+      renderBattleHUD();
+      updateAllHUD();
+      setBattleMessage(`🍬 在戰鬥中使用了【${item.name}】！【${lead.name}】升至 Lv.${lead.level}（HP ${lead.hp}/${lead.maxHp}）！`);
       return;
     }
 
@@ -1429,14 +2640,17 @@
 
   function closeBattle() {
     currentBattle = null;
+    const banner = document.getElementById("battleLevelUpBanner");
+    if (banner) banner.style.display = "none";
     document.getElementById("gbaBattle").classList.add("hidden");
     updateAllHUD();
   }
 
   // --------------------------------------------------------------------------
-  // 8. START 選單與通用視窗 (POKÉMON 隊伍 / BAG 背包 / SHOP 商店 / TOWN MAP / CODEX / TRAINER)
+  // 8. START 選單與通用視窗 (POKÉMON 隊伍與升級 / NURSERY 培育屋合成 / BAG / SHOP / MAP / CODEX / RECORDS / SAVE)
   // --------------------------------------------------------------------------
   function openMenuModal(tab) {
+    if (tab === "nursery") tab = "party";
     SFX.playClick();
     document.getElementById("startMenu").style.display = "none";
     const modal = document.getElementById("menuModal");
@@ -1444,79 +2658,223 @@
     const titleEl = document.getElementById("menuModalTitle");
     const bodyEl = document.getElementById("menuModalBody");
 
-    box.classList.toggle("wide", ["map", "shop", "codex"].includes(tab));
+    box.classList.toggle("wide", ["party", "nursery", "bag", "map", "shop", "codex", "records", "save"].includes(tab));
     modal.classList.remove("hidden");
 
     const titles = {
-      party: "YOUR POKÉMON · 寶可夢隊伍與倉庫",
+      party: "YOUR POKÉMON · 寶可夢隊伍、經驗升級與突破進化",
+      nursery: "POKÉMON PARTY · 等級進化隊伍",
       bag: "YOUR BAG · 背包道具與補給",
-      shop: "POKÉMON SHOP · 柳溪寶可夢商店（金幣購買特殊道具）",
+      shop: "POKÉMON SHOP · 柳溪寶可夢商店（購買精靈球、經驗糖果與特殊道具）",
       map: "TOWN MAP · 五大區域地圖與等級劃分",
-      codex: "COMPANION CODEX · 寶可夢收服圖鑑",
-      trainer: "TRAINER CARD · 訓練家狀態名片"
+      codex: "COMPANION CODEX · 寶可夢收服與合成圖鑑",
+      records: "ADVENTURE RECORDS · 柳溪谷冒險排行榜與日誌",
+      trainer: "TRAINER CARD · 訓練家狀態名片",
+      save: "SAVE & LOAD · 儲存與讀取冒險進度"
     };
     titleEl.textContent = titles[tab] || "MENU";
 
+    // ------------------------------------------------------------------------
+    // Tab 1: 寶可夢隊伍、升級 (EXP Candy / 金幣特訓) 與突破進化 (Party & Upgrade)
+    // ------------------------------------------------------------------------
     if (tab === "party") {
+      const candyS = state.items["exp-candy-s"] || 0;
+      const candyL = state.items["exp-candy-l"] || 0;
+
       const partyCards = state.party
         .map((p, idx) => {
+          ensurePokemonFields(p);
           const isLeader = idx === state.activeIndex;
           const pct = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100));
+          const xpMax = p.xpToNext || 20;
+          const xpPct = Math.max(0, Math.min(100, ((p.xp || 0) / xpMax) * 100));
+          const genBadge = p.generation > 0 ? `<span class="gen-badge">🧬 第${p.generation}代合成獸</span>` : "";
+          const stageBadge = p.breakthroughStage > 0 ? `<span class="breakthrough-badge">🌟 突破★${p.breakthroughStage}</span>` : "";
+          const traitsHtml = formatTraitBadges(p.traits);
+
           return `
-          <button type="button" class="companion-card ${isLeader ? "active" : ""}" data-party-idx="${idx}">
-            <img src="${getPortraitUrl(p.id4)}" onerror="this.src='${getStaticSpriteUrl(p.id)}'" alt="${p.name}" />
-            <div>
-              <strong>${p.name} <span style="font-size:15px;color:#1e40af;">Lv.${p.level} ${isLeader ? "· ★ 出戰隊長 (LEADER)" : ""}</span></strong>
-              <span style="font-size:15px;color:#334155;font-weight:800;">
-                ${p.type}系 · ⚔️攻擊力 ${p.atk} · 🛡️防禦力 ${p.def} · 絕招：${p.specialMove}
-              </span>
-              <div class="health" style="margin-top:6px;">
-                <span>HP</span>
-                <div><i style="width:${pct}%;background:${pct < 25 ? "#df7666" : pct < 50 ? "#e4be5e" : "#58b888"};"></i></div>
-                <small>${p.hp} / ${p.maxHp}</small>
+          <div class="companion-card ${isLeader ? "active" : ""}" style="flex-wrap:wrap;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:14px;flex:1 1 320px;cursor:pointer;" data-party-idx="${idx}" title="點擊設為出戰隊長">
+              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" alt="${p.name}" style="width:68px;height:68px;image-rendering:pixelated;object-fit:contain;background:rgba(255,255,255,0.75);border-radius:6px;border:2px solid #94a3b8;" />
+              <div style="flex:1 1;">
+                <strong style="font-size:20px;">
+                  ${p.name} <span style="font-size:15px;color:#1e40af;">Lv.${p.level} ${isLeader ? "· ★ 出戰隊長" : ""}</span>
+                </strong>
+                <div style="margin:3px 0;">
+                  ${genBadge}${stageBadge}${traitsHtml}
+                </div>
+                <span style="font-size:14px;color:#334155;font-weight:800;display:block;">
+                  ${p.type}系 · ⚔️攻擊 ${p.atk} · 🛡️防禦 ${p.def} · 絕招：${p.specialMove}
+                </span>
+                <div class="health" style="margin-top:5px;">
+                  <span>HP</span>
+                  <div><i style="width:${pct}%;background:${pct < 25 ? "#df7666" : pct < 50 ? "#e4be5e" : "#58b888"};"></i></div>
+                  <small>${p.hp}/${p.maxHp}</small>
+                </div>
+                <div class="hud-xp-row" style="margin-top:4px;">
+                  <span>EXP</span>
+                  <div><i style="width:${xpPct}%;"></i></div>
+                  <small>${p.xp || 0}/${xpMax} (滿 20 升級)</small>
+                </div>
               </div>
             </div>
-            <span class="pokeball small"><i></i></span>
-          </button>
+            <div style="display:flex;flex-direction:column;gap:5px;min-width:165px;">
+              ${
+                !isLeader
+                  ? `<button type="button" class="button primary" data-set-leader="${idx}" style="font-size:14px;padding:4px 10px;min-height:30px;">⚡ 設為出戰隊長</button>`
+                  : `<span style="font-size:13px;font-weight:900;color:#15803d;text-align:center;">✅ 當前出戰隊長</span>`
+              }
+              <button type="button" class="button gold" data-levelup-poke="${idx}" style="font-size:14px;padding:4px 10px;min-height:32px;">
+                ⬆️ 升級強化 ${candyS > 0 ? `(糖果S×${candyS})` : `(₽60 特訓)`}
+              </button>
+              <button type="button" class="button" data-send-nursery="${p.uid}" style="font-size:13px;padding:4px 10px;min-height:30px;border-color:#7e22ce;color:#581c87;background:#f3e8ff;">
+                🧬 送去培育屋合成
+              </button>
+            </div>
+          </div>
         `;
         })
         .join("");
 
       const storageRows = state.storage
-        .map(
-          (p, sIdx) => `
+        .map((p, sIdx) => {
+          ensurePokemonFields(p);
+          return `
           <div class="catalog-row">
-            <img src="${getPortraitUrl(p.id4)}" onerror="this.src='${getStaticSpriteUrl(p.id)}'" style="width:48px;height:48px;image-rendering:pixelated;" />
+            <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:48px;height:48px;image-rendering:pixelated;object-fit:contain;" />
             <div>
-              <strong>${p.name} · Lv.${p.level}</strong>
-              <p>⚔️ATK ${p.atk} · 🛡️DEF ${p.def} · HP ${p.hp}/${p.maxHp}</p>
+              <strong>${p.name} · Lv.${p.level} ${p.generation ? `(🧬第${p.generation}代)` : ""}</strong>
+              <p>${p.type}系 · ⚔️ATK ${p.atk} · 🛡️DEF ${p.def} · HP ${p.hp}/${p.maxHp}</p>
             </div>
-            <button type="button" class="button" data-swap-storage="${sIdx}">與隊長交換</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="button" data-swap-storage="${sIdx}">與隊長交換</button>
+              <button type="button" class="button" data-send-nursery="${p.uid}" style="border-color:#7e22ce;color:#581c87;background:#f3e8ff;">🧬 合成</button>
+            </div>
           </div>
-        `
-        )
+        `;
+        })
         .join("");
 
       bodyEl.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-          <span>目前隨身隊伍：<strong>${state.party.length} / 6 隻</strong>（點擊卡片可切換出戰隊長）</span>
-          <button type="button" class="button primary" id="btnPartyHealAll">💖 免費全隊恢復滿血</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;background:#f1f5f9;padding:8px 12px;border-radius:6px;border:2px solid #cbd5e1;">
+          <div>
+            <span>隨身隊伍：<strong>${state.party.length} / 6 隻</strong> ｜ 🪙 金幣：<strong>₽${state.coins}</strong> ｜ 🍬 經驗糖果S：<strong>${candyS}</strong> · 糖果L：<strong>${candyL}</strong></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="button primary" id="btnPartyHealAll" style="font-size:15px;padding:5px 12px;">💖 免費全隊恢復滿血</button>
+          </div>
         </div>
         <div class="party-list">${partyCards}</div>
         <p style="margin:14px 0 6px;font-weight:800;color:#475569;">📦 電腦倉庫中的寶可夢（${state.storage.length} 隻）：</p>
         <div class="catalog-list">${storageRows || `<div style="color:#64748b;font-size:15px;">倉庫目前是空的（當隊伍滿 6 隻時，新收服的寶可夢會存放在這裡）。</div>`}</div>
       `;
 
-      bodyEl.querySelectorAll("button[data-party-idx]").forEach((btn) => {
-        btn.onclick = () => {
-          state.activeIndex = parseInt(btn.getAttribute("data-party-idx"), 10);
-          SFX.playClick();
+      const setLeaderFn = (idx) => {
+        state.activeIndex = idx;
+        SFX.playClick();
+        saveGame();
+        updateAllHUD();
+        openMenuModal("party");
+        showToast(`⚡ 已將【${getLeadPokemon().name}】設為出戰隊長！`);
+      };
+
+      bodyEl.querySelectorAll("[data-party-idx]").forEach((el) => {
+        el.onclick = () => setLeaderFn(parseInt(el.getAttribute("data-party-idx"), 10));
+      });
+      bodyEl.querySelectorAll("button[data-set-leader]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          setLeaderFn(parseInt(btn.getAttribute("data-set-leader"), 10));
+        };
+      });
+
+      // 升級強化按鈕 (優先使用經驗糖果 S/L，若無糖果可用 ₽60 金幣進行特訓升級)
+      bodyEl.querySelectorAll("button[data-levelup-poke]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.getAttribute("data-levelup-poke"), 10);
+          const targetPoke = state.party[idx];
+          if (!targetPoke) return;
+
+          if ((state.items["exp-candy-s"] || 0) > 0) {
+            state.items["exp-candy-s"]--;
+            const res = gainPokemonExp(targetPoke, 20, false);
+            saveGame();
+            updateAllHUD();
+            openMenuModal("party");
+            showToast(`🍬 餵食【經驗糖果 S】！【${targetPoke.name}】升至 Lv.${targetPoke.level}（HP+${res.totalHpGain}/ATK+${res.totalAtkGain}/DEF+${res.totalDefGain}）！`);
+          } else if ((state.items["exp-candy-l"] || 0) > 0) {
+            state.items["exp-candy-l"]--;
+            const res = gainPokemonExp(targetPoke, 60, false);
+            saveGame();
+            updateAllHUD();
+            openMenuModal("party");
+            showToast(`🍬 餵食【經驗糖果 L】！【${targetPoke.name}】連升 ${res.levelsGained} 級至 Lv.${targetPoke.level}！`);
+          } else if (state.coins >= 60) {
+            state.coins -= 60;
+            const res = gainPokemonExp(targetPoke, 20, false);
+            saveGame();
+            updateAllHUD();
+            openMenuModal("party");
+            showToast(`⬆️ 消耗 ₽60 完成強化特訓！【${targetPoke.name}】升至 Lv.${targetPoke.level}（HP+${res.totalHpGain}/ATK+${res.totalAtkGain}/DEF+${res.totalDefGain}）！`);
+          } else {
+            SFX.playWrong();
+            showToast("⚠️ 經驗糖果與金幣（需 ₽60）不足！請先去國語/數學道館答題或開啟地圖寶箱賺取金幣！");
+          }
+        };
+      });
+
+      // 星輝突破進化按鈕
+      bodyEl.querySelectorAll("button[data-breakthrough-poke]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.getAttribute("data-breakthrough-poke"), 10);
+          const targetPoke = state.party[idx];
+          if (!targetPoke) return;
+          ensurePokemonFields(targetPoke);
+
+          if ((state.items["evo-stone"] || 0) > 0) {
+            state.items["evo-stone"]--;
+          } else if (state.coins >= 240) {
+            state.coins -= 240;
+          } else {
+            SFX.playWrong();
+            showToast("⚠️ 需要 1 顆【星輝突破石】或 ₽240 金幣才能進行突破進化！");
+            return;
+          }
+
+          targetPoke.breakthroughStage = (targetPoke.breakthroughStage || 0) + 1;
+          targetPoke.level += 1;
+          targetPoke.maxHp += 20;
+          targetPoke.hp = targetPoke.maxHp;
+          targetPoke.atk += 6;
+          targetPoke.def += 6;
+          if (!targetPoke.name.includes("★")) {
+            targetPoke.name = `${targetPoke.name}★`;
+          }
+          SFX.playHatch();
+          addJournalEntry(`🌟 【${targetPoke.name}】完成了第 ${targetPoke.breakthroughStage} 階星輝突破進化！`);
           saveGame();
           updateAllHUD();
           openMenuModal("party");
-          showToast(`⚡ 已將【${getLeadPokemon().name}】設為出戰隊長！`);
+          showToast(`🌟 突破進化成功！【${targetPoke.name}】升至 Lv.${targetPoke.level}（最大HP+20 · ⚔️ATK+6 · 🛡️DEF+6）！`);
         };
       });
+
+      // 送往培育屋合成按鈕
+      bodyEl.querySelectorAll("button[data-send-nursery]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const uid = btn.getAttribute("data-send-nursery");
+          if (!nurserySelA || nurserySelA === uid) {
+            nurserySelA = uid;
+          } else {
+            nurserySelB = uid;
+          }
+          openMenuModal("nursery");
+        };
+      });
+
       bodyEl.querySelectorAll("button[data-swap-storage]").forEach((btn) => {
         btn.onclick = () => {
           const sIdx = parseInt(btn.getAttribute("data-swap-storage"), 10);
@@ -1529,6 +2887,8 @@
           openMenuModal("party");
         };
       });
+
+      document.getElementById("btnPartyToNursery").onclick = () => openMenuModal("nursery");
       document.getElementById("btnPartyHealAll").onclick = () => {
         healAllParty(true);
         openMenuModal("party");
@@ -1536,91 +2896,532 @@
       return;
     }
 
-    if (tab === "bag") {
-      const ownedRows = DATA.shopItems
-        .filter((it) => it.effect !== "vehicle" && (state.items[it.id] || 0) > 0)
-        .map((it) => {
-          const count = state.items[it.id] || 0;
-          const iconEmoji =
-            it.effect === "capture" ? "🔴" : it.effect === "heal" ? "🧪" : it.effect === "herb" ? "🌿" : "✨";
-          const actionBtn =
-            it.effect === "capture"
-              ? `<small style="font-weight:800;color:#64748b;">於野外對戰中使用</small>`
-              : `<button type="button" class="button primary" data-use-bag="${it.id}">使用 (Use)</button>`;
-          return `
-          <div class="catalog-row">
-            <div class="item-icon-box" style="background:${it.color}22;border-color:${it.color};">${iconEmoji}</div>
-            <div>
-              <strong>${it.name} × ${count}</strong>
-              <p>${it.description}</p>
+    // ------------------------------------------------------------------------
+    // Tab 2: 培育屋合成與孵蛋工坊 (NURSERY — 100% 參考 infinite-pokemon VarietyPanels.tsx & content.ts)
+    // ------------------------------------------------------------------------
+    if (tab === "nursery") {
+      const allOwned = [...state.party, ...state.storage].map(ensurePokemonFields);
+      const eligible = allOwned.filter((p) => p.hp > 0 && p.level >= 5);
+
+      if (!nurserySelA && eligible[0]) nurserySelA = eligible[0].uid;
+      if (!nurserySelB && eligible[1]) nurserySelB = eligible[1].uid;
+      if (nurserySelA === nurserySelB && eligible.length > 1) {
+        const other = eligible.find((p) => p.uid !== nurserySelA);
+        nurserySelB = other ? other.uid : null;
+      }
+
+      const parentA = allOwned.find((p) => p.uid === nurserySelA) || null;
+      const parentB = allOwned.find((p) => p.uid === nurserySelB && p.uid !== nurserySelA) || null;
+      const canPreview = Boolean(parentA && parentB && parentA.level >= 5 && parentB.level >= 5);
+      const previewChild = canPreview ? buildSynthesizedSpecies(parentA, parentB, nurseryCustomName) : null;
+
+      const eggHtml = state.egg
+        ? `
+          <div class="egg-card">
+            <div class="egg-icon-pulse"></div>
+            <div style="flex:1 1 240px;">
+              <strong style="font-size:20px;color:#581c87;">
+                🥚 正在孵化的合成蛋：【${state.egg.childSpecies?.name || "神祕合成獸"}】（第 ${state.egg.childSpecies?.generation || 1} 代）
+              </strong>
+              <p style="font-size:14px;color:#4c1d95;margin-top:2px;">
+                親代組合：${(state.egg.parentNames || []).join(" × ")} ｜ 屬性：${state.egg.childSpecies?.type || "雙屬性"} ｜ 距離孵化剩餘：<strong>${state.egg.stepsRemaining} 步</strong>
+              </p>
+              <div class="health" style="margin-top:6px;">
+                <span>孵化進度</span>
+                <div><i style="width:${Math.round(((32 - (state.egg.stepsRemaining || 0)) / 32) * 100)}%;background:#a855f7;"></i></div>
+                <small>${32 - (state.egg.stepsRemaining || 0)} / 32 步</small>
+              </div>
             </div>
-            ${actionBtn}
+            <button type="button" class="button primary" id="btnHatchEggNow" style="background:#7e22ce;border-color:#581c87;color:#fff;">
+              ⚡ 道館能量立即孵化！
+            </button>
+          </div>
+        `
+        : "";
+
+      const renderSlotCard = (slotLabel, pObj) => {
+        if (!pObj) {
+          return `
+            <div class="parent-slot-box">
+              <div style="font-size:30px;">➕</div>
+              <div>
+                <strong>${slotLabel}：尚未選擇</strong>
+                <div style="font-size:13px;color:#64748b;">請從下方點選 1 隻 Lv.5 以上的健康寶可夢</div>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="parent-slot-box filled">
+            <img src="${getPokemonDisplayUrl(pObj, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(pObj, "portrait")}'" alt="${pObj.name}" />
+            <div>
+              <strong style="font-size:18px;color:#4c1d95;">${slotLabel}：${pObj.name} (Lv.${pObj.level})</strong>
+              <div style="font-size:13px;color:#334155;font-weight:800;">
+                ${pObj.type}系 · ⚔️${pObj.atk} / 🛡️${pObj.def} / ❤️${pObj.maxHp}
+              </div>
+              <div>${formatTraitBadges(pObj.traits)}</div>
+            </div>
           </div>
         `;
+      };
+
+      const previewHtml = previewChild
+        ? `
+          <div class="hybrid-preview-box">
+            <img src="${generatePixelCreatureDataUrl(previewChild.art, false)}" alt="${previewChild.name}" />
+            <div style="flex:1 1 260px;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span class="gen-badge">🧬 第 ${previewChild.generation} 代合成物種預覽</span>
+                <strong style="font-size:22px;color:#4c1d95;">【${previewChild.name}】 (${previewChild.enName})</strong>
+                <span style="font-size:14px;font-weight:900;color:#1e40af;">初始 Lv.${previewChild.minLv}</span>
+              </div>
+              <div style="font-size:14px;color:#334155;font-weight:800;margin-top:4px;">
+                融合雙屬性：<strong>${previewChild.type}系</strong> ｜ 繼承能力：❤️HP <strong>${previewChild.baseHp}</strong> · ⚔️ATK <strong>${previewChild.baseAtk}</strong> · 🛡️DEF <strong>${previewChild.baseDef}</strong> ｜ 融合絕招：<strong>${previewChild.move}</strong>
+              </div>
+              <div style="margin-top:4px;">
+                繼承特性：${formatTraitBadges(previewChild.traits)}
+              </div>
+              <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <label style="font-size:14px;font-weight:800;color:#581c87;">✏️ 自訂合成獸名稱：</label>
+                <input type="text" id="inputHybridName" value="${nurseryCustomName}" placeholder="留空則使用「${previewChild.name}」" maxlength="10" style="padding:4px 8px;border:2px solid #a855f7;border-radius:4px;font-size:15px;width:190px;" />
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button type="button" class="button primary" id="btnBreedInstant" ${state.coins < 120 ? "disabled" : ""} style="background:#7e22ce;border-color:#4c1d95;color:#fff;">
+                ⚡ 立即合成誕生 (₽120)
+              </button>
+              <button type="button" class="button gold" id="btnBreedEgg" ${state.egg || state.coins < 120 ? "disabled" : ""}>
+                🥚 領取合成蛋 (₽120 · 走32步孵化)
+              </button>
+            </div>
+          </div>
+        `
+        : `
+          <div style="background:#fef2f2;border:2px solid #f87171;border-radius:8px;padding:12px 14px;margin-bottom:12px;color:#991b1b;font-weight:800;font-size:15px;">
+            💡 請在下方選擇 <strong>2 隻達 Lv.5 以上的健康寶可夢</strong> 作為「親代 A」與「親代 B」，即可預覽並合成出繼承雙親屬性、特性與高能力值的全新合成寶可夢！（親代不會消失，會留在你的隊伍中！）
+          </div>
+        `;
+
+      const companionRows = allOwned
+        .map((p) => {
+          const isA = p.uid === nurserySelA;
+          const isB = p.uid === nurserySelB;
+          const lvOk = p.level >= 5 && p.hp > 0;
+          return `
+            <div class="catalog-row" style="background:${isA || isB ? "#f3e8ff" : lvOk ? "#e8ecd8" : "#f1f5f9"};border-color:${isA || isB ? "#7e22ce" : "#a0b0a8"};">
+              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:52px;height:52px;image-rendering:pixelated;object-fit:contain;background:#fff;border-radius:6px;border:2px solid #94a3b8;" />
+              <div>
+                <strong>
+                  ${p.name} · Lv.${p.level}
+                  ${p.generation ? `<span class="gen-badge">第${p.generation}代</span>` : ""}
+                  ${isA ? `<span class="gen-badge" style="background:#7e22ce;color:#fff;">親代 A</span>` : ""}
+                  ${isB ? `<span class="gen-badge" style="background:#2563eb;color:#fff;">親代 B</span>` : ""}
+                </strong>
+                <p>${p.type}系 · ⚔️ATK ${p.atk} · 🛡️DEF ${p.def} · HP ${p.hp}/${p.maxHp} · 絕招：${p.specialMove}</p>
+                <div>${formatTraitBadges(p.traits)}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${
+                  lvOk
+                    ? `
+                      <button type="button" class="button ${isA ? "primary" : ""}" data-pick-a="${p.uid}">選為親代 A</button>
+                      <button type="button" class="button ${isB ? "primary" : ""}" data-pick-b="${p.uid}">選為親代 B</button>
+                    `
+                    : `
+                      <button type="button" class="button gold" data-boost-lv5="${p.uid}">
+                        ⬆️ 強化至 Lv.5 解鎖合成
+                      </button>
+                    `
+                }
+              </div>
+            </div>
+          `;
         })
         .join("");
 
       bodyEl.innerHTML = `
-        <div class="wallet">
-          <span>🪙 持有金幣：₽ ${state.coins}</span>
-          <button type="button" class="button gold" id="btnBagToShop">🏪 前往寶可夢商店購買道具</button>
+        <div class="wallet" style="background:#f3e8ff;border-color:#a855f7;color:#581c87;">
+          <span>🪙 訓練家金幣：₽ ${state.coins}（培育屋合成費：₽ 120 / 次 · 雙親保留不消失）</span>
+          <span style="font-size:15px;">🧬 已合成新物種：${(state.customSpecies || []).length} 種</span>
         </div>
-        ${state.repelSteps > 0 ? `<p style="color:#15803d;font-weight:800;margin-bottom:8px;">🌿 除蟲噴霧效果剩餘：${state.repelSteps} 步</p>` : ""}
-        <div class="catalog-list">
-          ${ownedRows || `<p style="color:#64748b;">背包目前沒有道具，快去地圖開啟寶箱或前往商店購買吧！</p>`}
+
+        ${eggHtml}
+
+        <div class="nursery-workbench">
+          ${renderSlotCard("🧬 親代 A", parentA)}
+          <div style="font-size:28px;font-weight:900;color:#7e22ce;text-align:center;">✕</div>
+          ${renderSlotCard("🧬 親代 B", parentB)}
+        </div>
+
+        ${previewHtml}
+
+        <h3 style="font-size:17px;font-weight:900;color:#1e293b;margin-bottom:6px;">
+          🐾 選擇親代寶可夢（目前符合 Lv.5+ 資格共 ${eligible.length} / ${allOwned.length} 隻）：
+        </h3>
+        <div class="catalog-list">${companionRows}</div>
+      `;
+
+      const hatchNowBtn = document.getElementById("btnHatchEggNow");
+      if (hatchNowBtn) {
+        hatchNowBtn.onclick = () => {
+          const res = hatchCurrentEgg();
+          if (res && res.childPoke) {
+            showToast(`🐣 孵化成功！第 ${res.childPoke.generation} 代合成獸【${res.childPoke.name} Lv.${res.childPoke.level}】已加入隊伍！`);
+            openMenuModal("nursery");
+          }
+        };
+      }
+
+      const nameInp = document.getElementById("inputHybridName");
+      if (nameInp) {
+        nameInp.oninput = (e) => {
+          nurseryCustomName = e.target.value;
+        };
+      }
+
+      const executeBreed = (instantHatch) => {
+        if (!parentA || !parentB || parentA.uid === parentB.uid) return;
+        if (state.coins < 120) {
+          SFX.playWrong();
+          showToast("⚠️ 金幣不足 ₽120！請先到道館答題或開啟地圖寶箱獲得金幣！");
+          return;
+        }
+        const customVal = (document.getElementById("inputHybridName")?.value || nurseryCustomName || "").trim();
+        const childSp = buildSynthesizedSpecies(parentA, parentB, customVal);
+        state.coins -= 120;
+        parentA.breedAfterStep = (state.steps || 0) + 32;
+        parentB.breedAfterStep = (state.steps || 0) + 32;
+        state.egg = {
+          parentNames: [parentA.name, parentB.name],
+          stepsRemaining: 32,
+          childSpecies: childSp
+        };
+        nurseryCustomName = "";
+
+        if (instantHatch) {
+          const res = hatchCurrentEgg();
+          if (res && res.childPoke) {
+            showToast(
+              `🎉 合成成功！第 ${res.childPoke.generation} 代合成寶可夢【${res.childPoke.name} Lv.${res.childPoke.level}】已加入你的${res.inParty ? "出戰隊伍" : "倉庫"}！`
+            );
+          }
+        } else {
+          SFX.playHeal();
+          addJournalEntry(`🥚 在培育屋由【${parentA.name} × ${parentB.name}】獲得了合成精靈蛋！`);
+          saveGame();
+          updateAllHUD();
+          showToast(`🥚 已領取【${childSp.name}】的合成蛋！在地圖走 32 步或點擊「立即孵化」即可誕生！`);
+        }
+        openMenuModal("nursery");
+      };
+
+      const btnInstant = document.getElementById("btnBreedInstant");
+      if (btnInstant) btnInstant.onclick = () => executeBreed(true);
+      const btnEgg = document.getElementById("btnBreedEgg");
+      if (btnEgg) btnEgg.onclick = () => executeBreed(false);
+
+      bodyEl.querySelectorAll("button[data-pick-a]").forEach((btn) => {
+        btn.onclick = () => {
+          const uid = btn.getAttribute("data-pick-a");
+          if (nurserySelB === uid) nurserySelB = nurserySelA;
+          nurserySelA = uid;
+          SFX.playClick();
+          openMenuModal("nursery");
+        };
+      });
+      bodyEl.querySelectorAll("button[data-pick-b]").forEach((btn) => {
+        btn.onclick = () => {
+          const uid = btn.getAttribute("data-pick-b");
+          if (nurserySelA === uid) nurserySelA = nurserySelB;
+          nurserySelB = uid;
+          SFX.playClick();
+          openMenuModal("nursery");
+        };
+      });
+      bodyEl.querySelectorAll("button[data-boost-lv5]").forEach((btn) => {
+        btn.onclick = () => {
+          const uid = btn.getAttribute("data-boost-lv5");
+          const target = allOwned.find((p) => p.uid === uid);
+          if (!target) return;
+          const needLevels = Math.max(1, 5 - target.level);
+          if ((state.items["exp-candy-s"] || 0) >= 1) {
+            state.items["exp-candy-s"]--;
+            gainPokemonExp(target, needLevels * 20, false);
+            saveGame();
+            updateAllHUD();
+            showToast(`🍬 使用經驗糖果將【${target.name}】提升至 Lv.${target.level}，已解鎖培育屋合成資格！`);
+            openMenuModal("nursery");
+          } else if (state.coins >= 80) {
+            state.coins -= 80;
+            gainPokemonExp(target, needLevels * 20, false);
+            saveGame();
+            updateAllHUD();
+            showToast(`⬆️ 消耗 ₽80 將【${target.name}】特訓升至 Lv.${target.level}，已解鎖合成資格！`);
+            openMenuModal("nursery");
+          } else {
+            SFX.playWrong();
+            showToast("⚠️ 請先去國語或數學道館答題升級，或在商店購買經驗糖果！");
+          }
+        };
+      });
+      return;
+    }
+
+    if (tab === "bag") {
+      const ownedItems = DATA.shopItems.filter(
+        (it) => (it.effect === "vehicle" && state.ownedBicycle) || (state.items[it.id] || 0) > 0
+      );
+      const luckyBonus = (state.items["lucky-egg"] || 0) * 25;
+      const coinBonus = (state.items["amulet-coin"] || 0) * 50;
+      const candyLvBonus = (state.items["rare-candy"] || 0) * 2;
+
+      const bagCards = ownedItems
+        .map((it) => {
+          const count = it.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.items[it.id] || 0;
+          const maxCarry = it.maxCarry || 9;
+          const orbClass = it.orbTheme || (it.tier >= 4 ? "gold-burst" : it.tier === 3 ? "epic-burst" : "mint");
+          const fallbackUrl = getItemFallbackSvgUrl(it);
+          const imgSrc = it.spriteUrl || fallbackUrl;
+
+          let actionHtml = "";
+          if (it.effect === "capture") {
+            actionHtml = `
+              <button type="button" class="pb-cta-btn shortfall" disabled style="background:#64748b;">
+                <span>於野外／頭目對戰中投擲</span>
+                <span class="pb-price-tag">持有 ×${count}</span>
+              </button>
+            `;
+          } else if (it.effect === "amulet-coin") {
+            actionHtml = `
+              <button type="button" class="pb-cta-btn can-buy" disabled style="background:linear-gradient(135deg,#16a34a,#059669);cursor:default;">
+                <span>✅ 被動生效中 (金幣 +${count * 50}%)</span>
+                <span class="pb-price-tag">×${count}</span>
+              </button>
+            `;
+          } else if (it.effect === "vehicle") {
+            actionHtml = `
+              <button type="button" class="pb-cta-btn can-buy" data-use-bag="${it.id}">
+                <span>${state.ridingBicycle ? "🚲 切換為步行" : "🚲 立即騎乘腳踏車"}</span>
+                <span class="pb-price-tag">160% 移速</span>
+              </button>
+            `;
+          } else if (it.effect === "sweet-honey") {
+            actionHtml = `
+              <button type="button" class="pb-cta-btn can-buy" data-use-bag="${it.id}" style="background:linear-gradient(135deg,#d97706,#f59e0b);">
+                <span>🍯 立即吸引區域頭目出沒</span>
+                <span class="pb-price-tag">使用 ×1</span>
+              </button>
+            `;
+          } else {
+            actionHtml = `
+              <button type="button" class="pb-cta-btn can-buy" data-use-bag="${it.id}">
+                <span>✨ 對出戰隊長使用</span>
+                <span class="pb-price-tag">剩餘 ×${count}</span>
+              </button>
+            `;
+          }
+
+          return `
+            <div class="pb-item-card">
+              <div>
+                <div class="pb-card-top">
+                  <div class="pb-orb ${orbClass}">
+                    <img class="pb-sprite" src="${imgSrc}" onerror="this.onerror=null;this.src='${fallbackUrl}';" alt="${it.name}" />
+                  </div>
+                  <div class="pb-title-wrap">
+                    <strong>${it.name}</strong>
+                    <div class="pb-owned-line">
+                      <span class="pb-rarity-dot" style="background:${it.dotColor || "#22c55e"};"></span>
+                      <span>背包中有 ${count}/${maxCarry} 個</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="pb-desc">${it.description}</div>
+              </div>
+              <div>
+                <div class="pb-stock-pill">📦 目前持有：${count} 個</div>
+                ${actionHtml}
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      bodyEl.innerHTML = `
+        <div class="pb-shop-shell">
+          <div class="pb-header-row">
+            <div class="pb-green-banner">
+              <strong>背包</strong>
+              <span>檢視與使用你的冒險神器與補給道具</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="pb-currency-pill" title="目前持有金幣">
+                <span>🪙</span>
+                <span>${state.coins}</span>
+              </div>
+              <button type="button" class="button gold" id="btnBagToShop" style="border-radius:999px;padding:7px 16px;">
+                🏪 前往商店兌換道具
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+            <span style="background:rgba(34,197,94,0.18);border:1px solid #4ade80;color:#bbf7d0;padding:5px 12px;border-radius:999px;font-size:0.86rem;font-weight:800;">
+              🍀 幸運蛋經驗加成：+${luckyBonus}%
+            </span>
+            <span style="background:rgba(250,204,21,0.18);border:1px solid #facc15;color:#fef08a;padding:5px 12px;border-radius:999px;font-size:0.86rem;font-weight:800;">
+              🪙 護符金幣加成：+${coinBonus}%
+            </span>
+            <span style="background:rgba(96,165,250,0.18);border:1px solid #60a5fa;color:#bfdbfe;padding:5px 12px;border-radius:999px;font-size:0.86rem;font-weight:800;">
+              🍬 神奇糖果收服等級加成：+${candyLvBonus} 級
+            </span>
+            ${
+              state.repelSteps > 0
+                ? `<span style="background:rgba(16,185,129,0.25);border:1px solid #34d399;color:#ecfdf5;padding:5px 12px;border-radius:999px;font-size:0.86rem;font-weight:800;">
+                     🌿 除蟲噴霧剩餘：${state.repelSteps} 步
+                   </span>`
+                : ""
+            }
+          </div>
+
+          <div class="pb-section-header">
+            <span class="pb-section-dot"></span>
+            <span>已擁有背包道具</span>
+            <span class="pb-section-count">${ownedItems.length}</span>
+          </div>
+
+          ${
+            ownedItems.length > 0
+              ? `<div class="pb-cards-grid">${bagCards}</div>`
+              : `<div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:24px;text-align:center;color:#cbd5e1;font-weight:800;">
+                   背包目前沒有道具，快點擊右上角「🏪 前往商店兌換道具」或去道館特訓賺取金幣吧！
+                 </div>`
+          }
         </div>
       `;
 
       document.getElementById("btnBagToShop").onclick = () => openMenuModal("shop");
       bodyEl.querySelectorAll("button[data-use-bag]").forEach((btn) => {
         btn.onclick = () => {
-          useBagItemOutOfBattle(btn.getAttribute("data-use-bag"));
-          openMenuModal("bag");
+          const itemId = btn.getAttribute("data-use-bag");
+          useBagItemOutOfBattle(itemId);
         };
       });
       return;
     }
 
     if (tab === "shop") {
-      const shopRows = DATA.shopItems
-        .map((it) => {
-          const ownedCount = it.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.items[it.id] || 0;
-          const canBuy = state.coins >= it.price && !(it.effect === "vehicle" && state.ownedBicycle);
-          const iconEmoji =
-            it.effect === "capture"
-              ? "🔴"
-              : it.effect === "heal"
-              ? "🧪"
-              : it.effect === "vehicle"
-              ? "🚲"
-              : it.effect.includes("boost")
-              ? "🏅"
-              : "✨";
-          return `
-          <div class="catalog-row">
-            <div class="item-icon-box" style="background:${it.color}22;border-color:${it.color};">${iconEmoji}</div>
-            <div>
-              <strong>${it.name}</strong>
-              <p>${it.description}</p>
-              <small style="color:#475569;font-weight:800;">目前持有：${it.effect === "vehicle" ? (state.ownedBicycle ? "已擁有" : "未購買") : ownedCount + " 個"}</small>
-            </div>
-            <button type="button" class="button ${canBuy ? "primary" : ""}" data-buy-id="${it.id}" ${!canBuy ? "disabled" : ""}>
-              ${it.effect === "vehicle" && state.ownedBicycle ? "已購買" : `購買 · ₽${it.price}`}
+      if (!state.shopPurchased) state.shopPurchased = {};
+
+      const renderShopCard = (it) => {
+        const ownedCount = it.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.items[it.id] || 0;
+        const maxStock = it.maxStock || 4;
+        const maxCarry = it.maxCarry || 9;
+        const boughtCount = it.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.shopPurchased[it.id] || 0;
+        const remainingStock = Math.max(0, maxStock - boughtCount);
+        const curPrice = it.price + boughtCount * (it.priceStep || 0);
+        const nextPrice = it.price + (boughtCount + 1) * (it.priceStep || 0);
+        const canBuy = remainingStock > 0 && ownedCount < maxCarry && state.coins >= curPrice;
+        const shortfall = Math.max(0, curPrice - (state.coins || 0));
+        const orbClass = it.orbTheme || (it.tier >= 4 ? "gold-burst" : it.tier === 3 ? "epic-burst" : "mint");
+        const fallbackUrl = getItemFallbackSvgUrl(it);
+        const imgSrc = it.spriteUrl || fallbackUrl;
+
+        let ctaBtnHtml = "";
+        if (remainingStock <= 0 || ownedCount >= maxCarry) {
+          ctaBtnHtml = `
+            <button type="button" class="pb-cta-btn shortfall" disabled>
+              <span>已達購買上限</span>
+              <span class="pb-price-tag">✅ 已滿</span>
             </button>
+          `;
+        } else if (canBuy) {
+          ctaBtnHtml = `
+            <button type="button" class="pb-cta-btn can-buy" data-buy-id="${it.id}">
+              <span>立即兌換</span>
+              <span class="pb-price-tag">🪙 ${curPrice}</span>
+            </button>
+          `;
+        } else {
+          ctaBtnHtml = `
+            <button type="button" class="pb-cta-btn shortfall" data-buy-id="${it.id}">
+              <span>還差 ${shortfall}</span>
+              <span class="pb-price-tag">🪙 ${curPrice}</span>
+            </button>
+          `;
+        }
+
+        return `
+          <div class="pb-item-card">
+            <div>
+              <div class="pb-card-top">
+                <div class="pb-orb ${orbClass}">
+                  <img class="pb-sprite" src="${imgSrc}" onerror="this.onerror=null;this.src='${fallbackUrl}';" alt="${it.name}" />
+                </div>
+                <div class="pb-title-wrap">
+                  <strong>${it.name}</strong>
+                  <div class="pb-owned-line">
+                    <span class="pb-rarity-dot" style="background:${it.dotColor || "#22c55e"};"></span>
+                    <span>背包中有 ${ownedCount}/${maxCarry} 個</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pb-desc">${it.description}</div>
+            </div>
+
+            <div>
+              <div class="pb-stock-pill ${remainingStock <= 0 ? "sold-out" : ""}">
+                ${remainingStock > 0 ? `還能購買 ${remainingStock} 個` : `今日已全數兌換完畢`}
+              </div>
+              <div class="pb-meta-row">
+                <span>今日已購買：${boughtCount}/${maxStock}</span>
+                <span>${remainingStock > 1 && it.priceStep ? `下一個：${nextPrice}` : `單價：${curPrice}`}</span>
+              </div>
+              ${ctaBtnHtml}
+            </div>
           </div>
         `;
-        })
-        .join("");
+      };
+
+      const backpackItems = DATA.shopItems.filter((it) => it.category === "backpack");
+      const supplyItems = DATA.shopItems.filter((it) => it.category !== "backpack");
 
       bodyEl.innerHTML = `
-        <div class="wallet">
-          <span>🪙 訓練家錢包金幣：₽ ${state.coins}</span>
-          <button type="button" class="button" id="btnShopFreeHeal">💖 喬伊小姐免費全隊恢復 HP</button>
+        <div class="pb-shop-shell">
+          <div class="pb-header-row">
+            <div class="pb-green-banner">
+              <strong>商店</strong>
+              <span>用金幣兌換背包道具</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="button" class="button" id="btnShopFreeHeal" style="border-radius:999px;background:#ecfdf5;color:#065f46;border-color:#10b981;font-size:0.9rem;padding:6px 14px;">
+                💖 喬伊免費恢復全隊 HP
+              </button>
+              <div class="pb-currency-pill" title="透過國語道館、數學道館結算與地圖寶箱獲得金幣">
+                <span>🪙</span>
+                <span>${state.coins}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pb-section-header">
+            <span class="pb-section-dot" style="background:#22c55e;"></span>
+            <span>背包</span>
+            <span class="pb-section-count">${backpackItems.length}</span>
+          </div>
+          <div class="pb-cards-grid">
+            ${backpackItems.map(renderShopCard).join("")}
+          </div>
+
+          <div class="pb-section-header">
+            <span class="pb-section-dot" style="background:#38bdf8;box-shadow:0 0 8px #38bdf8;"></span>
+            <span>精靈球、醫療補給與道館裝備</span>
+            <span class="pb-section-count">${supplyItems.length}</span>
+          </div>
+          <div class="pb-cards-grid">
+            ${supplyItems.map(renderShopCard).join("")}
+          </div>
         </div>
-        <p style="font-size:15px;color:#334155;margin-bottom:10px;">
-          💡 在五大地圖開啟<strong>金幣寶箱</strong>或完成<strong>國語/數學道館訓練</strong>皆可獲得金幣（₽），用來購買高級精靈球、傷藥、永久攻防護符與越野腳踏車！
-        </p>
-        <div class="catalog-list">${shopRows}</div>
       `;
 
       document.getElementById("btnShopFreeHeal").onclick = () => healAllParty(true);
@@ -1695,17 +3496,26 @@
     }
 
     if (tab === "codex") {
-      const codexHtml = DATA.pokemonCatalog
+      const fullCatalog = DATA.pokemonCatalog.filter((cat) => cat.id < 900);
+      const codexHtml = fullCatalog
         .map((cat) => {
-          const caught = state.caughtIds.includes(cat.id);
-          const regName = cat.regionId === "starter" ? "初始夥伴" : (DATA.regions[cat.regionId]?.name || cat.regionId);
+          const caught = state.caughtIds.includes(cat.id) || Boolean(cat.isHybrid);
+          const regName = cat.isHybrid
+            ? `🧬 培育屋合成（親代：${(cat.parentNames || []).join("×")}）`
+            : cat.regionId === "starter"
+            ? "初始夥伴"
+            : DATA.regions[cat.regionId]?.name || cat.regionId;
           return `
-          <div class="catalog-row" style="opacity:${caught ? "1" : "0.65"};background:${caught ? "#e8f5e9" : "#f1f5f9"};">
-            <img src="${getPortraitUrl(cat.id4)}" onerror="this.src='${getStaticSpriteUrl(cat.id)}'" style="width:56px;height:56px;image-rendering:pixelated;border-radius:6px;border:2px solid #94a3b8;" />
+          <div class="catalog-row" style="opacity:${caught ? "1" : "0.65"};background:${cat.isHybrid ? "#f3e8ff" : caught ? "#e8f5e9" : "#f1f5f9"};">
+            <img src="${getPokemonDisplayUrl(cat, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(cat, "portrait")}'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;border-radius:6px;border:2px solid #94a3b8;background:#fff;" />
             <div>
-              <strong>#${cat.id4} ${cat.name} (${cat.enName}) ${caught ? "✅ 已收服" : "🔒 未收服"}</strong>
+              <strong>
+                #${cat.id4} ${cat.name} (${cat.enName})
+                ${cat.isHybrid ? `<span class="gen-badge">第${cat.generation || 1}代合成獸</span>` : ""}
+                ${caught ? "✅ 已收服" : "🔒 未收服"}
+              </strong>
               <p>${cat.desc}</p>
-              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 棲息地：${regName} (Lv.${cat.minLv}+) · 絕招：${cat.move}</small>
+              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 來源：${regName} (Lv.${cat.minLv}+) · 絕招：${cat.move}</small>
             </div>
           </div>
         `;
@@ -1714,9 +3524,60 @@
 
       bodyEl.innerHTML = `
         <p style="margin-bottom:10px;font-weight:800;">
-          📖 已收服寶可夢圖鑑：<strong>${state.caughtIds.length} / ${DATA.pokemonCatalog.length} 種</strong>（打敗野生寶可夢後丟出精靈球約 60% 機率收服）
+          📖 寶可夢圖鑑紀錄：<strong>已收服 ${state.caughtIds.length} / ${fullCatalog.length} 種</strong>（依金銀版既有寶可夢與等級進化）
         </p>
         <div class="catalog-list">${codexHtml}</div>
+      `;
+      return;
+    }
+
+    // ------------------------------------------------------------------------
+    // Tab: 冒險排行榜與日誌 (RECORDS — 移植自 infinite-pokemon VarietyPanels.tsx)
+    // ------------------------------------------------------------------------
+    if (tab === "records") {
+      const badgeCount = (state.badges.chinese ? 1 : 0) + (state.badges.math ? 1 : 0);
+      const hybridCount = (state.customSpecies || []).length;
+      const trainerWins = (state.defeatedTrainers || []).length + (state.defeatedGuardians || []).length;
+      const playerScore =
+        state.caughtIds.length * 100 +
+        badgeCount * 300 +
+        hybridCount * 220 +
+        trainerWins * 150 +
+        (state.atkBonus + state.defBonus) * 15;
+
+      const rivalBoard = [
+        { name: `${state.trainerName}（你）`, caught: state.caughtIds.length, hybrids: hybridCount, badges: badgeCount, score: playerScore, isMe: true },
+        { name: "道館學長 小茂", caught: 14, hybrids: 2, badges: 2, score: 2680, isMe: false },
+        { name: "培育家 小遙", caught: 11, hybrids: 4, badges: 2, score: 2420, isMe: false },
+        { name: "巡護員 阿哲", caught: 9, hybrids: 1, badges: 1, score: 1650, isMe: false }
+      ].sort((a, b) => b.score - a.score);
+
+      const boardRows = rivalBoard
+        .map(
+          (r, i) => `
+          <div class="catalog-row" style="background:${r.isMe ? "#fef9c3" : "#e8ecd8"};border-color:${r.isMe ? "#eab308" : "#a0b0a8"};">
+            <div class="item-icon-box" style="font-weight:900;font-size:20px;background:${i === 0 ? "#fde047" : "#fff"};">#${i + 1}</div>
+            <div>
+              <strong>${r.name}</strong>
+              <p>📖 圖鑑：${r.caught} 種 · 🧬 合成獸：${r.hybrids} 種 · 🏅 道館徽章：${r.badges} 枚</p>
+            </div>
+            <strong style="font-size:20px;color:#1e3a8a;">${r.score} 分</strong>
+          </div>
+        `
+        )
+        .join("");
+
+      const journalHtml = (state.journal || [])
+        .map((j) => `<div style="padding:6px 10px;border-bottom:1px solid #cbd5e1;font-size:15px;color:#334155;">• ${j}</div>`)
+        .join("");
+
+      bodyEl.innerHTML = `
+        <h3 style="font-size:18px;font-weight:900;color:#1e293b;margin-bottom:8px;">🏆 柳溪谷榮譽訓練家排行榜：</h3>
+        <div class="catalog-list" style="max-height:240px;margin-bottom:14px;">${boardRows}</div>
+        <h3 style="font-size:18px;font-weight:900;color:#1e293b;margin-bottom:6px;">📜 最近冒險與合成日誌：</h3>
+        <div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:6px;max-height:190px;overflow-y:auto;">
+          ${journalHtml || `<div style="padding:10px;color:#64748b;">尚無紀錄</div>`}
+        </div>
       `;
       return;
     }
@@ -1735,7 +3596,7 @@
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;font-size:17px;">
           <div style="background:#e8ecd8;padding:10px;border:2px solid #a0b0a8;">🐾 擁有寶可夢總數：<strong>${state.party.length + state.storage.length} 隻</strong></div>
-          <div style="background:#e8ecd8;padding:10px;border:2px solid #a0b0a8;">📖 圖鑑收服進度：<strong>${state.caughtIds.length} / ${DATA.pokemonCatalog.length}</strong></div>
+          <div style="background:#e8ecd8;padding:10px;border:2px solid #a0b0a8;">🧬 已合成新寶可夢：<strong>${(state.customSpecies || []).length} 種</strong></div>
           <div style="background:#fee2e2;padding:10px;border:2px solid #f87171;">⚔️ 國語文道館攻擊加成：<strong>+${state.atkBonus}</strong></div>
           <div style="background:#dbeafe;padding:10px;border:2px solid #60a5fa;">🛡️ 數學道館防禦加成：<strong>+${state.defBonus}</strong></div>
           <div style="background:#fef9c3;padding:10px;border:2px solid #facc15;">🪙 持有金幣：<strong>₽ ${state.coins}</strong></div>
@@ -1743,43 +3604,218 @@
         </div>
         ${lead ? `<p style="font-size:16px;color:#334155;">目前出戰隊長：<strong>${lead.name} Lv.${lead.level}</strong>（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def} / HP ${lead.hp}/${lead.maxHp}）</p>` : ""}
       `;
+      return;
+    }
+
+    if (tab === "save") {
+      const lead = getLeadPokemon();
+      const curReg = getCurrentRegion();
+
+      const slotsHtml = SAVE_SLOT_KEYS.map((key, idx) => {
+        let slotData = null;
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) slotData = JSON.parse(raw);
+        } catch (e) {}
+
+        const hasData = slotData && slotData.initialized && Array.isArray(slotData.party) && slotData.party.length > 0;
+        const sLead = hasData ? slotData.party[slotData.activeIndex || 0] || slotData.party[0] : null;
+        const sRegName = hasData ? (DATA.regions[slotData.regionId]?.name || "柳溪") : "";
+
+        return `
+          <div class="save-slot-card ${hasData ? "active-slot" : ""}">
+            <div style="flex:1 1 260px;">
+              <strong style="font-size:19px;color:#0f172a;">
+                📁 存檔槽 ${idx + 1} ${hasData ? `— 訓練家【${slotData.trainerName}】` : "（空白存檔槽）"}
+              </strong>
+              ${
+                hasData
+                  ? `<div style="font-size:14px;color:#334155;font-weight:700;margin-top:4px;">
+                       📍 位置：${sRegName} ｜ 🐾 隊長：${sLead ? `${sLead.name} Lv.${sLead.level}` : "無"}（共 ${slotData.party.length + (slotData.storage?.length || 0)} 隻）<br/>
+                       ⚔️ 國語攻擊 +${slotData.atkBonus || 0} ｜ 🛡️ 數學防禦 +${slotData.defBonus || 0} ｜ 🪙 金幣 ₽${slotData.coins || 0} ｜ 🕒 存檔時間：${slotData.lastSavedAt || "未知"}
+                     </div>`
+                  : `<div style="font-size:14px;color:#64748b;margin-top:4px;">尚未儲存任何進度，點擊右側「存入此槽」即可保存。</div>`
+              }
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="button primary" data-save-slot="${idx}">💾 存入此槽</button>
+              <button type="button" class="button gold" data-load-slot="${idx}" ${!hasData ? "disabled" : ""}>📂 讀取進度</button>
+              <button type="button" class="button danger" data-del-slot="${idx}" ${!hasData ? "disabled" : ""}>🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      bodyEl.innerHTML = `
+        <div style="background:#dcfce7;border:2px solid #22c55e;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div>
+            <strong style="font-size:19px;color:#14532d;">✅ 目前遊戲進度（本機自動存檔已啟用）</strong>
+            <div style="font-size:14px;color:#166534;font-weight:700;margin-top:3px;">
+              🧢 訓練家：${state.trainerName} ｜ 📍 地點：${curReg.name} ｜ 🐾 隊長：${lead ? `${lead.name} Lv.${lead.level}` : "無"} ｜ 🕒 最後存檔：${state.lastSavedAt || "剛剛"}
+            </div>
+          </div>
+          <button type="button" class="button primary" id="btnQuickSaveNow" style="background:#15803d;border-color:#14532d;color:#fff;">
+            💾 立即手動存檔
+          </button>
+        </div>
+
+        <h3 style="font-size:18px;font-weight:900;color:#1e293b;margin-bottom:6px;">🗂️ 多重存檔槽（可為不同同學或不同階段保存進度）：</h3>
+        <div class="save-slots-grid">${slotsHtml}</div>
+
+        <div style="margin-top:14px;padding:12px 14px;background:#f1f5f9;border:2px solid #cbd5e1;border-radius:8px;">
+          <strong style="font-size:16px;color:#1e293b;">🔄 跨裝置備份與還原（下載存檔檔案 / 匯入存檔檔案）：</strong>
+          <p style="font-size:14px;color:#475569;margin:4px 0 10px;">
+            若要在不同平板或電腦之間轉移進度，可點擊「下載存檔檔 (.json)」，之後在另一台裝置點擊「讀取存檔檔」即可完整恢復！
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="button" id="btnExportSaveFile">📤 下載存檔檔案 (.json)</button>
+            <label class="button primary" style="cursor:pointer;margin:0;">
+              📥 讀取存檔檔案 (.json)
+              <input type="file" id="inputImportSaveFile" accept=".json,application/json" style="display:none;" />
+            </label>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("btnQuickSaveNow").onclick = () => {
+        saveGame(true);
+        openMenuModal("save");
+      };
+
+      bodyEl.querySelectorAll("button[data-save-slot]").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-save-slot"), 10);
+          saveToSlot(idx);
+          openMenuModal("save");
+        };
+      });
+
+      bodyEl.querySelectorAll("button[data-load-slot]").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-load-slot"), 10);
+          if (loadFromSlot(idx)) {
+            modal.classList.add("hidden");
+          }
+        };
+      });
+
+      bodyEl.querySelectorAll("button[data-del-slot]").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-del-slot"), 10);
+          if (confirm(`確定要清除「存檔槽 ${idx + 1}」的進度紀錄嗎？`)) {
+            deleteSlot(idx);
+            openMenuModal("save");
+          }
+        };
+      });
+
+      document.getElementById("btnExportSaveFile").onclick = () => {
+        saveGame(false);
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `寶可夢訓練道館_${state.trainerName}_存檔.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("📤 已下載存檔檔案 (.json)！");
+      };
+
+      const fileInput = document.getElementById("inputImportSaveFile");
+      if (fileInput) {
+        fileInput.onchange = (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const parsed = JSON.parse(ev.target.result);
+              if (parsed && parsed.initialized && Array.isArray(parsed.party) && parsed.party.length > 0) {
+                state = Object.assign(getDefaultState(), parsed);
+                state.party = (state.party || []).map(ensurePokemonFields);
+                state.storage = (state.storage || []).map(ensurePokemonFields);
+                saveGame(false);
+                camX = state.x * TILE_SIZE;
+                camY = state.y * TILE_SIZE;
+                SFX.playHeal();
+                updateAllHUD();
+                modal.classList.add("hidden");
+                showToast(`🎉 成功匯入訓練家【${state.trainerName}】的冒險進度！`);
+              } else {
+                alert("存檔檔案格式不正確！");
+              }
+            } catch (err) {
+              alert("無法讀取該存檔檔案，請確認是否為有效的 .json 存檔！");
+            }
+          };
+          reader.readAsText(file);
+        };
+      }
+      return;
     }
   }
 
   function buyShopItem(itemId) {
     const item = DATA.shopItems.find((it) => it.id === itemId);
     if (!item) return;
-    if (state.coins < item.price) {
+    if (!state.shopPurchased) state.shopPurchased = {};
+
+    const maxStock = item.maxStock || 4;
+    const maxCarry = item.maxCarry || 9;
+    const boughtCount = item.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.shopPurchased[item.id] || 0;
+    const ownedCount = item.effect === "vehicle" ? (state.ownedBicycle ? 1 : 0) : state.items[item.id] || 0;
+    const curPrice = item.price + boughtCount * (item.priceStep || 0);
+
+    if (boughtCount >= maxStock || ownedCount >= maxCarry) {
       SFX.playWrong();
-      showToast("⚠️ 金幣不足！快去地圖上尋找寶箱或到道館答題賺取金幣（₽）！");
+      showToast(`⚠️ 【${item.name}】已達購買或背包攜帶上限！`);
       return;
     }
-    state.coins -= item.price;
+
+    if (state.coins < curPrice) {
+      SFX.playWrong();
+      showToast(`⚠️ 金幣還差 ₽${curPrice - state.coins}！快去國語或數學道館完成練習結算領取豐厚金幣！`);
+      return;
+    }
+
+    state.coins -= curPrice;
+    state.shopPurchased[item.id] = boughtCount + 1;
     SFX.playChest();
 
     if (item.effect === "vehicle") {
       state.ownedBicycle = true;
       state.ridingBicycle = true;
-      showToast("🚲 恭喜購買【越野腳踏車】！現在你在戶外地圖的移動速度大幅提升了！");
+      showToast("🚲 恭喜兌換【越野腳踏車】！現在你在戶外地圖的移動速度提升至 160%！");
     } else if (item.effect === "atk-boost") {
       state.atkBonus += item.power;
+      state.items[itemId] = (state.items[itemId] || 0) + 1;
       state.party.forEach((p) => {
         p.atk += item.power;
         p.level += 1;
       });
-      showToast(`⚔️ 使用【${item.name}】！全隊寶可夢永久提升攻擊力 +${item.power} 並升 1 級！`);
+      showToast(`⚔️ 兌換【${item.name}】！全隊寶可夢永久提升攻擊力 +${item.power} 並升 1 級！`);
     } else if (item.effect === "def-boost") {
       state.defBonus += item.power;
+      state.items[itemId] = (state.items[itemId] || 0) + 1;
       state.party.forEach((p) => {
         p.def += item.power;
         p.maxHp += 15;
         p.hp = p.maxHp;
         p.level += 1;
       });
-      showToast(`🛡️ 使用【${item.name}】！全隊寶可夢永久提升防禦力 +${item.power}、最大HP +15！`);
+      showToast(`🛡️ 兌換【${item.name}】！全隊寶可夢永久提升防禦力 +${item.power}、最大HP +15！`);
+    } else if (item.effect === "rare-candy") {
+      state.items[itemId] = (state.items[itemId] || 0) + 1;
+      const lead = getLeadPokemon();
+      if (lead) {
+        gainPokemonExp(lead, (lead.xpToNext || 20) * 2, false);
+      }
+      showToast(`🍬 兌換【神奇糖果】×1！出戰隊長立即連升 2 級，且後續新收服寶可夢開局額外 +2 級！`);
     } else {
       state.items[itemId] = (state.items[itemId] || 0) + 1;
-      showToast(`🛍️ 成功購買【${item.name}】×1！（剩餘金幣 ₽${state.coins}）`);
+      showToast(`🛍️ 成功兌換【${item.name}】×1！（剩餘金幣 ₽${state.coins}）`);
     }
     saveGame();
     updateAllHUD();
@@ -1787,9 +3823,33 @@
 
   function useBagItemOutOfBattle(itemId) {
     const item = DATA.shopItems.find((it) => it.id === itemId);
-    if (!item || (state.items[itemId] || 0) <= 0) return;
+    if (!item) return;
+
+    if (item.effect === "vehicle") {
+      if (!state.ownedBicycle) return;
+      state.ridingBicycle = !state.ridingBicycle;
+      SFX.playClick();
+      saveGame();
+      updateAllHUD();
+      openMenuModal("bag");
+      showToast(state.ridingBicycle ? "🚲 已騎上越野腳踏車（移動速度 160%）！" : "👟 已切換為步行模式。");
+      return;
+    }
+
+    if ((state.items[itemId] || 0) <= 0) return;
     const lead = getLeadPokemon();
     if (!lead) return;
+    ensurePokemonFields(lead);
+
+    if (item.effect === "sweet-honey") {
+      state.items[itemId]--;
+      saveGame();
+      updateAllHUD();
+      document.getElementById("menuModal").classList.add("hidden");
+      showToast("🍯 甜甜蜜散發出濃郁香氣！成功吸引本區域的【頭目寶可夢】出沒！");
+      startGuardianBattle({ id: "honey-alpha", name: `${getCurrentRegion().name.split(" ")[0]}頭目` });
+      return;
+    }
 
     state.items[itemId]--;
     SFX.playHeal();
@@ -1797,6 +3857,25 @@
     if (item.effect === "heal") {
       lead.hp = Math.min(lead.maxHp, lead.hp + item.power);
       showToast(`💖 對【${lead.name}】使用了${item.name}，恢復 ${item.power} HP！`);
+    } else if (item.effect === "rare-candy") {
+      const res = gainPokemonExp(lead, (lead.xpToNext || 20) * 2, false);
+      showToast(`🍬 使用【神奇糖果】！【${lead.name}】連升 2 級至 Lv.${lead.level}（HP+${res.totalHpGain}/ATK+${res.totalAtkGain}/DEF+${res.totalDefGain}）！`);
+    } else if (item.effect === "lucky-egg") {
+      const res = gainPokemonExp(lead, 30, false);
+      showToast(`🥚 使用【幸運蛋】能量！【${lead.name}】獲得 +${res.expGain} EXP（升至 Lv.${lead.level}）！`);
+    } else if (item.effect === "exp-candy") {
+      const res = gainPokemonExp(lead, item.power || 20, false);
+      showToast(`🍬 餵食【${item.name}】！【${lead.name}】升上了 Lv.${lead.level}（HP+${res.totalHpGain}/ATK+${res.totalAtkGain}/DEF+${res.totalDefGain}）！`);
+    } else if (item.effect === "breakthrough") {
+      lead.breakthroughStage = (lead.breakthroughStage || 0) + 1;
+      lead.level += 1;
+      lead.maxHp += 20;
+      lead.hp = lead.maxHp;
+      lead.atk += 6;
+      lead.def += 6;
+      if (!lead.name.includes("★")) lead.name = `${lead.name}★`;
+      SFX.playHatch();
+      showToast(`🌟 【${lead.name}】使用覺醒之石完成突破進化！全能力大幅提升！`);
     } else if (item.effect === "revive") {
       lead.hp = Math.max(lead.hp, Math.round(lead.maxHp * 0.5));
       showToast(`✨ 【${lead.name}】恢復了精神與一半 HP！`);
@@ -1822,111 +3901,502 @@
     }
     saveGame();
     updateAllHUD();
+    openMenuModal("bag");
   }
 
 
   // --------------------------------------------------------------------------
-  // 國語文道館（南一版第 1~6 課）— 提升攻擊力 ATK
-  // (a) 初階：語音出題 ＋ iPad 繁體中文田字格手寫辨識
-  // (b) 中階：照樣造句／詞語造句
-  // (c) 高階：閱讀測驗
+  // 隨機抽題工具函式（每次進入道館或切換難度皆重新隨機抽取指定題數）
+  // --------------------------------------------------------------------------
+  function shuffleArray(arr) {
+    const copy = Array.isArray(arr) ? [...arr] : [];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function sampleQuestions(pool, count) {
+    const shuffled = shuffleArray(pool).slice(0, Math.min(count, pool.length));
+    return shuffled.map((item) => {
+      const clone = JSON.parse(JSON.stringify(item));
+      if (Array.isArray(clone.options)) {
+        clone.options = shuffleArray(clone.options);
+      }
+      if (Array.isArray(clone.questions)) {
+        clone.questions = clone.questions.map((qObj) => {
+          if (Array.isArray(qObj.options) && typeof qObj.answer === "number") {
+            const correctText = qObj.options[qObj.answer];
+            const newOpts = shuffleArray(qObj.options);
+            return {
+              ...qObj,
+              options: newOpts,
+              answer: newOpts.indexOf(correctText)
+            };
+          }
+          return qObj;
+        });
+      }
+      return clone;
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 道館進度條與結算共用輔助函式
+  // --------------------------------------------------------------------------
+  function createEmptyTierStats() {
+    return {
+      atk: 0,
+      def: 0,
+      hp: 0,
+      coins: 0,
+      mistakes: 0,
+      bonusClaimed: false,
+      items: []
+    };
+  }
+
+  function findNextUnansweredIndex(doneSet, currentIdx, total) {
+    for (let offset = 1; offset <= total; offset++) {
+      const candidate = (currentIdx + offset) % total;
+      if (!doneSet.has(candidate)) return candidate;
+    }
+    return currentIdx;
+  }
+
+  function buildGymProgressStripHtml(gymType, tier, curIdx, total, doneSet) {
+    const doneCount = doneSet ? doneSet.size : 0;
+    const tierNameMap = {
+      a: `初階（目標 ${total} 題）`,
+      b: `中階（目標 ${total} 題）`,
+      c: `進階（目標 ${total} 題）`
+    };
+    let dotsHtml = "";
+    for (let i = 0; i < total; i++) {
+      const isDone = doneSet && doneSet.has(i);
+      const isCurrent = i === curIdx;
+      const cls = ["gym-step-dot", isDone ? "done" : "", isCurrent ? "current" : ""]
+        .filter(Boolean)
+        .join(" ");
+      dotsHtml += `<span class="${cls}" data-step-idx="${i}" style="cursor:pointer;" title="點擊前往第 ${i + 1} 題">${
+        isDone ? "✓" : i + 1
+      }</span>`;
+    }
+    const allDoneBtn =
+      doneCount >= total
+        ? `<button type="button" class="btn-pixel" id="btnViewSettlementNow" style="padding:4px 12px;font-size:0.82rem;">🏆 查看結算畫面</button>`
+        : "";
+
+    return `
+      <div class="gym-progress-strip">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:900;color:${gymType === "chinese" ? "#882818" : "#184078"};">
+            📊 ${tierNameMap[tier] || ""}進度：已完成 <strong>${doneCount} / ${total}</strong> 題
+          </span>
+          <span style="font-size:0.8rem;font-weight:800;color:#64748b;">
+            （做完 ${total} 題自動進入結算畫面！）
+          </span>
+          ${allDoneBtn}
+        </div>
+        <div class="gym-step-dots" id="gymStepDotsBar">${dotsHtml}</div>
+      </div>
+    `;
+  }
+
+  function bindGymProgressStripEvents(container, gymType, tier, onSelectIdx) {
+    if (!container) return;
+    container.querySelectorAll("#gymStepDotsBar .gym-step-dot").forEach((dot) => {
+      dot.onclick = () => {
+        const idx = parseInt(dot.getAttribute("data-step-idx"), 10);
+        if (!isNaN(idx)) {
+          SFX.playClick();
+          onSelectIdx(idx);
+        }
+      };
+    });
+    const settleBtn = container.querySelector("#btnViewSettlementNow");
+    if (settleBtn) {
+      settleBtn.onclick = () => {
+        SFX.playClick();
+        if (gymType === "chinese") renderChineseSettlement(tier);
+        else renderMathSettlement(tier);
+      };
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 國語文道館（南一版第 1~6 課 & 題庫卷）— 提升攻擊力 ATK
+  // (a) 初階（10 題）：第 1~6 課生字聽寫手寫練習（無任何候選字選項，完全親手書寫） -> 做完 10 題出現結算畫面
+  // (b) 中階（8 題）：題庫精選（改錯字、多音字、選詞填寫、部首字形、修辭、課文理解） -> 練習完 8 題出現結算畫面
+  // (c) 進階（5 題）：閱讀測驗理解 -> 練習完 5 題出現結算畫面
   // --------------------------------------------------------------------------
   let chState = {
     tier: "a",
     qIndexA: 0,
     qIndexB: 0,
     qIndexC: 0,
+    poolA: [],
+    poolB: [],
+    poolC: [],
+    done: { a: new Set(), b: new Set(), c: new Set() },
+    stats: {
+      a: createEmptyTierStats(),
+      b: createEmptyTierStats(),
+      c: createEmptyTierStats()
+    },
+    advanceTimer: null,
     recognizedChars: [],
-    showTraceGuide: false,
-    selectedBlocks: []
+    candidateLists: [],
+    strokeCounts: [],
+    strokeLengths: [],
+    showRadicalHint: false,
+    showStrokeHint: false
   };
+
+  function clearChineseAdvanceTimer() {
+    if (chState.advanceTimer) {
+      clearTimeout(chState.advanceTimer);
+      chState.advanceTimer = null;
+    }
+  }
+
+  function resampleChineseTier(tier) {
+    clearChineseAdvanceTimer();
+    if (tier === "a") {
+      chState.poolA = sampleQuestions(DATA.chineseGym.dictationQuestions || [], 10);
+      chState.qIndexA = 0;
+      chState.done.a = new Set();
+      chState.stats.a = createEmptyTierStats();
+    } else if (tier === "b") {
+      const midSource = DATA.chineseGym.middleQuestions || DATA.chineseGym.sentenceQuestions || [];
+      chState.poolB = sampleQuestions(midSource, 8);
+      chState.qIndexB = 0;
+      chState.done.b = new Set();
+      chState.stats.b = createEmptyTierStats();
+    } else if (tier === "c") {
+      chState.poolC = sampleQuestions(DATA.chineseGym.readingQuestions || [], 5);
+      chState.qIndexC = 0;
+      chState.done.c = new Set();
+      chState.stats.c = createEmptyTierStats();
+    }
+  }
 
   function openChineseGym(defaultTier = null) {
     SFX.playClick();
+    clearChineseAdvanceTimer();
     if (defaultTier) chState.tier = defaultTier;
     document.getElementById("chineseGymModal").classList.remove("hidden");
-    switchChineseTier(chState.tier);
+    // 每次進入皆重新隨機抽題並重置該輪進度
+    resampleChineseTier("a");
+    resampleChineseTier("b");
+    resampleChineseTier("c");
+    switchChineseTier(chState.tier, false);
   }
 
-  function switchChineseTier(tier) {
+  function switchChineseTier(tier, shouldResample = true) {
+    clearChineseAdvanceTimer();
     chState.tier = tier;
+    if (shouldResample) {
+      resampleChineseTier(tier);
+    }
     ["a", "b", "c"].forEach((t) => {
       const btn = document.getElementById(`chTab_${t}`);
-      if (btn) { btn.classList.toggle("active", t === tier); btn.classList.toggle("active-chinese", t === tier); btn.classList.toggle("active-math", t === tier); }
+      if (btn) {
+        btn.classList.toggle("active", t === tier);
+        btn.classList.toggle("active-chinese", t === tier);
+        btn.classList.toggle("active-math", false);
+      }
     });
     if (tier === "a") renderChineseDictation();
-    else if (tier === "b") renderChineseSentence();
+    else if (tier === "b") renderChineseMiddle();
     else renderChineseReading();
   }
 
-  // --- (a) 初階：語音出題 + iPad 田字格手寫生字 ---
+  function handleChineseQuestionCompleted(tier, qIdx, totalCount, atkBonus, qId, reviewTitle, reviewDetail, renderNextFn) {
+    clearChineseAdvanceTimer();
+    const doneSet = chState.done[tier];
+    const st = chState.stats[tier];
+    const isFirstTimeThisSession = !doneSet.has(qIdx);
+
+    if (isFirstTimeThisSession) {
+      doneSet.add(qIdx);
+      const gainInfo = rewardChineseTraining(atkBonus, qId);
+      st.atk += gainInfo.atkGain;
+      st.coins += gainInfo.coinGain;
+      st.items.push({
+        num: qIdx + 1,
+        title: reviewTitle,
+        detail: reviewDetail,
+        reward: `⚔️ATK +${gainInfo.atkGain} · 🪙₽${gainInfo.coinGain}`
+      });
+    }
+
+    // 更新上方進度點點
+    const dotEl = document.querySelector(`#chineseGymBody #gymStepDotsBar .gym-step-dot[data-step-idx="${qIdx}"]`);
+    if (dotEl) {
+      dotEl.classList.add("done");
+      dotEl.textContent = "✓";
+    }
+
+    if (doneSet.size >= totalCount) {
+      // 已完成本階全部題數（初階 10 題 / 中階 8 題 / 進階 5 題）-> 進入結算畫面！
+      chState.advanceTimer = setTimeout(() => {
+        renderChineseSettlement(tier);
+      }, 850);
+      return true;
+    } else {
+      // 自動跳往下一題未作答題目
+      const nextIdx = findNextUnansweredIndex(doneSet, qIdx, totalCount);
+      chState.advanceTimer = setTimeout(() => {
+        renderNextFn(nextIdx);
+      }, tier === "c" ? 1300 : 1050);
+      return false;
+    }
+  }
+
+  function renderChineseSettlement(tier) {
+    clearChineseAdvanceTimer();
+    const container = document.getElementById("chineseGymBody");
+    if (!container) return;
+
+    const totalMap = { a: 10, b: 8, c: 5 };
+    const titleMap = {
+      a: "初階・第 1~6 課生字聽寫特訓（10 題全數完成！）",
+      b: "中階・國語文綜合題庫測驗（8 題全數完成！）",
+      c: "進階・國語文閱讀素養測驗（5 篇全數完成！）"
+    };
+    const bonusCoinMap = { a: 150, b: 200, c: 280 };
+    const bonusItemMap = {
+      a: { key: "poke-ball", name: "精靈球 ×1" },
+      b: { key: "great-ball", name: "超級球 ×1" },
+      c: { key: "rare-candy", name: "神奇糖果 ×1" }
+    };
+
+    const st = chState.stats[tier];
+    const totalCount = totalMap[tier] || 10;
+    const bonusItem = bonusItemMap[tier];
+    const extraCoins = Math.round((bonusCoinMap[tier] || 150) * getCoinMultiplier());
+
+    if (!st.bonusClaimed) {
+      st.bonusClaimed = true;
+      state.coins = (state.coins || 0) + extraCoins;
+      st.coins += extraCoins;
+      if (bonusItem) {
+        state.items[bonusItem.key] = (state.items[bonusItem.key] || 0) + 1;
+      }
+      addJournalEntry(`完成【國語文道館・${titleMap[tier]}】，獲得結算獎勵 ₽${extraCoins} 與 ${bonusItem.name}！`);
+      saveGame();
+      updateAllHUD();
+      SFX.playGymComplete();
+    }
+
+    const lead = getLeadPokemon();
+    const accuracy = Math.max(
+      60,
+      Math.round((totalCount / Math.max(totalCount, totalCount + st.mistakes)) * 100)
+    );
+    const stars = st.mistakes <= 1 ? "⭐⭐⭐" : st.mistakes <= 4 ? "⭐⭐☆" : "⭐☆☆";
+
+    const reviewRowsHtml = st.items
+      .map(
+        (it) => `
+        <div class="gym-review-row">
+          <div>
+            <span class="badge-ok">第 ${it.num} 題</span>
+            <strong style="margin-left:6px;color:#1e293b;">${it.title}</strong>
+            <span style="margin-left:8px;color:#475569;font-size:0.84rem;">${it.detail}</span>
+          </div>
+          <div style="font-size:0.82rem;color:#b45309;font-weight:900;">${it.reward}</div>
+        </div>
+      `
+      )
+      .join("");
+
+    const nextTier = tier === "a" ? "b" : tier === "b" ? "c" : null;
+    const nextTierLabel = tier === "a" ? "⏭️ 挑戰中階（8 題）" : tier === "b" ? "⏭️ 挑戰進階（5 題）" : "";
+
+    container.innerHTML = `
+      <div class="gym-settlement-card">
+        <div class="gym-settlement-header">
+          <div class="gym-settlement-trophy">🏆</div>
+          <div style="font-size:1.4rem;letter-spacing:2px;margin:2px 0;">${stars}</div>
+          <h3 class="gym-settlement-title">🎊 國語文道館・階段結算報告 🎊</h3>
+          <p class="gym-settlement-sub">${titleMap[tier]}</p>
+        </div>
+
+        ${
+          lead
+            ? `
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;background:#fff8ed;border:2px solid #f5d08a;border-radius:14px;padding:10px 18px;margin-bottom:14px;">
+            <img src="${getSpriteUrl(lead.id)}" alt="${lead.name}" style="width:68px;height:68px;image-rendering:pixelated;" />
+            <div style="text-align:left;">
+              <div style="font-weight:900;font-size:1.08rem;color:#7c2d12;">
+                出戰夥伴：【${lead.name}】 Lv.${lead.level}
+              </div>
+              <div style="font-size:0.88rem;font-weight:800;color:#9a3412;">
+                目前攻擊力：⚔️ ${lead.atk}　｜　通關額外大禮：🪙 +₽${extraCoins}、🎁 ${bonusItem ? bonusItem.name : ""}
+              </div>
+            </div>
+          </div>
+        `
+            : ""
+        }
+
+        <div class="gym-settlement-stats-grid">
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">✅ 完成題數</div>
+            <div class="gym-settlement-stat-val">${totalCount} / ${totalCount} 題</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">🎯 答題正確率</div>
+            <div class="gym-settlement-stat-val" style="color:#15803d;">${accuracy}%</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">⚔️ 累計攻擊提升</div>
+            <div class="gym-settlement-stat-val" style="color:#b91c1c;">+${st.atk} ATK</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">🪙 本輪總獲金幣</div>
+            <div class="gym-settlement-stat-val" style="color:#b45309;">+₽${st.coins.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div class="gym-review-list">
+          <div style="font-weight:900;color:#334155;margin-bottom:6px;font-size:0.92rem;">
+            📝 本輪完成題目與學習重點一覽（共 ${st.items.length} 題）：
+          </div>
+          ${reviewRowsHtml}
+        </div>
+
+        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:18px;">
+          <button type="button" class="btn-pixel" id="btnSettleRetryCh" style="padding:10px 18px;font-size:0.98rem;">
+            🎲 再練習一輪（重新抽 ${totalCount} 題）
+          </button>
+          ${
+            nextTier
+              ? `<button type="button" class="btn-pixel-lg" id="btnSettleNextCh" style="padding:10px 22px;font-size:1rem;">${nextTierLabel}</button>`
+              : ""
+          }
+          <button type="button" class="hud-btn" id="btnSettleOpenShopCh" style="padding:10px 16px;font-size:0.95rem;background:#fef3c7;color:#92400e;border-color:#f59e0b;">
+            🏪 前往商店兌換道具
+          </button>
+          <button type="button" class="hud-btn" id="btnSettleCloseCh" style="padding:10px 16px;font-size:0.95rem;">
+            🗺️ 返回寶可夢地圖
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("btnSettleRetryCh").onclick = () => {
+      SFX.playClick();
+      resampleChineseTier(tier);
+      switchChineseTier(tier, false);
+    };
+    const nextBtn = document.getElementById("btnSettleNextCh");
+    if (nextBtn && nextTier) {
+      nextBtn.onclick = () => {
+        SFX.playClick();
+        resampleChineseTier(nextTier);
+        switchChineseTier(nextTier, false);
+      };
+    }
+    document.getElementById("btnSettleOpenShopCh").onclick = () => {
+      SFX.playClick();
+      document.getElementById("chineseGymModal").classList.add("hidden");
+      openMenuModal("shop");
+    };
+    document.getElementById("btnSettleCloseCh").onclick = () => {
+      SFX.playClick();
+      document.getElementById("chineseGymModal").classList.add("hidden");
+    };
+  }
+
+  // --- (a) 初階（10 題）：第 1~6 課語音聽寫生字（純手寫，絕不顯示候選字選項） ---
   function renderChineseDictation() {
-    const list = DATA.chineseGym.dictationQuestions;
-    const q = list[chState.qIndexA % list.length];
+    clearChineseAdvanceTimer();
+    if (!chState.poolA || chState.poolA.length === 0) {
+      resampleChineseTier("a");
+    }
+    const list = chState.poolA;
+    const curIdx = chState.qIndexA % list.length;
+    const q = list[curIdx];
     const container = document.getElementById("chineseGymBody");
     const chars = Array.from(q.word);
     chState.recognizedChars = chars.map(() => "");
+    chState.candidateLists = chars.map(() => []);
+    chState.strokeCounts = chars.map(() => 0);
+    chState.strokeLengths = chars.map(() => 0);
     chState.showRadicalHint = false;
     chState.showStrokeHint = false;
 
     const radicalText = (q.radicals || [])
       .map((r, i) => `第 ${i + 1} 字部首：【${r}】`)
       .join("　｜　");
-    const firstStrokeText = (q.firstStrokes || [])
-      .map((s, i) => `第 ${i + 1} 字第一筆畫：【${s}】`)
+    const strokeHintText = (q.firstStrokes || [])
+      .map((s, i) => {
+        const sc = q.strokeCounts && q.strokeCounts[i] ? `（共 ${q.strokeCounts[i]} 畫）` : "";
+        return `第 ${i + 1} 字第一筆畫：【${s}】${sc}`;
+      })
       .join("　｜　");
+
+    const progressStripHtml = buildGymProgressStripHtml("chinese", "a", curIdx, list.length, chState.done.a);
 
     container.innerHTML = `
       <div class="dictation-panel">
+        ${progressStripHtml}
         <div class="voice-prompt-bar">
           <div>
             <span class="brand-badge" style="background:#b83828">${q.lesson}</span>
-            <strong style="font-size:1.15rem;margin-left:8px;">第 ${(chState.qIndexA % list.length) + 1} / ${list.length} 題 · 語音聽寫生字（共 ${chars.length} 字）</strong>
+            <strong style="font-size:1.15rem;margin-left:8px;">第 ${curIdx + 1} / ${list.length} 題 · 生字聽寫手寫特訓（共 ${chars.length} 字）</strong>
             <div style="margin-top:6px;font-size:0.95rem;color:#485868;font-weight:700;">
-              🎧 請點擊右側「播放語音出題」仔細聽題目，並在下方田字格寫出正確的國字。
+              🎧 請按「播放語音出題」聽取題目；畫面不顯示答案提示。
             </div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button type="button" class="voice-play-btn" id="btnPlayDictationVoice">
               🔊 播放語音出題
             </button>
+            <button type="button" class="hud-btn" id="btnResampleChA" title="重新從題庫隨機抽取 10 題">
+              🎲 重新隨機抽 10 題
+            </button>
           </div>
         </div>
 
-        <div style="text-align:center;font-weight:800;color:#485868;font-size:0.95rem;">
-          ✍️ 請用手指、Apple Pencil 或滑鼠在下方空白田字格中寫出繁體中文字：
+        <div style="text-align:center;font-weight:800;color:#882820;font-size:0.96rem;background:#fff5f2;padding:8px 12px;border-radius:8px;border:1px solid #f0c8c0;">
+          ✍️ 請直接用手指、觸控筆或滑鼠在下方空白田字格內<strong>親手寫出國字</strong>（本模式不提供選字按鈕，考驗真實手寫實力！）：
         </div>
 
-        <div class="tianzige-row" id="tianzigeRow"></div>
+        <div class="tianzige-row" id="tianzigeRow" style="margin-top:12px;"></div>
 
-        <!-- 下方僅提供 2 個選項的提示：1. 部首提示、2. 第一筆畫提示 -->
+        <!-- 僅提供部首與筆畫文字提示，絕不出現任何候選國字選項供點選 -->
         <div style="margin-top:14px;padding:12px 16px;background:#fdf8ec;border:2px solid #d8c8a8;border-radius:10px;">
           <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
-            <span style="font-weight:900;color:#684828;font-size:0.95rem;">💡 需要提示嗎？請選擇：</span>
+            <span style="font-weight:900;color:#684828;font-size:0.95rem;">💡 忘記怎麼寫嗎？可查看筆畫與部首提示：</span>
             <button type="button" class="hud-btn" id="btnHintRadical" style="background:#fff3d6;color:#7c4d12;border-color:#c8963e;font-weight:900;">
               1. 部首提示
             </button>
             <button type="button" class="hud-btn" id="btnHintFirstStroke" style="background:#eef6ff;color:#1e4e8c;border-color:#5a90d6;font-weight:900;">
-              2. 第一筆畫提示
+              2. 筆畫提示（起筆與總筆畫）
             </button>
           </div>
           <div id="hintRadicalBox" style="display:none;margin-top:10px;padding:8px 12px;background:#fff9eb;border-left:4px solid #d89028;font-weight:800;color:#683810;text-align:center;">
             🔍 <strong>部首提示：</strong>${radicalText}
           </div>
           <div id="hintStrokeBox" style="display:none;margin-top:8px;padding:8px 12px;background:#f0f7ff;border-left:4px solid #3878c8;font-weight:800;color:#183868;text-align:center;">
-            ✏️ <strong>第一筆畫提示：</strong>${firstStrokeText}
+            ✏️ <strong>筆畫提示：</strong>${strokeHintText}
           </div>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:12px;border-top:2px dashed #d8ceb8;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-weight:800;">目前辨識結果：</span>
-            <div id="dictationResultSlots" style="display:flex;gap:8px;"></div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-weight:800;">手寫進度：</span>
+            <div id="dictationResultSlots" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button type="button" class="hud-btn" id="btnPrevDictation">⬅️ 上一題</button>
             <button type="button" class="btn-pixel-lg" id="btnSubmitDictation" style="padding:8px 20px;font-size:1.05rem;">
-              ✅ 檢查手寫答案 (攻擊力 +${q.atkBonus})
+              ✅ 批改手寫國字 (攻擊力 +${q.atkBonus})
             </button>
             <button type="button" class="hud-btn" id="btnNextDictation">下一題 ➡️</button>
           </div>
@@ -1935,18 +4405,24 @@
       </div>
     `;
 
+    bindGymProgressStripEvents(container, "chinese", "a", (idx) => {
+      chState.qIndexA = idx;
+      renderChineseDictation();
+    });
+
     const rowEl = document.getElementById("tianzigeRow");
     const slotsEl = document.getElementById("dictationResultSlots");
 
     chars.forEach((targetChar, idx) => {
-      // 結果槽
       const slot = document.createElement("div");
       slot.className = "recognized-slot";
       slot.id = `recSlot_${idx}`;
-      slot.textContent = "？";
+      slot.style.minWidth = "72px";
+      slot.style.padding = "4px 10px";
+      slot.style.fontSize = "0.9rem";
+      slot.textContent = "待手寫";
       slotsEl.appendChild(slot);
 
-      // 田字格單元（完全不顯示描紅底字）
       const unit = document.createElement("div");
       unit.className = "tianzige-unit";
       unit.innerHTML = `
@@ -1954,11 +4430,11 @@
         <div class="tianzige-box">
           <canvas class="handwrite-canvas" id="hwCanvas_${idx}" width="220" height="220"></canvas>
         </div>
-        <div class="candidate-strip" id="candStrip_${idx}">
-          <span style="font-size:0.82rem;color:#788898;">動筆書寫後顯示辨識字...</span>
+        <div id="hwStatus_${idx}" style="font-size:0.84rem;font-weight:800;color:#586878;min-height:22px;text-align:center;">
+          ✍️ 請在格內手寫第 ${idx + 1} 個字
         </div>
         <div style="display:flex;gap:6px;">
-          <button type="button" class="hud-btn" id="clearHw_${idx}" style="font-size:0.82rem;padding:4px 10px;">🧹 重寫此字</button>
+          <button type="button" class="hud-btn" id="clearHw_${idx}" style="font-size:0.82rem;padding:4px 10px;">🧹 擦掉重寫</button>
         </div>
       `;
       rowEl.appendChild(unit);
@@ -1966,9 +4442,14 @@
       setupHandwritingCanvas(idx, targetChar);
     });
 
-    // 綁定按鈕事件
     document.getElementById("btnPlayDictationVoice").onclick = () => {
       SFX.speak(q.voicePrompt);
+    };
+    document.getElementById("btnResampleChA").onclick = () => {
+      SFX.playClick();
+      resampleChineseTier("a");
+      renderChineseDictation();
+      showToast("🎲 已重新隨機抽取 10 題第 1~6 課生字聽寫題！");
     };
     document.getElementById("btnHintRadical").onclick = () => {
       SFX.playClick();
@@ -1991,14 +4472,13 @@
       renderChineseDictation();
     };
     document.getElementById("btnSubmitDictation").onclick = () => {
-      checkDictationAnswer(q);
+      checkDictationAnswer(q, curIdx, list.length);
     };
 
-    // 自動朗讀題目
     setTimeout(() => SFX.speak(q.voicePrompt), 250);
   }
 
-  // 田字格手寫與即時繁體中文辨識引擎
+  // 田字格手寫與背景筆跡辨識引擎（不顯示任何候選字供學生點選）
   function setupHandwritingCanvas(idx, targetChar) {
     const cvs = document.getElementById(`hwCanvas_${idx}`);
     if (!cvs) return;
@@ -2052,10 +4532,24 @@
       if (currentStroke[0].length > 0) {
         strokes.push(currentStroke);
       }
+      chState.strokeCounts[idx] = strokes.length;
+      chState.strokeLengths[idx] = Math.round(strokeLength);
+
+      const statusEl = document.getElementById(`hwStatus_${idx}`);
+      if (statusEl) {
+        statusEl.style.color = "#1e4e8c";
+        statusEl.textContent = `🖊️ 已手寫 ${strokes.length} 筆畫`;
+      }
+      const slot = document.getElementById(`recSlot_${idx}`);
+      if (slot) {
+        slot.textContent = `已寫 ${strokes.length} 畫`;
+        slot.classList.remove("correct");
+      }
+
       if (recogTimer) clearTimeout(recogTimer);
       recogTimer = setTimeout(() => {
-        recognizeChineseInk(idx, strokes);
-      }, 380);
+        recognizeChineseInk(idx, strokes, targetChar);
+      }, 320);
     }
 
     cvs.addEventListener("mousedown", startDraw);
@@ -2069,15 +4563,25 @@
       c.clearRect(0, 0, cvs.width, cvs.height);
       strokes = [];
       strokeLength = 0;
-      setRecognizedChar(idx, "");
-      document.getElementById(`candStrip_${idx}`).innerHTML =
-        `<span style="font-size:0.82rem;color:#788898;">已清除，請重新書寫...</span>`;
+      chState.strokeCounts[idx] = 0;
+      chState.strokeLengths[idx] = 0;
+      chState.recognizedChars[idx] = "";
+      chState.candidateLists[idx] = [];
+      const statusEl = document.getElementById(`hwStatus_${idx}`);
+      if (statusEl) {
+        statusEl.style.color = "#788898";
+        statusEl.textContent = `🧹 已清除，請重新手寫第 ${idx + 1} 字`;
+      }
+      const slot = document.getElementById(`recSlot_${idx}`);
+      if (slot) {
+        slot.textContent = "待手寫";
+        slot.classList.remove("correct");
+      }
     };
   }
 
-  async function recognizeChineseInk(idx, strokes) {
-    const strip = document.getElementById(`candStrip_${idx}`);
-    if (!strip || strokes.length === 0) return;
+  async function recognizeChineseInk(idx, strokes, targetChar) {
+    if (!strokes || strokes.length === 0) return;
 
     try {
       const payload = {
@@ -2090,7 +4594,7 @@
           {
             writing_guide: { writing_area_width: 220, writing_area_height: 220 },
             pre_context: "",
-            max_num_results: 8,
+            max_num_results: 12,
             max_completions: 0,
             language: "zh-TW",
             ink: strokes
@@ -2108,203 +4612,246 @@
       );
       const data = await resp.json();
       if (data && data[0] === "SUCCESS" && data[1] && data[1][0] && data[1][0][1]) {
-        const cands = data[1][0][1];
-        if (cands[0]) {
-          setRecognizedChar(idx, cands[0]);
+        const cands = data[1][0][1] || [];
+        chState.candidateLists[idx] = cands;
+        if (targetChar && cands.includes(targetChar)) {
+          chState.recognizedChars[idx] = targetChar;
+        } else if (cands[0]) {
+          chState.recognizedChars[idx] = cands[0];
         }
-        renderCandidates(idx, cands);
         return;
       }
-    } catch (e) {}
-  }
-
-  function renderCandidates(idx, cands) {
-    const strip = document.getElementById(`candStrip_${idx}`);
-    if (!strip) return;
-    strip.innerHTML = "";
-    cands.slice(0, 6).forEach((ch) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "candidate-btn" + (ch === chState.recognizedChars[idx] ? " matched" : "");
-      btn.textContent = ch;
-      btn.onclick = () => {
-        SFX.playClick();
-        setRecognizedChar(idx, ch);
-        renderCandidates(idx, cands);
-      };
-      strip.appendChild(btn);
-    });
-  }
-
-  function setRecognizedChar(idx, charVal) {
-    chState.recognizedChars[idx] = charVal;
-    const slot = document.getElementById(`recSlot_${idx}`);
-    if (slot) {
-      slot.textContent = charVal || "？";
-      slot.classList.remove("correct");
+    } catch (e) {
+      // 離線或網路無法連線至辨識服務時，保留筆畫數供離線批改輔助
     }
   }
 
-  function checkDictationAnswer(q) {
-    const written = chState.recognizedChars.join("");
+  function checkDictationAnswer(q, curIdx = 0, totalCount = 10) {
+    const chars = Array.from(q.word);
     const fb = document.getElementById("dictationFeedback");
-    if (written === q.word) {
-      Array.from(q.word).forEach((_, idx) => {
-        const slot = document.getElementById(`recSlot_${idx}`);
-        if (slot) slot.classList.add("correct");
-      });
-      SFX.playCorrect();
-      SFX.speak(`太棒了！你正確寫出了「${q.word}」！寶可夢攻擊力提升 ${q.atkBonus} 點！`);
-      rewardChineseTraining(q.atkBonus, q.id);
-      if (fb) {
-        fb.style.color = "#187838";
-        fb.innerHTML = `🎉 答對了！你親手寫出了「<strong>${q.word}</strong>」！出戰寶可夢【攻擊力 +${q.atkBonus}】！`;
-      }
-    } else {
+
+    const unwrittenIdx = chars.findIndex((_, i) => (chState.strokeCounts[i] || 0) < 2);
+    if (unwrittenIdx !== -1) {
       SFX.playWrong();
       if (fb) {
         fb.style.color = "#c83028";
-        fb.innerHTML = `⚠️ 目前辨識為「${written || "尚未寫完"}」，還不太正確喔！請再點選「🔊 播放語音出題」聽一次，或點擊下方「1. 部首提示」、「2. 第一筆畫提示」！`;
+        fb.innerHTML = `⚠️ 第 <strong>${unwrittenIdx + 1}</strong> 個田字格還沒有寫完喔！請在每個田字格內親手寫出國字再按批改。`;
+      }
+      return;
+    }
+
+    let allCorrect = true;
+    const detailMsgs = [];
+
+    chars.forEach((targetChar, idx) => {
+      const slot = document.getElementById(`recSlot_${idx}`);
+      const statusEl = document.getElementById(`hwStatus_${idx}`);
+      const cands = chState.candidateLists[idx] || [];
+      const recChar = chState.recognizedChars[idx] || "";
+      const writtenStrokes = chState.strokeCounts[idx] || 0;
+      const expectedStrokes = (q.strokeCounts && q.strokeCounts[idx]) || 0;
+
+      const isOnlineMatched = recChar === targetChar || cands.includes(targetChar);
+      const isOfflineFallbackMatched =
+        cands.length === 0 &&
+        expectedStrokes > 0 &&
+        Math.abs(writtenStrokes - expectedStrokes) <= 2 &&
+        (chState.strokeLengths[idx] || 0) >= 180;
+
+      if (isOnlineMatched || isOfflineFallbackMatched) {
+        if (slot) {
+          slot.textContent = `✅ ${targetChar}`;
+          slot.classList.add("correct");
+        }
+        if (statusEl) {
+          statusEl.style.color = "#187838";
+          statusEl.textContent = `✅ 第 ${idx + 1} 字手寫正確！`;
+        }
+      } else {
+        allCorrect = false;
+        if (slot) {
+          slot.textContent = recChar ? `❌ 辨識為「${recChar}」` : `❌ 筆畫不符`;
+          slot.classList.remove("correct");
+        }
+        if (statusEl) {
+          statusEl.style.color = "#c83028";
+          statusEl.textContent = recChar
+            ? `⚠️ 看起像「${recChar}」，請擦掉重寫`
+            : `⚠️ 字形不夠端正（已寫 ${writtenStrokes} 畫）`;
+        }
+        detailMsgs.push(
+          `第 ${idx + 1} 字（已寫 ${writtenStrokes} 畫${expectedStrokes ? `，正確為 ${expectedStrokes} 畫` : ""}）`
+        );
+      }
+    });
+
+    if (allCorrect) {
+      SFX.playCorrect();
+      SFX.speak(`太棒了！你親手寫出了「${q.word}」！寶可夢攻擊力提升 ${q.atkBonus} 點！`);
+      const isAllDone = handleChineseQuestionCompleted(
+        "a",
+        curIdx,
+        totalCount,
+        q.atkBonus,
+        q.id,
+        `【${q.lesson}】${q.word}`,
+        q.voicePrompt,
+        (nextIdx) => {
+          chState.qIndexA = nextIdx;
+          renderChineseDictation();
+        }
+      );
+      if (fb) {
+        fb.style.color = "#187838";
+        fb.innerHTML = isAllDone
+          ? `🎊 批改通過！已完成初階全部 ${totalCount} 題生字聽寫！即將進入結算畫面...`
+          : `🎉 批改通過！你親手寫出了工整的「<strong>${q.word}</strong>」！出戰寶可夢【攻擊力 +${q.atkBonus}】！（已完成 ${chState.done.a.size}/${totalCount} 題，即將前往下一題...）`;
+      }
+    } else {
+      SFX.playWrong();
+      chState.stats.a.mistakes++;
+      if (fb) {
+        fb.style.color = "#c83028";
+        fb.innerHTML = `⚠️ ${detailMsgs.join("、")} 還不太正確喔！請參考「1. 部首提示」與「2. 筆畫提示」，擦掉後再端正手寫一次！`;
       }
     }
   }
 
-  // --- (b) 中階：照樣造句／詞語造句活動 ---
-  function renderChineseSentence() {
-    const list = DATA.chineseGym.sentenceQuestions;
-    const q = list[chState.qIndexB % list.length];
-    chState.selectedBlocks = [];
-    const allBlocks = [...q.blocks, ...q.distractors].sort(() => Math.random() - 0.5);
-
+  // --- (b) 中階（8 題）：題庫精選（改錯字、多音字、選詞填寫、部首字形、修辭、課文理解） ---
+  function renderChineseMiddle() {
+    clearChineseAdvanceTimer();
+    if (!chState.poolB || chState.poolB.length === 0) {
+      resampleChineseTier("b");
+    }
+    const list = chState.poolB;
+    const curIdx = chState.qIndexB % list.length;
+    const q = list[curIdx];
     const container = document.getElementById("chineseGymBody");
+
+    const progressStripHtml = buildGymProgressStripHtml("chinese", "b", curIdx, list.length, chState.done.b);
+
+    const optsHtml = (q.options || [])
+      .map(
+        (opt, oIdx) =>
+          `<button type="button" class="quiz-option-btn" data-val="${opt}">(${
+            ["A", "B", "C", "D"][oIdx] || oIdx + 1
+          }) ${opt}</button>`
+      )
+      .join("");
+
     container.innerHTML = `
       <div class="dictation-panel">
+        ${progressStripHtml}
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div>
-            <span class="brand-badge" style="background:#b83828">${q.lesson}</span>
-            <strong style="font-size:1.15rem;margin-left:8px;">${q.type}（第 ${(chState.qIndexB % list.length) + 1} / ${list.length} 題）</strong>
+            <span class="brand-badge" style="background:#b83828">${q.lesson || "三上國語題庫"}</span>
+            <span class="brand-badge" style="background:#7a4218;margin-left:4px;">${q.type || "綜合測驗"}</span>
+            <strong style="font-size:1.15rem;margin-left:8px;">第 ${curIdx + 1} / ${list.length} 題</strong>
           </div>
-          <button type="button" class="voice-play-btn" id="btnSpeakSentenceExample" style="padding:6px 14px;font-size:0.95rem;">
-            🔊 朗讀範例與題目
-          </button>
-        </div>
-
-        <div style="margin-top:12px;padding:12px;background:#fff5eb;border-left:5px solid #e06040;border-radius:4px;">
-          <div style="font-weight:900;color:#882818;">📌 句型結構：${q.pattern}</div>
-          <div style="margin-top:4px;font-weight:700;color:#384858;">${q.example}</div>
-        </div>
-
-        <p style="margin:12px 0 6px;font-weight:800;font-size:1.05rem;">👉 ${q.prompt}（點擊下方語詞積木組合成完整句子）：</p>
-
-        <div class="sentence-builder-zone" id="sentenceBuilderZone">
-          <span style="color:#788898;">請依序點選下方語詞積木放入此處...</span>
-        </div>
-
-        <div class="word-block-pool" id="wordBlockPool"></div>
-
-        <div style="margin-top:14px;padding:10px 14px;background:#f8fafd;border:2px solid #cbd5e0;border-radius:6px;">
-          <label style="font-weight:800;font-size:0.95rem;display:block;margin-bottom:6px;">
-            ✍️ 自由造句延伸練習（可自己打字或用 iPad 手寫鍵盤輸入你的創意造句）：
-          </label>
-          <input type="text" id="customSentenceInput" placeholder="也可以在這裡自己造一句話喔！" style="width:100%;padding:8px 12px;font-size:1.05rem;border:2px solid #90a4c0;border-radius:5px;" />
-        </div>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;">
-          <button type="button" class="hud-btn" id="btnResetSentence">🔄 重新排列</button>
-          <div style="display:flex;gap:10px;">
-            <button type="button" class="hud-btn" id="btnPrevSentence">⬅️ 上一題</button>
-            <button type="button" class="btn-pixel-lg" id="btnCheckSentence" style="padding:8px 20px;font-size:1.05rem;">
-              ✅ 檢查造句 (攻擊力 +${q.atkBonus})
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="voice-play-btn" id="btnSpeakChMiddle" style="padding:6px 14px;font-size:0.92rem;">
+              🔊 朗讀題目
             </button>
-            <button type="button" class="hud-btn" id="btnNextSentence">下一題 ➡️</button>
+            <button type="button" class="hud-btn" id="btnResampleChB" title="重新從題庫隨機抽取 8 題">
+              🎲 重新隨機抽 8 題
+            </button>
           </div>
         </div>
-        <div id="sentenceFeedback" style="margin-top:12px;font-weight:800;font-size:1.05rem;"></div>
+
+        <div style="margin-top:14px;padding:16px;background:#fffef8;border:2px solid #d8c4a0;border-left:6px solid #c84828;border-radius:8px;font-size:1.16rem;font-weight:900;line-height:1.7;color:#1e2d38;">
+          ${q.question}
+        </div>
+
+        <div class="quiz-options-list" id="chMiddleOpts" style="margin-top:14px;">
+          ${optsHtml}
+        </div>
+
+        <div id="chMiddleFeedback" style="margin-top:12px;font-weight:800;font-size:1.05rem;min-height:28px;"></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:12px;border-top:2px dashed #d8ceb8;">
+          <button type="button" class="hud-btn" id="btnPrevChMiddle">⬅️ 上一題</button>
+          <span style="font-weight:800;color:#882818;">⚔️ 答對獎勵：出戰寶可夢【攻擊力 +${q.atkBonus || 6}】（完成 8 題進入結算）</span>
+          <button type="button" class="hud-btn" id="btnNextChMiddle">下一題 ➡️</button>
+        </div>
       </div>
     `;
 
-    const poolEl = document.getElementById("wordBlockPool");
-    const zoneEl = document.getElementById("sentenceBuilderZone");
+    bindGymProgressStripEvents(container, "chinese", "b", (idx) => {
+      chState.qIndexB = idx;
+      renderChineseMiddle();
+    });
 
-    function refreshSentenceUI() {
-      zoneEl.innerHTML = "";
-      if (chState.selectedBlocks.length === 0) {
-        zoneEl.innerHTML = `<span style="color:#788898;">請依序點選下方語詞積木放入此處...</span>`;
-      } else {
-        chState.selectedBlocks.forEach((b, i) => {
-          const chip = document.createElement("button");
-          chip.type = "button";
-          chip.className = "word-chip selected-chip";
-          chip.textContent = b;
-          chip.onclick = () => {
-            SFX.playClick();
-            chState.selectedBlocks.splice(i, 1);
-            refreshSentenceUI();
-          };
-          zoneEl.appendChild(chip);
-        });
-      }
+    container.querySelectorAll(".quiz-option-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const val = btn.getAttribute("data-val");
+        const fb = document.getElementById("chMiddleFeedback");
+        container.querySelectorAll(".quiz-option-btn").forEach((b) => b.classList.remove("correct", "wrong"));
 
-      poolEl.innerHTML = "";
-      allBlocks.forEach((b) => {
-        const usedCount = chState.selectedBlocks.filter((x) => x === b).length;
-        const totalCount = allBlocks.filter((x) => x === b).length;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "word-chip";
-        btn.textContent = b;
-        btn.disabled = usedCount >= totalCount;
-        btn.onclick = () => {
-          SFX.playClick();
-          chState.selectedBlocks.push(b);
-          refreshSentenceUI();
-        };
-        poolEl.appendChild(btn);
-      });
-    }
+        if (val === q.answer) {
+          SFX.playCorrect();
+          btn.classList.add("correct");
+          const isAllDone = handleChineseQuestionCompleted(
+            "b",
+            curIdx,
+            list.length,
+            q.atkBonus || 6,
+            q.id,
+            `【${q.type || "綜合"}】正解：${q.answer}`,
+            q.question.slice(0, 32) + (q.question.length > 32 ? "..." : ""),
+            (nextIdx) => {
+              chState.qIndexB = nextIdx;
+              renderChineseMiddle();
+            }
+          );
+          if (fb) {
+            fb.style.color = "#187838";
+            fb.innerHTML = isAllDone
+              ? `🎊 答對了！正確答案是「<strong>${q.answer}</strong>」！已完成中階全部 ${list.length} 題，即將進入結算畫面...`
+              : `🎉 答對了！正確答案是「<strong>${q.answer}</strong>」！（已完成 ${chState.done.b.size}/${list.length} 題）<br><small>💡 解析：${q.explanation || ""}（寶可夢攻擊力 +${q.atkBonus || 6}！）</small>`;
+          }
+        } else {
+          SFX.playWrong();
+          chState.stats.b.mistakes++;
+          btn.classList.add("wrong");
+          if (fb) {
+            fb.style.color = "#c83028";
+            fb.innerHTML = `⚠️ 再想一想喔！<br><small>💡 提示：${q.explanation || "請仔細比對字形、讀音與前後文意。"}</small>`;
+          }
+        }
+      };
+    });
 
-    refreshSentenceUI();
-
-    document.getElementById("btnSpeakSentenceExample").onclick = () => {
-      SFX.speak(`${q.example}。${q.prompt}`);
+    document.getElementById("btnSpeakChMiddle").onclick = () => {
+      SFX.speak(q.question);
     };
-    document.getElementById("btnResetSentence").onclick = () => {
-      chState.selectedBlocks = [];
-      refreshSentenceUI();
+    document.getElementById("btnResampleChB").onclick = () => {
+      SFX.playClick();
+      resampleChineseTier("b");
+      renderChineseMiddle();
+      showToast("🎲 已從國語題庫重新隨機抽取 8 題中階題目！");
     };
-    document.getElementById("btnPrevSentence").onclick = () => {
+    document.getElementById("btnPrevChMiddle").onclick = () => {
       chState.qIndexB = (chState.qIndexB - 1 + list.length) % list.length;
-      renderChineseSentence();
+      renderChineseMiddle();
     };
-    document.getElementById("btnNextSentence").onclick = () => {
+    document.getElementById("btnNextChMiddle").onclick = () => {
       chState.qIndexB = (chState.qIndexB + 1) % list.length;
-      renderChineseSentence();
-    };
-    document.getElementById("btnCheckSentence").onclick = () => {
-      const built = chState.selectedBlocks.join("");
-      const custom = (document.getElementById("customSentenceInput").value || "").trim();
-      const fb = document.getElementById("sentenceFeedback");
-
-      if (built === q.targetSentence || custom.length >= 6) {
-        SFX.playCorrect();
-        const finalSentence = built === q.targetSentence ? built : custom;
-        SFX.speak(`造句成功！${finalSentence}`);
-        rewardChineseTraining(q.atkBonus, q.id);
-        fb.style.color = "#187838";
-        fb.innerHTML = `🎉 太棒了！句子通順又優美：「<strong>${finalSentence}</strong>」<br><small>${q.explanation}（寶可夢攻擊力 +${q.atkBonus}！）</small>`;
-      } else {
-        SFX.playWrong();
-        fb.style.color = "#c83028";
-        fb.innerHTML = `⚠️ 語序還不太對喔！目前組出：「${built || "未選擇"}」。<br>💡 提示：請對照「${q.pattern}」的順序再試一次！`;
-      }
+      renderChineseMiddle();
     };
   }
 
-  // --- (c) 高階：閱讀測驗活動 ---
+  // --- (c) 進階（5 題）：閱讀測驗活動 ---
   function renderChineseReading() {
-    const list = DATA.chineseGym.readingQuestions;
-    const item = list[chState.qIndexC % list.length];
+    clearChineseAdvanceTimer();
+    if (!chState.poolC || chState.poolC.length === 0) {
+      resampleChineseTier("c");
+    }
+    const list = chState.poolC;
+    const curIdx = chState.qIndexC % list.length;
+    const item = list[curIdx];
     const container = document.getElementById("chineseGymBody");
+
+    const progressStripHtml = buildGymProgressStripHtml("chinese", "c", curIdx, list.length, chState.done.c);
 
     let qHtml = "";
     item.questions.forEach((qObj, qIdx) => {
@@ -2327,27 +4874,40 @@
 
     container.innerHTML = `
       <div class="dictation-panel">
+        ${progressStripHtml}
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div>
             <span class="brand-badge" style="background:#b83828">${item.lesson}</span>
-            <strong style="font-size:1.2rem;margin-left:8px;">${item.title}</strong>
+            <strong style="font-size:1.18rem;margin-left:8px;">第 ${curIdx + 1} / ${list.length} 篇 · ${item.title}</strong>
           </div>
-          <button type="button" class="voice-play-btn" id="btnSpeakReading" style="padding:6px 14px;font-size:0.95rem;">
-            🔊 語音朗讀短文
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="voice-play-btn" id="btnSpeakReading" style="padding:6px 14px;font-size:0.95rem;">
+              🔊 語音朗讀短文
+            </button>
+            <button type="button" class="hud-btn" id="btnResampleChC" title="重新從題庫隨機抽取 5 篇閱讀測驗">
+              🎲 重新隨機抽 5 篇
+            </button>
+          </div>
         </div>
 
         <div style="margin-top:12px;padding:16px;background:#fffef8;border:2px solid #c8bca0;border-radius:8px;font-size:1.12rem;line-height:1.75;white-space:pre-line;color:#202c38;">${item.passage}</div>
 
         ${qHtml}
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
+        <div id="chReadingOverallFeedback" style="margin-top:12px;font-weight:900;font-size:1.05rem;"></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;">
           <button type="button" class="hud-btn" id="btnPrevReading">⬅️ 上一篇</button>
-          <span style="font-weight:800;color:#882818;">全部答對可獲【攻擊力 +${item.atkBonus}】與文采徽章進度！</span>
+          <span style="font-weight:800;color:#882818;">全部答對可獲【攻擊力 +${item.atkBonus}】（練習完 5 篇即進入結算畫面！）</span>
           <button type="button" class="hud-btn" id="btnNextReading">下一篇 ➡️</button>
         </div>
       </div>
     `;
+
+    bindGymProgressStripEvents(container, "chinese", "c", (idx) => {
+      chState.qIndexC = idx;
+      renderChineseReading();
+    });
 
     let answeredCorrect = {};
 
@@ -2369,10 +4929,30 @@
           answeredCorrect[qIdx] = true;
 
           if (Object.keys(answeredCorrect).length === item.questions.length) {
-            rewardChineseTraining(item.atkBonus, item.id);
+            const overallFb = document.getElementById("chReadingOverallFeedback");
+            const isAllDone = handleChineseQuestionCompleted(
+              "c",
+              curIdx,
+              list.length,
+              item.atkBonus,
+              item.id,
+              `【${item.lesson}】${item.title}`,
+              `完成 ${item.questions.length} 道閱讀理解題`,
+              (nextIdx) => {
+                chState.qIndexC = nextIdx;
+                renderChineseReading();
+              }
+            );
+            if (overallFb) {
+              overallFb.style.color = "#15803d";
+              overallFb.innerHTML = isAllDone
+                ? `🎊 太厲害了！已完成進階全部 ${list.length} 篇閱讀測驗！即將進入結算畫面...`
+                : `🎉 本篇閱讀測驗全部答對！（已完成 ${chState.done.c.size}/${list.length} 篇，即將前往下一篇...）`;
+            }
           }
         } else {
           SFX.playWrong();
+          chState.stats.c.mistakes++;
           btn.classList.add("wrong");
           expEl.style.color = "#c83028";
           expEl.innerHTML = `❌ 再想一想喔！請仔細閱讀短文中的線索。`;
@@ -2382,6 +4962,12 @@
 
     document.getElementById("btnSpeakReading").onclick = () => {
       SFX.speak(item.passage);
+    };
+    document.getElementById("btnResampleChC").onclick = () => {
+      SFX.playClick();
+      resampleChineseTier("c");
+      renderChineseReading();
+      showToast("🎲 已重新隨機抽取 5 篇閱讀測驗！");
     };
     document.getElementById("btnPrevReading").onclick = () => {
       chState.qIndexC = (chState.qIndexC - 1 + list.length) % list.length;
@@ -2395,23 +4981,27 @@
 
   function rewardChineseTraining(atkBonus, qId) {
     const lead = getLeadPokemon();
-    if (!lead) return;
-    const coinGain = atkBonus >= 7 ? 100 : atkBonus >= 5 ? 70 : 50;
+    const baseCoin = atkBonus >= 7 ? 100 : atkBonus >= 5 ? 70 : 50;
+    const coinGain = Math.round(baseCoin * getCoinMultiplier());
+    if (!lead) return { atkGain: atkBonus, coinGain };
+
     state.atkBonus = (state.atkBonus || 0) + atkBonus;
     state.coins = (state.coins || 0) + coinGain;
 
     state.party.forEach((p, i) => {
+      ensurePokemonFields(p);
       const gain = i === state.activeIndex ? atkBonus : Math.max(2, Math.round(atkBonus * 0.7));
       p.atk += gain;
       p.atkTrained = (p.atkTrained || 0) + gain;
-      p.level += 1;
       p.maxHp += 6;
       p.hp = p.maxHp;
+      gainPokemonExp(p, p.xpToNext || 20, false);
     });
     state.storage.forEach((p) => {
+      ensurePokemonFields(p);
       const gain = Math.max(2, Math.round(atkBonus * 0.5));
       p.atk += gain;
-      p.level += 1;
+      gainPokemonExp(p, p.xpToNext || 20, false);
     });
 
     state.chineseScore = (state.chineseScore || 0) + 10;
@@ -2421,148 +5011,332 @@
     if (state.chineseScore >= 30 && !state.badges.chinese) {
       state.badges.chinese = true;
       state.items["great-ball"] = (state.items["great-ball"] || 0) + 2;
+      addJournalEntry(`獲得【國語道館・文采徽章】！全隊升級且攻擊力提升 +${atkBonus}！`);
       showToast(`🏅 恭喜獲得【國語道館・文采徽章】！全隊升級 Lv+1、攻擊+${atkBonus}、金幣+₽${coinGain}、超級球×2！`);
     } else {
       showToast(`📕 國語道館特訓成功！【${lead.name}】升至 Lv.${lead.level}，攻擊力 +${atkBonus}（現為 ${lead.atk}），獲得金幣 ₽${coinGain}！`);
     }
     saveGame();
     updateAllHUD();
+    return { atkGain: atkBonus, coinGain };
   }
 
   // --------------------------------------------------------------------------
-  // 數學道館（康軒版第 1~4 單元）— 提升防禦力 DEF 與 HP
-  // (a) 初階：乘法與基本運算
-  // (b) 中階：四位數加減（直式呈現＋iPad 直式手寫書寫）
-  // (c) 高階：第 1~4 單元素養題與應用題解答
+  // 數學道館（三上第 1~4 單元 & 題庫卷）— 提升防禦力 DEF 與 HP
+  // (a) 初階（10 題）：千位數的加減運算為主（直式計算板 ＋ 手寫數字辨識） -> 做完 10 題出現結算畫面
+  // (b) 中階（8 題）：選擇題或填空題為主（參考題庫：位值化聚、比大小、毫米、乘法、角） -> 練習完 8 題出現結算畫面
+  // (c) 進階（5 題）：應用題為主（參考題庫素養與兩步驟應用題） -> 練習完 5 題出現結算畫面
   // --------------------------------------------------------------------------
   let maState = {
     tier: "a",
     qIndexA: 0,
     qIndexB: 0,
     qIndexC: 0,
+    poolA: [],
+    poolB: [],
+    poolC: [],
+    done: { a: new Set(), b: new Set(), c: new Set() },
+    stats: {
+      a: createEmptyTierStats(),
+      b: createEmptyTierStats(),
+      c: createEmptyTierStats()
+    },
+    advanceTimer: null,
     verticalDigits: ["", "", "", ""], // 千、百、十、個
-    activeDigitCol: 3 // 預設從「個位」(index 3) 開始算起！
+    activeDigitCol: 3 // 預設從「個位」(index 3) 開始算起
   };
+
+  function clearMathAdvanceTimer() {
+    if (maState.advanceTimer) {
+      clearTimeout(maState.advanceTimer);
+      maState.advanceTimer = null;
+    }
+  }
+
+  function resampleMathTier(tier) {
+    clearMathAdvanceTimer();
+    if (tier === "a") {
+      maState.poolA = sampleQuestions(DATA.mathGym.verticalQuestions || [], 10);
+      maState.qIndexA = 0;
+      maState.done.a = new Set();
+      maState.stats.a = createEmptyTierStats();
+    } else if (tier === "b") {
+      const midSource = DATA.mathGym.middleQuestions || DATA.mathGym.basicQuestions || [];
+      maState.poolB = sampleQuestions(midSource, 8);
+      maState.qIndexB = 0;
+      maState.done.b = new Set();
+      maState.stats.b = createEmptyTierStats();
+    } else if (tier === "c") {
+      maState.poolC = sampleQuestions(DATA.mathGym.wordProblems || [], 5);
+      maState.qIndexC = 0;
+      maState.done.c = new Set();
+      maState.stats.c = createEmptyTierStats();
+    }
+  }
 
   function openMathGym(defaultTier = null) {
     SFX.playClick();
+    clearMathAdvanceTimer();
     if (defaultTier) maState.tier = defaultTier;
     document.getElementById("mathGymModal").classList.remove("hidden");
-    switchMathTier(maState.tier);
+    // 每次進入皆重新隨機抽題並重置該輪進度
+    resampleMathTier("a");
+    resampleMathTier("b");
+    resampleMathTier("c");
+    switchMathTier(maState.tier, false);
   }
 
-  function switchMathTier(tier) {
+  function switchMathTier(tier, shouldResample = true) {
+    clearMathAdvanceTimer();
     maState.tier = tier;
+    if (shouldResample) {
+      resampleMathTier(tier);
+    }
     ["a", "b", "c"].forEach((t) => {
       const btn = document.getElementById(`maTab_${t}`);
-      if (btn) { btn.classList.toggle("active", t === tier); btn.classList.toggle("active-chinese", t === tier); btn.classList.toggle("active-math", t === tier); }
+      if (btn) {
+        btn.classList.toggle("active", t === tier);
+        btn.classList.toggle("active-chinese", false);
+        btn.classList.toggle("active-math", t === tier);
+      }
     });
-    if (tier === "a") renderMathBasic();
-    else if (tier === "b") renderMathVertical();
+    if (tier === "a") renderMathVertical();
+    else if (tier === "b") renderMathMiddle();
     else renderMathWordProblem();
   }
 
-  // --- (a) 初階：乘法等基本運算 ---
-  function renderMathBasic() {
-    const list = DATA.mathGym.basicQuestions;
-    const q = list[maState.qIndexA % list.length];
-    const container = document.getElementById("mathGymBody");
+  function handleMathQuestionCompleted(tier, qIdx, totalCount, defBonus, qId, reviewTitle, reviewDetail, renderNextFn) {
+    clearMathAdvanceTimer();
+    const doneSet = maState.done[tier];
+    const st = maState.stats[tier];
+    const isFirstTimeThisSession = !doneSet.has(qIdx);
 
-    const optsHtml = q.options
+    if (isFirstTimeThisSession) {
+      doneSet.add(qIdx);
+      const gainInfo = rewardMathTraining(defBonus, qId);
+      st.def += gainInfo.defGain;
+      st.hp += gainInfo.hpGain;
+      st.coins += gainInfo.coinGain;
+      st.items.push({
+        num: qIdx + 1,
+        title: reviewTitle,
+        detail: reviewDetail,
+        reward: `🛡️DEF +${gainInfo.defGain} · ❤️HP +${gainInfo.hpGain} · 🪙₽${gainInfo.coinGain}`
+      });
+    }
+
+    const dotEl = document.querySelector(`#mathGymBody #gymStepDotsBar .gym-step-dot[data-step-idx="${qIdx}"]`);
+    if (dotEl) {
+      dotEl.classList.add("done");
+      dotEl.textContent = "✓";
+    }
+
+    if (doneSet.size >= totalCount) {
+      // 已完成本階全部題數（初階 10 題 / 中階 8 題 / 進階 5 題）-> 進入結算畫面！
+      maState.advanceTimer = setTimeout(() => {
+        renderMathSettlement(tier);
+      }, 850);
+      return true;
+    } else {
+      const nextIdx = findNextUnansweredIndex(doneSet, qIdx, totalCount);
+      maState.advanceTimer = setTimeout(() => {
+        renderNextFn(nextIdx);
+      }, tier === "c" ? 1300 : 1050);
+      return false;
+    }
+  }
+
+  function renderMathSettlement(tier) {
+    clearMathAdvanceTimer();
+    const container = document.getElementById("mathGymBody");
+    if (!container) return;
+
+    const totalMap = { a: 10, b: 8, c: 5 };
+    const titleMap = {
+      a: "初階・千位數加減直式特訓（10 題全數完成！）",
+      b: "中階・數學觀念選擇與填空（8 題全數完成！）",
+      c: "進階・生活素養應用題挑戰（5 題全數完成！）"
+    };
+    const bonusCoinMap = { a: 150, b: 200, c: 280 };
+    const bonusItemMap = {
+      a: { key: "poke-ball", name: "精靈球 ×1" },
+      b: { key: "great-ball", name: "超級球 ×1" },
+      c: { key: "rare-candy", name: "神奇糖果 ×1" }
+    };
+
+    const st = maState.stats[tier];
+    const totalCount = totalMap[tier] || 10;
+    const bonusItem = bonusItemMap[tier];
+    const extraCoins = Math.round((bonusCoinMap[tier] || 150) * getCoinMultiplier());
+
+    if (!st.bonusClaimed) {
+      st.bonusClaimed = true;
+      state.coins = (state.coins || 0) + extraCoins;
+      st.coins += extraCoins;
+      if (bonusItem) {
+        state.items[bonusItem.key] = (state.items[bonusItem.key] || 0) + 1;
+      }
+      addJournalEntry(`完成【數學道館・${titleMap[tier]}】，獲得結算獎勵 ₽${extraCoins} 與 ${bonusItem.name}！`);
+      saveGame();
+      updateAllHUD();
+      SFX.playGymComplete();
+    }
+
+    const lead = getLeadPokemon();
+    const accuracy = Math.max(
+      60,
+      Math.round((totalCount / Math.max(totalCount, totalCount + st.mistakes)) * 100)
+    );
+    const stars = st.mistakes <= 1 ? "⭐⭐⭐" : st.mistakes <= 4 ? "⭐⭐☆" : "⭐☆☆";
+
+    const reviewRowsHtml = st.items
       .map(
-        (opt) =>
-          `<button type="button" class="quiz-option-btn" data-val="${opt}">🔹 ${opt}</button>`
+        (it) => `
+        <div class="gym-review-row">
+          <div>
+            <span class="badge-ok">第 ${it.num} 題</span>
+            <strong style="margin-left:6px;color:#1e293b;">${it.title}</strong>
+            <span style="margin-left:8px;color:#475569;font-size:0.84rem;">${it.detail}</span>
+          </div>
+          <div style="font-size:0.82rem;color:#1d4ed8;font-weight:900;">${it.reward}</div>
+        </div>
+      `
       )
       .join("");
 
+    const nextTier = tier === "a" ? "b" : tier === "b" ? "c" : null;
+    const nextTierLabel = tier === "a" ? "⏭️ 挑戰中階（8 題）" : tier === "b" ? "⏭️ 挑戰進階（5 題）" : "";
+
     container.innerHTML = `
-      <div class="dictation-panel">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-          <div>
-            <span class="brand-badge" style="background:#285898">${q.unit}</span>
-            <strong style="font-size:1.15rem;margin-left:8px;">第 ${(maState.qIndexA % list.length) + 1} / ${list.length} 題</strong>
-          </div>
-          <span style="font-weight:800;color:#2058a8;">🛡️ 答對獎勵：防禦力 +${q.defBonus} · 最大HP +6</span>
+      <div class="gym-settlement-card">
+        <div class="gym-settlement-header math-theme">
+          <div class="gym-settlement-trophy">🏆</div>
+          <div style="font-size:1.4rem;letter-spacing:2px;margin:2px 0;">${stars}</div>
+          <h3 class="gym-settlement-title">🎊 數學道館・階段結算報告 🎊</h3>
+          <p class="gym-settlement-sub">${titleMap[tier]}</p>
         </div>
 
-        <div style="margin-top:12px;padding:16px;background:#f0f6ff;border:2px solid #78a0d8;border-radius:8px;font-size:1.22rem;font-weight:900;white-space:pre-line;color:#182c48;">${q.question}</div>
-
-        <div class="quiz-options-list" id="mathBasicOpts">${optsHtml}</div>
-
-        <div class="scratchpad-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <span style="font-size:0.88rem;font-weight:800;color:#486078;">✏️ iPad 手寫計算草稿紙（可在下方空白處列直式算算看）：</span>
-            <button type="button" class="hud-btn" id="btnClearBasicScratch" style="font-size:0.8rem;padding:3px 10px;">🧹 清除草稿</button>
+        ${
+          lead
+            ? `
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;background:#eff6ff;border:2px solid #93c5fd;border-radius:14px;padding:10px 18px;margin-bottom:14px;">
+            <img src="${getSpriteUrl(lead.id)}" alt="${lead.name}" style="width:68px;height:68px;image-rendering:pixelated;" />
+            <div style="text-align:left;">
+              <div style="font-weight:900;font-size:1.08rem;color:#1e3a8a;">
+                出戰夥伴：【${lead.name}】 Lv.${lead.level}
+              </div>
+              <div style="font-size:0.88rem;font-weight:800;color:#1d4ed8;">
+                目前防禦力：🛡️ ${lead.def} · 最大HP：❤️ ${lead.maxHp}　｜　通關大禮：🪙 +₽${extraCoins}、🎁 ${bonusItem ? bonusItem.name : ""}
+              </div>
+            </div>
           </div>
-          <canvas class="scratchpad-canvas" id="basicScratchCanvas" width="760" height="140"></canvas>
+        `
+            : ""
+        }
+
+        <div class="gym-settlement-stats-grid">
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">✅ 完成題數</div>
+            <div class="gym-settlement-stat-val">${totalCount} / ${totalCount} 題</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">🎯 答題正確率</div>
+            <div class="gym-settlement-stat-val" style="color:#15803d;">${accuracy}%</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">🛡️ 防禦與HP提升</div>
+            <div class="gym-settlement-stat-val" style="color:#1d4ed8;">+${st.def} DEF / +${st.hp} HP</div>
+          </div>
+          <div class="gym-settlement-stat-box">
+            <div class="gym-settlement-stat-label">🪙 本輪總獲金幣</div>
+            <div class="gym-settlement-stat-val" style="color:#b45309;">+₽${st.coins.toLocaleString()}</div>
+          </div>
         </div>
 
-        <div id="mathBasicFeedback" style="margin-top:12px;font-weight:800;font-size:1.05rem;"></div>
+        <div class="gym-review-list">
+          <div style="font-weight:900;color:#334155;margin-bottom:6px;font-size:0.92rem;">
+            📝 本輪完成題目與算式紀錄（共 ${st.items.length} 題）：
+          </div>
+          ${reviewRowsHtml}
+        </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
-          <button type="button" class="hud-btn" id="btnPrevMathBasic">⬅️ 上一題</button>
-          <button type="button" class="hud-btn" id="btnNextMathBasic">下一題 ➡️</button>
+        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:18px;">
+          <button type="button" class="btn-pixel" id="btnSettleRetryMa" style="padding:10px 18px;font-size:0.98rem;">
+            🎲 再練習一輪（重新抽 ${totalCount} 題）
+          </button>
+          ${
+            nextTier
+              ? `<button type="button" class="btn-pixel-lg" id="btnSettleNextMa" style="background:#2563eb;padding:10px 22px;font-size:1rem;">${nextTierLabel}</button>`
+              : ""
+          }
+          <button type="button" class="hud-btn" id="btnSettleOpenShopMa" style="padding:10px 16px;font-size:0.95rem;background:#fef3c7;color:#92400e;border-color:#f59e0b;">
+            🏪 前往商店兌換道具
+          </button>
+          <button type="button" class="hud-btn" id="btnSettleCloseMa" style="padding:10px 16px;font-size:0.95rem;">
+            🗺️ 返回寶可夢地圖
+          </button>
         </div>
       </div>
     `;
 
-    initFreeScratchpad("basicScratchCanvas", "btnClearBasicScratch");
-
-    container.querySelectorAll(".quiz-option-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const val = btn.getAttribute("data-val");
-        const fb = document.getElementById("mathBasicFeedback");
-        container.querySelectorAll(".quiz-option-btn").forEach((b) => b.classList.remove("correct", "wrong"));
-
-        if (val === q.answer) {
-          SFX.playCorrect();
-          btn.classList.add("correct");
-          rewardMathTraining(q.defBonus, q.id);
-          fb.style.color = "#187838";
-          fb.innerHTML = `🎉 答對了！正確答案是 <strong>${q.answer}</strong>！<br><small>💡 解析：${q.hint}</small>`;
-        } else {
-          SFX.playWrong();
-          btn.classList.add("wrong");
-          fb.style.color = "#c83028";
-          fb.innerHTML = `⚠️ 算錯囉！提示：${q.hint}`;
-        }
-      };
-    });
-
-    document.getElementById("btnPrevMathBasic").onclick = () => {
-      maState.qIndexA = (maState.qIndexA - 1 + list.length) % list.length;
-      renderMathBasic();
+    document.getElementById("btnSettleRetryMa").onclick = () => {
+      SFX.playClick();
+      resampleMathTier(tier);
+      switchMathTier(tier, false);
     };
-    document.getElementById("btnNextMathBasic").onclick = () => {
-      maState.qIndexA = (maState.qIndexA + 1) % list.length;
-      renderMathBasic();
+    const nextBtn = document.getElementById("btnSettleNextMa");
+    if (nextBtn && nextTier) {
+      nextBtn.onclick = () => {
+        SFX.playClick();
+        resampleMathTier(nextTier);
+        switchMathTier(nextTier, false);
+      };
+    }
+    document.getElementById("btnSettleOpenShopMa").onclick = () => {
+      SFX.playClick();
+      document.getElementById("mathGymModal").classList.add("hidden");
+      openMenuModal("shop");
+    };
+    document.getElementById("btnSettleCloseMa").onclick = () => {
+      SFX.playClick();
+      document.getElementById("mathGymModal").classList.add("hidden");
     };
   }
 
-  // --- (b) 中階：四位數加減（直式呈現 ＋ iPad 手寫直式計算） ---
+  // --- (a) 初階（10 題）：千位數的加減運算（直式呈現 ＋ 平板手寫直式計算） ---
   function renderMathVertical() {
-    const list = DATA.mathGym.verticalQuestions;
-    const q = list[maState.qIndexB % list.length];
+    clearMathAdvanceTimer();
+    if (!maState.poolA || maState.poolA.length === 0) {
+      resampleMathTier("a");
+    }
+    const list = maState.poolA;
+    const curIdx = maState.qIndexA % list.length;
+    const q = list[curIdx];
     maState.verticalDigits = ["", "", "", ""];
     maState.activeDigitCol = 3; // 從個位開始算起
 
     const d1 = String(q.num1).padStart(4, " ").split("");
     const d2 = String(q.num2).padStart(4, " ").split("");
 
+    const progressStripHtml = buildGymProgressStripHtml("math", "a", curIdx, list.length, maState.done.a);
+
     const container = document.getElementById("mathGymBody");
     container.innerHTML = `
       <div class="dictation-panel">
+        ${progressStripHtml}
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div>
             <span class="brand-badge" style="background:#285898">${q.unit}</span>
-            <strong style="font-size:1.15rem;margin-left:8px;">直式四位數加減特訓（第 ${(maState.qIndexB % list.length) + 1} / ${list.length} 題）</strong>
+            <strong style="font-size:1.15rem;margin-left:8px;">千位數加減直式特訓（第 ${curIdx + 1} / ${list.length} 題）</strong>
           </div>
-          <button type="button" class="hud-btn" id="btnRandomVertical" style="font-size:0.88rem;">🎲 隨機出新題目</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="hud-btn" id="btnRandomVertical" style="font-size:0.88rem;">🎲 重新隨機抽 10 題</button>
+          </div>
         </div>
 
-        <p style="margin:10px 0;font-size:1.08rem;font-weight:800;color:#203040;">📖 情境題：${q.story}</p>
+        <p style="margin:10px 0;font-size:1.08rem;font-weight:800;color:#203040;">📖 題目：${q.story}</p>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;align-items:start;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;align-items:start;">
           <!-- 左側：標準四位數直式計算板 -->
           <div class="vertical-math-board">
             <div class="place-value-header">
@@ -2625,6 +5399,7 @@
             </div>
             <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
               <button type="button" class="hud-btn" id="btnClearDigitCanvas" style="font-size:0.82rem;">🧹 重寫數字</button>
+              <button type="button" class="hud-btn" id="btnClearCurrentCell" style="font-size:0.82rem;">⌫ 清除此格</button>
             </div>
 
             <div style="font-size:0.85rem;font-weight:800;color:#586878;margin-top:10px;">或直接點選數字鍵填入該位數：</div>
@@ -2643,6 +5418,11 @@
         <div id="verticalFeedback" style="margin-top:12px;font-weight:800;font-size:1.06rem;"></div>
       </div>
     `;
+
+    bindGymProgressStripEvents(container, "math", "a", (idx) => {
+      maState.qIndexA = idx;
+      renderMathVertical();
+    });
 
     const colNames = ["千位", "百位", "十位", "個位"];
 
@@ -2667,7 +5447,15 @@
       };
     }
 
-    // 數字鍵盤 0~9
+    const clearCellBtn = document.getElementById("btnClearCurrentCell");
+    if (clearCellBtn) {
+      clearCellBtn.onclick = () => {
+        SFX.playClick();
+        maState.verticalDigits[maState.activeDigitCol] = "";
+        updateVerticalCellsUI();
+      };
+    }
+
     const numpad = document.getElementById("mathNumpadBar");
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].forEach((n) => {
       const b = document.createElement("button");
@@ -2681,36 +5469,21 @@
       numpad.appendChild(b);
     });
 
-    // 手寫數字辨識畫布
     setupMathDigitCanvas(updateVerticalCellsUI);
 
     document.getElementById("btnPrevVertical").onclick = () => {
-      maState.qIndexB = (maState.qIndexB - 1 + list.length) % list.length;
+      maState.qIndexA = (maState.qIndexA - 1 + list.length) % list.length;
       renderMathVertical();
     };
     document.getElementById("btnNextVertical").onclick = () => {
-      maState.qIndexB = (maState.qIndexB + 1) % list.length;
+      maState.qIndexA = (maState.qIndexA + 1) % list.length;
       renderMathVertical();
     };
     document.getElementById("btnRandomVertical").onclick = () => {
-      // 動態產生新的四位數加減題
-      const isAdd = Math.random() < 0.5;
-      let n1 = 2000 + Math.floor(Math.random() * 6500);
-      let n2 = 1100 + Math.floor(Math.random() * (isAdd ? 9800 - n1 : n1 - 1200));
-      const ans = isAdd ? n1 + n2 : n1 - n2;
-      DATA.mathGym.verticalQuestions.push({
-        id: "ma_b_dyn_" + Date.now(),
-        unit: isAdd ? "單元二：四位數直式加法（動態題）" : "單元二：四位數直式減法（動態題）",
-        story: `道館能量計算練習：請用直式算出 ${n1} ${isAdd ? "＋" : "－"} ${n2} 的結果！`,
-        op: isAdd ? "+" : "-",
-        num1: n1,
-        num2: n2,
-        answer: ans,
-        hint: `直式對齊個、十、百、千位計算：${n1} ${isAdd ? "+" : "-"} ${n2} = ${ans}。`,
-        defBonus: 6
-      });
-      maState.qIndexB = DATA.mathGym.verticalQuestions.length - 1;
+      SFX.playClick();
+      resampleMathTier("a");
       renderMathVertical();
+      showToast("🎲 已重新隨機抽取 10 題千位數加減運算題！");
     };
 
     document.getElementById("btnCheckVertical").onclick = () => {
@@ -2718,7 +5491,9 @@
       let allMatch = true;
       for (let i = 0; i < 4; i++) {
         const cell = document.getElementById(`vCell_${i}`);
-        if (maState.verticalDigits[i] === targetStr[i]) {
+        const userVal = maState.verticalDigits[i];
+        const isLeadingZeroMatch = i === 0 && targetStr[0] === "0" && (userVal === "" || userVal === "0");
+        if (userVal === targetStr[i] || isLeadingZeroMatch) {
           cell.classList.add("correct-cell");
         } else {
           cell.classList.remove("correct-cell");
@@ -2729,11 +5504,26 @@
       const fb = document.getElementById("verticalFeedback");
       if (allMatch) {
         SFX.playCorrect();
-        rewardMathTraining(q.defBonus, q.id);
+        const isAllDone = handleMathQuestionCompleted(
+          "a",
+          curIdx,
+          list.length,
+          q.defBonus,
+          q.id,
+          `${q.num1} ${q.op} ${q.num2} = ${q.answer}`,
+          q.unit,
+          (nextIdx) => {
+            maState.qIndexA = nextIdx;
+            renderMathVertical();
+          }
+        );
         fb.style.color = "#187838";
-        fb.innerHTML = `🎉 直式計算完全正確！${q.num1} ${q.op} ${q.num2} ＝ <strong>${q.answer}</strong>！<br><small>🛡️ 寶可夢防禦力 +${q.defBonus}、最大 HP +10！</small>`;
+        fb.innerHTML = isAllDone
+          ? `🎊 直式計算完全正確！已完成初階全部 ${list.length} 題千位數加減！即將進入結算畫面...`
+          : `🎉 直式計算完全正確！${q.num1} ${q.op} ${q.num2} ＝ <strong>${q.answer}</strong>！（已完成 ${maState.done.a.size}/${list.length} 題，即將前往下一題...）<br><small>🛡️ 寶可夢防禦力 +${q.defBonus}、最大 HP +${Math.round(q.defBonus * 3)}！</small>`;
       } else {
         SFX.playWrong();
+        maState.stats.a.mistakes++;
         fb.style.color = "#c83028";
         fb.innerHTML = `⚠️ 還有位數算錯或沒填完喔！（綠色代表該位數正確）<br>💡 提示：${q.hint}`;
       }
@@ -2742,7 +5532,6 @@
 
   function fillVerticalDigit(digitStr, refreshFn) {
     maState.verticalDigits[maState.activeDigitCol] = digitStr;
-    // 自動往左一個位數移動（個位 -> 十位 -> 百位 -> 千位）
     if (maState.activeDigitCol > 0) {
       maState.activeDigitCol--;
     }
@@ -2851,34 +5640,254 @@
     };
   }
 
-  // --- (c) 高階：第 1 到 4 單元的素養題與應用題解答 ---
-  function renderMathWordProblem() {
-    const list = DATA.mathGym.wordProblems;
-    const q = list[maState.qIndexC % list.length];
+  // --- (b) 中階（8 題）：題庫選擇題與填空題（10000以內的數、毫米、乘法、角） ---
+  function renderMathMiddle() {
+    clearMathAdvanceTimer();
+    if (!maState.poolB || maState.poolB.length === 0) {
+      resampleMathTier("b");
+    }
+    const list = maState.poolB;
+    const curIdx = maState.qIndexB % list.length;
+    const q = list[curIdx];
     const container = document.getElementById("mathGymBody");
+    const isFill = q.qType === "fill" || !Array.isArray(q.options) || q.options.length === 0;
+
+    const progressStripHtml = buildGymProgressStripHtml("math", "b", curIdx, list.length, maState.done.b);
+
+    let answerAreaHtml = "";
+    if (isFill) {
+      answerAreaHtml = `
+        <div style="margin-top:14px;padding:14px;background:#ffffff;border:2px solid #88a8d8;border-radius:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <label for="mathFillInput" style="font-weight:900;color:#183868;font-size:1.05rem;">✏️ 請填入答案：</label>
+            <input type="text" id="mathFillInput" inputmode="numeric" placeholder="輸入數字答案"
+              style="font-size:1.25rem;font-weight:900;padding:8px 14px;width:180px;border:3px solid #3868b8;border-radius:8px;text-align:center;color:#182c48;" />
+            ${q.unitLabel ? `<span style="font-weight:900;font-size:1.1rem;color:#284878;">${q.unitLabel}</span>` : ""}
+            <button type="button" class="btn-pixel-lg" id="btnSubmitMathFill" style="background:#2868c8;padding:8px 20px;font-size:1rem;">
+              ✅ 檢查填空答案
+            </button>
+          </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:0.85rem;font-weight:800;color:#586878;">平板快捷數字鍵：</span>
+            <div id="mathFillNumpad" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          </div>
+        </div>
+      `;
+    } else {
+      const optsHtml = q.options
+        .map(
+          (opt, idx) =>
+            `<button type="button" class="quiz-option-btn" data-val="${opt}">(${
+              ["A", "B", "C", "D"][idx] || idx + 1
+            }) ${opt}</button>`
+        )
+        .join("");
+      answerAreaHtml = `<div class="quiz-options-list" id="mathBasicOpts" style="margin-top:14px;">${optsHtml}</div>`;
+    }
+
+    container.innerHTML = `
+      <div class="dictation-panel">
+        ${progressStripHtml}
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <span class="brand-badge" style="background:#285898">${q.unit}</span>
+            <span class="brand-badge" style="background:${isFill ? "#1e7868" : "#485898"};margin-left:4px;">${
+      isFill ? "✏️ 填充題" : "🔘 選擇題"
+    }</span>
+            <strong style="font-size:1.15rem;margin-left:8px;">第 ${curIdx + 1} / ${list.length} 題</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-weight:800;color:#2058a8;">🛡️ 防禦力 +${q.defBonus}（練習完 8 題進入結算）</span>
+            <button type="button" class="hud-btn" id="btnResampleMaB" style="font-size:0.86rem;">🎲 重新隨機抽 8 題</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;padding:16px;background:#f0f6ff;border:2px solid #78a0d8;border-radius:8px;font-size:1.2rem;font-weight:900;white-space:pre-line;color:#182c48;">${q.question}</div>
+
+        ${answerAreaHtml}
+
+        <div class="scratchpad-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:0.88rem;font-weight:800;color:#486078;">✏️ 平板手寫計算草稿紙（可在下方空白處列式算算看）：</span>
+            <button type="button" class="hud-btn" id="btnClearBasicScratch" style="font-size:0.8rem;padding:3px 10px;">🧹 清除草稿</button>
+          </div>
+          <canvas class="scratchpad-canvas" id="basicScratchCanvas" width="760" height="140"></canvas>
+        </div>
+
+        <div id="mathBasicFeedback" style="margin-top:12px;font-weight:800;font-size:1.05rem;"></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+          <button type="button" class="hud-btn" id="btnPrevMathBasic">⬅️ 上一題</button>
+          <button type="button" class="hud-btn" id="btnNextMathBasic">下一題 ➡️</button>
+        </div>
+      </div>
+    `;
+
+    bindGymProgressStripEvents(container, "math", "b", (idx) => {
+      maState.qIndexB = idx;
+      renderMathMiddle();
+    });
+
+    initFreeScratchpad("basicScratchCanvas", "btnClearBasicScratch");
+
+    const fb = document.getElementById("mathBasicFeedback");
+
+    if (isFill) {
+      const inp = document.getElementById("mathFillInput");
+      const pad = document.getElementById("mathFillNumpad");
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "⌫", "清空"].forEach((key) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "numpad-btn";
+        b.style.padding = "6px 12px";
+        b.textContent = key;
+        b.onclick = () => {
+          SFX.playClick();
+          if (!inp) return;
+          if (key === "清空") inp.value = "";
+          else if (key === "⌫") inp.value = inp.value.slice(0, -1);
+          else inp.value += key;
+        };
+        pad.appendChild(b);
+      });
+
+      const checkFill = () => {
+        const val = (inp.value || "").trim().replace(/,/g, "");
+        const expected = String(q.answer).trim().replace(/,/g, "");
+        if (val === expected) {
+          SFX.playCorrect();
+          inp.style.borderColor = "#189848";
+          inp.style.background = "#eafff0";
+          const isAllDone = handleMathQuestionCompleted(
+            "b",
+            curIdx,
+            list.length,
+            q.defBonus,
+            q.id,
+            `【${q.unit}】正解：${q.answer}${q.unitLabel || ""}`,
+            q.question.slice(0, 32) + (q.question.length > 32 ? "..." : ""),
+            (nextIdx) => {
+              maState.qIndexB = nextIdx;
+              renderMathMiddle();
+            }
+          );
+          fb.style.color = "#187838";
+          fb.innerHTML = isAllDone
+            ? `🎊 答對了！正確答案是 <strong>${q.answer}${q.unitLabel ? " " + q.unitLabel : ""}</strong>！已完成中階全部 ${list.length} 題，即將進入結算畫面...`
+            : `🎉 答對了！正確答案是 <strong>${q.answer}${q.unitLabel ? " " + q.unitLabel : ""}</strong>！（已完成 ${maState.done.b.size}/${list.length} 題）<br><small>💡 解析：${q.hint}</small>`;
+        } else {
+          SFX.playWrong();
+          maState.stats.b.mistakes++;
+          inp.style.borderColor = "#d83828";
+          inp.style.background = "#fff2f0";
+          fb.style.color = "#c83028";
+          fb.innerHTML = `⚠️ 答案還不對喔！提示：${q.hint}`;
+        }
+      };
+
+      document.getElementById("btnSubmitMathFill").onclick = checkFill;
+      if (inp) {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            checkFill();
+          }
+        });
+      }
+    } else {
+      container.querySelectorAll(".quiz-option-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const val = btn.getAttribute("data-val");
+          container.querySelectorAll(".quiz-option-btn").forEach((b) => b.classList.remove("correct", "wrong"));
+
+          if (val === String(q.answer)) {
+            SFX.playCorrect();
+            btn.classList.add("correct");
+            const isAllDone = handleMathQuestionCompleted(
+              "b",
+              curIdx,
+              list.length,
+              q.defBonus,
+              q.id,
+              `【${q.unit}】正解：${q.answer}`,
+              q.question.slice(0, 32) + (q.question.length > 32 ? "..." : ""),
+              (nextIdx) => {
+                maState.qIndexB = nextIdx;
+                renderMathMiddle();
+              }
+            );
+            fb.style.color = "#187838";
+            fb.innerHTML = isAllDone
+              ? `🎊 答對了！正確答案是 <strong>${q.answer}</strong>！已完成中階全部 ${list.length} 題，即將進入結算畫面...`
+              : `🎉 答對了！正確答案是 <strong>${q.answer}</strong>！（已完成 ${maState.done.b.size}/${list.length} 題）<br><small>💡 解析：${q.hint}</small>`;
+          } else {
+            SFX.playWrong();
+            maState.stats.b.mistakes++;
+            btn.classList.add("wrong");
+            fb.style.color = "#c83028";
+            fb.innerHTML = `⚠️ 算錯囉！提示：${q.hint}`;
+          }
+        };
+      });
+    }
+
+    document.getElementById("btnResampleMaB").onclick = () => {
+      SFX.playClick();
+      resampleMathTier("b");
+      renderMathMiddle();
+      showToast("🎲 已從數學題庫重新隨機抽取 8 題中階題目！");
+    };
+    document.getElementById("btnPrevMathBasic").onclick = () => {
+      maState.qIndexB = (maState.qIndexB - 1 + list.length) % list.length;
+      renderMathMiddle();
+    };
+    document.getElementById("btnNextMathBasic").onclick = () => {
+      maState.qIndexB = (maState.qIndexB + 1) % list.length;
+      renderMathMiddle();
+    };
+  }
+
+  // --- (c) 進階（5 題）：第 1 到 4 單元題庫應用題解答 ---
+  function renderMathWordProblem() {
+    clearMathAdvanceTimer();
+    if (!maState.poolC || maState.poolC.length === 0) {
+      resampleMathTier("c");
+    }
+    const list = maState.poolC;
+    const curIdx = maState.qIndexC % list.length;
+    const q = list[curIdx];
+    const container = document.getElementById("mathGymBody");
+
+    const progressStripHtml = buildGymProgressStripHtml("math", "c", curIdx, list.length, maState.done.c);
 
     const optsHtml = q.options
       .map(
-        (opt) =>
-          `<button type="button" class="quiz-option-btn" data-val="${opt}">🔹 ${opt}</button>`
+        (opt, idx) =>
+          `<button type="button" class="quiz-option-btn" data-val="${opt}">(${
+            ["A", "B", "C", "D"][idx] || idx + 1
+          }) ${opt}</button>`
       )
       .join("");
 
     container.innerHTML = `
       <div class="dictation-panel">
+        ${progressStripHtml}
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div>
             <span class="brand-badge" style="background:#285898">${q.unit}</span>
-            <strong style="font-size:1.18rem;margin-left:8px;">${q.title}</strong>
+            <strong style="font-size:1.18rem;margin-left:8px;">第 ${curIdx + 1} / ${list.length} 題 · ${q.title}</strong>
           </div>
-          <span style="font-weight:800;color:#2058a8;">🛡️ 答對獎勵：防禦力 +${q.defBonus} · 最大HP +12</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-weight:800;color:#2058a8;">🛡️ 防禦力 +${q.defBonus} · HP +${Math.round(q.defBonus * 3)}（練習完 5 題進入結算）</span>
+            <button type="button" class="hud-btn" id="btnResampleMaC" style="font-size:0.86rem;">🎲 重新隨機抽 5 題</button>
+          </div>
         </div>
 
         <div style="margin-top:12px;padding:16px;background:#f4f8ff;border:2px solid #7898c8;border-radius:8px;font-size:1.15rem;font-weight:800;line-height:1.65;white-space:pre-line;color:#182c48;">${q.question}</div>
 
         <div class="scratchpad-wrap">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <span style="font-size:0.9rem;font-weight:800;color:#285078;">✏️ 素養應用題手寫計算區（請先在下方白板列式計算，再選出答案）：</span>
+            <span style="font-size:0.9rem;font-weight:800;color:#285078;">✏️ 應用題手寫計算區（請先在下方白板列式計算，再選出答案）：</span>
             <button type="button" class="hud-btn" id="btnClearWordScratch" style="font-size:0.8rem;padding:3px 10px;">🧹 清除計算紙</button>
           </div>
           <canvas class="scratchpad-canvas" id="wordScratchCanvas" width="760" height="150"></canvas>
@@ -2895,6 +5904,11 @@
       </div>
     `;
 
+    bindGymProgressStripEvents(container, "math", "c", (idx) => {
+      maState.qIndexC = idx;
+      renderMathWordProblem();
+    });
+
     initFreeScratchpad("wordScratchCanvas", "btnClearWordScratch");
 
     container.querySelectorAll(".quiz-option-btn").forEach((btn) => {
@@ -2906,11 +5920,26 @@
         if (val === q.answer) {
           SFX.playCorrect();
           btn.classList.add("correct");
-          rewardMathTraining(q.defBonus, q.id);
+          const isAllDone = handleMathQuestionCompleted(
+            "c",
+            curIdx,
+            list.length,
+            q.defBonus,
+            q.id,
+            `【${q.title}】正解：${q.answer}`,
+            q.unit,
+            (nextIdx) => {
+              maState.qIndexC = nextIdx;
+              renderMathWordProblem();
+            }
+          );
           fb.style.color = "#187838";
-          fb.innerHTML = `🎉 恭喜解開素養應用題！答案正是 <strong>${q.answer}</strong>！\n📘 【解題步驟】：\n${q.stepsHint}`;
+          fb.innerHTML = isAllDone
+            ? `🎊 恭喜解開應用題！已完成進階全部 ${list.length} 題應用題，即將進入結算畫面...\n📘 【解題步驟】：\n${q.stepsHint}`
+            : `🎉 恭喜解開應用題！答案正是 <strong>${q.answer}</strong>！（已完成 ${maState.done.c.size}/${list.length} 題）\n📘 【解題步驟】：\n${q.stepsHint}`;
         } else {
           SFX.playWrong();
+          maState.stats.c.mistakes++;
           btn.classList.add("wrong");
           fb.style.color = "#c83028";
           fb.innerHTML = `⚠️ 答案不對喔！請參考解題思路再算算看：\n${q.stepsHint}`;
@@ -2918,6 +5947,12 @@
       };
     });
 
+    document.getElementById("btnResampleMaC").onclick = () => {
+      SFX.playClick();
+      resampleMathTier("c");
+      renderMathWordProblem();
+      showToast("🎲 已從題庫重新隨機抽取 5 題進階應用題！");
+    };
     document.getElementById("btnPrevWordProb").onclick = () => {
       maState.qIndexC = (maState.qIndexC - 1 + list.length) % list.length;
       renderMathWordProblem();
@@ -2991,30 +6026,32 @@
     }
   }
 
-
-
   function rewardMathTraining(defBonus, qId) {
     const lead = getLeadPokemon();
-    if (!lead) return;
     const hpGain = Math.round(defBonus * 3);
-    const coinGain = defBonus >= 7 ? 100 : defBonus >= 5 ? 70 : 50;
+    const baseCoin = defBonus >= 7 ? 100 : defBonus >= 5 ? 70 : 50;
+    const coinGain = Math.round(baseCoin * getCoinMultiplier());
+    if (!lead) return { defGain: defBonus, hpGain, coinGain };
+
     state.defBonus = (state.defBonus || 0) + defBonus;
     state.coins = (state.coins || 0) + coinGain;
 
     state.party.forEach((p, i) => {
+      ensurePokemonFields(p);
       const dGain = i === state.activeIndex ? defBonus : Math.max(2, Math.round(defBonus * 0.7));
       p.def += dGain;
       p.defTrained = (p.defTrained || 0) + dGain;
       p.maxHp += hpGain;
       p.hp = p.maxHp;
-      p.level += 1;
+      gainPokemonExp(p, p.xpToNext || 20, false);
     });
     state.storage.forEach((p) => {
+      ensurePokemonFields(p);
       const dGain = Math.max(2, Math.round(defBonus * 0.5));
       p.def += dGain;
       p.maxHp += 10;
       p.hp = p.maxHp;
-      p.level += 1;
+      gainPokemonExp(p, p.xpToNext || 20, false);
     });
 
     state.mathScore = (state.mathScore || 0) + 10;
@@ -3024,12 +6061,14 @@
     if (state.mathScore >= 30 && !state.badges.math) {
       state.badges.math = true;
       state.items["great-ball"] = (state.items["great-ball"] || 0) + 2;
+      addJournalEntry(`獲得【數學道館・邏輯徽章】！全隊升級且防禦力提升 +${defBonus}！`);
       showToast(`🏅 恭喜獲得【數學道館・邏輯徽章】！全隊升級 Lv+1、防禦+${defBonus}、HP+${hpGain}、金幣+₽${coinGain}！`);
     } else {
       showToast(`📘 數學道館特訓成功！【${lead.name}】升至 Lv.${lead.level}，防禦力 +${defBonus}、最大HP +${hpGain}，獲得金幣 ₽${coinGain}！`);
     }
     saveGame();
     updateAllHUD();
+    return { defGain: defBonus, hpGain, coinGain };
   }
 
   // --------------------------------------------------------------------------
@@ -3044,21 +6083,32 @@
 
     if (!obj) {
       txt.textContent = "調查周圍 / 對話";
-      hint.textContent = "走到道館大門、商店、寶箱或 NPC 旁按 E 即可互動（或直接點擊地圖上的建築與寶箱）";
+      hint.textContent = "平板可直接點擊地圖任意位置自動行走，或使用畫面左下角十字鍵移動";
       return;
     }
     if (obj.kind === "door") {
       txt.textContent = obj.name || "進入建築";
-      hint.textContent = "按下 E 或點擊左側按鈕立即進入！";
+      hint.textContent = "點擊右側「A 互動」按鈕、按下 E 或點擊建築即可進入！";
     } else if (obj.kind === "chest") {
       txt.textContent = `🎁 開啟【${obj.name}】領取金幣`;
-      hint.textContent = "發現金幣寶箱！按 E 立即打開！";
+      hint.textContent = "發現金幣寶箱！點擊「A 互動」或按 E 立即打開！";
+    } else if (obj.kind === "waystone") {
+      txt.textContent = `🗿 挑戰【${obj.name || "石碑守護者"}】`;
+      hint.textContent = "點擊「A 互動」或按 E 喚醒遠古石碑守護者進行頭目對戰！";
     } else if (obj.kind === "npc") {
-      txt.textContent = `💬 與 ${obj.name.split(" ")[0]} 對話`;
-      hint.textContent = "按下 E 聽取指引或開啟訓練！";
+      if (obj.role === "breeder") {
+        txt.textContent = `🧬 與 ${obj.name.split(" ")[0]} 開啟培育屋合成`;
+        hint.textContent = "點擊「A 互動」開啟寶可夢基因合成與孵蛋工坊！";
+      } else if (obj.role === "trainer") {
+        txt.textContent = `⚔️ 向 ${obj.name} 發起訓練家對戰`;
+        hint.textContent = "點擊「A 互動」進行訓練家切磋對戰，贏取豐厚 EXP 與金幣！";
+      } else {
+        txt.textContent = `💬 與 ${obj.name.split(" ")[0]} 對話`;
+        hint.textContent = "點擊「A 互動」或按 E 聽取指引或開啟訓練！";
+      }
     } else {
       txt.textContent = `🔍 查看 ${obj.name || "路標"}`;
-      hint.textContent = "按下 E 閱讀詳細內容";
+      hint.textContent = "點擊「A 互動」或按 E 閱讀詳細內容";
     }
   }
 
@@ -3082,10 +6132,23 @@
       (state.items["potion"] || 0) + (state.items["super-potion"] || 0) + (state.items["hyper-potion"] || 0);
     document.getElementById("topBagPill").textContent = `🎒 球 ×${totalBalls} · 傷藥 ×${totalPots}`;
 
+    const topNurseryPill = document.getElementById("topNurseryPill");
+    if (topNurseryPill) {
+      if (state.egg) {
+        topNurseryPill.textContent = `🥚 合成蛋：剩 ${state.egg.stepsRemaining} 步`;
+      } else {
+        topNurseryPill.textContent = `🧬 培育屋合成`;
+      }
+    }
+
     // START 選單附註
     document.getElementById("menuPartyCount").textContent = `${state.party.length}/6`;
     document.getElementById("menuCoinsTxt").textContent = `₽${state.coins || 0}`;
     document.getElementById("menuTrainerName").textContent = `${state.trainerName} 名片`;
+    const menuEggTxt = document.getElementById("menuEggTxt");
+    if (menuEggTxt) {
+      menuEggTxt.textContent = state.egg ? `剩 ${state.egg.stepsRemaining} 步` : `孵蛋/合成`;
+    }
 
     // 腳踏車按鈕
     const bikeBtn = document.getElementById("btnToggleBike");
@@ -3098,27 +6161,37 @@
     document.getElementById("worldChestCounter").textContent = `🎁 已開啟地圖寶箱：${state.collectedChests.length} / 16 · 走出城鎮四個路口可前往五大地圖`;
 
     if (lead) {
+      ensurePokemonFields(lead);
       const hudImg = document.getElementById("hudLeaderImg");
-      hudImg.src = getPortraitUrl(lead.id4);
+      hudImg.src = getPokemonDisplayUrl(lead, "portrait");
       hudImg.onerror = () => {
-        hudImg.src = getStaticSpriteUrl(lead.id);
+        hudImg.src = getPokemonFallbackUrl(lead, "front");
       };
-      document.getElementById("hudLeaderName").textContent = `${lead.name} · Lv.${lead.level}`;
+      const genTag = (lead.generation || 1) > 1 ? ` · G${lead.generation}` : "";
+      document.getElementById("hudLeaderName").textContent = `${lead.name} · Lv.${lead.level}${genTag}`;
       document.getElementById("hudLeaderStats").textContent = `⚔️ATK ${lead.atk} · 🛡️DEF ${lead.def} · HP ${lead.hp}/${lead.maxHp}`;
       const hpPct = Math.max(0, Math.min(100, (lead.hp / lead.maxHp) * 100));
       const hpBar = document.getElementById("hudLeaderHpBar");
       hpBar.style.width = `${hpPct}%`;
       hpBar.style.background = hpPct < 25 ? "#df7666" : hpPct < 50 ? "#e4be5e" : "#58b888";
 
+      const xpBar = document.getElementById("hudLeaderXpBar");
+      const xpTxt = document.getElementById("hudLeaderXpTxt");
+      const nextExp = lead.xpToNext || 20;
+      const curXp = lead.xp || 0;
+      const xpPct = Math.max(0, Math.min(100, (curXp / nextExp) * 100));
+      if (xpBar) xpBar.style.width = `${xpPct}%`;
+      if (xpTxt) xpTxt.textContent = `${curXp}/${nextExp}`;
+
       // 動態更新下方指引文字
       const objTitle = document.getElementById("objectiveTitle");
       const objDesc = document.getElementById("objectiveDesc");
       if (lead.atk < 12 || lead.def < 10) {
         objTitle.textContent = `📍 當前目標：先到「國語文道館」與「數學道館」訓練你的【${lead.name} Lv.${lead.level}】！`;
-        objDesc.textContent = `目前【${lead.name}】攻擊力 ${lead.atk}、防禦力 ${lead.def}，還打不贏柳溪草地（建議 ⚔️12 / 🛡️10）的野生怪獸！請點選右側道館按鈕或走進城鎮建築特訓！`;
+        objDesc.textContent = `目前【${lead.name}】攻擊力 ${lead.atk}、防禦力 ${lead.def}，還打不贏柳溪草地（建議 ⚔️12 / 🛡️10）的野生怪獸！請點選道館按鈕或走進城鎮建築特訓！`;
       } else {
-        objTitle.textContent = `📍 當前目標：探索五大地圖、開啟寶箱收集金幣，收服更強的寶可夢！`;
-        objDesc.textContent = `你的【${lead.name} Lv.${lead.level}】（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def}）已具備實戰能力！可走進草叢對戰收服寶可夢，或從北、南、東、西路口前往更高階地圖！`;
+        objTitle.textContent = `📍 當前目標：探索五大地圖、對戰升級並觸發等級進化！`;
+        objDesc.textContent = `你的【${lead.name} Lv.${lead.level}】（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def}）已具備實戰能力！可走進草叢收服寶可夢、向訓練家與石碑守護者挑戰，達到進化等級後會自動進化！`;
       }
     }
 
@@ -3152,6 +6225,24 @@
     document.getElementById("topCoinsPill").onclick = () => openMenuModal("shop");
     document.getElementById("topBagPill").onclick = () => openMenuModal("bag");
     document.getElementById("hudLeaderBadge").onclick = () => openMenuModal("party");
+
+    // 培育屋合成按鈕綁定
+    const topNurseryPill = document.getElementById("topNurseryPill");
+    if (topNurseryPill) topNurseryPill.onclick = () => openMenuModal("nursery");
+    const btnHudNursery = document.getElementById("btnHudNursery");
+    if (btnHudNursery) btnHudNursery.onclick = () => openMenuModal("nursery");
+    const btnQuickNursery = document.getElementById("btnQuickNursery");
+    if (btnQuickNursery) btnQuickNursery.onclick = () => openMenuModal("nursery");
+    const btnQuickNurseryBottom = document.getElementById("btnQuickNurseryBottom");
+    if (btnQuickNurseryBottom) btnQuickNurseryBottom.onclick = () => openMenuModal("nursery");
+
+    // 存檔進度管理按鈕綁定
+    const topSavePill = document.getElementById("topSavePill");
+    if (topSavePill) topSavePill.onclick = () => openMenuModal("save");
+    const btnHudSave = document.getElementById("btnHudSave");
+    if (btnHudSave) btnHudSave.onclick = () => openMenuModal("save");
+    const btnQuickSave = document.getElementById("btnQuickSave");
+    if (btnQuickSave) btnQuickSave.onclick = () => openMenuModal("save");
 
     document.getElementById("topSoundToggle").onclick = () => {
       SFX.enabled = !SFX.enabled;
@@ -3192,15 +6283,15 @@
     document.getElementById("closeMathGym").onclick = () =>
       document.getElementById("mathGymModal").classList.add("hidden");
 
-    // 國語與數學道館分頁切換
+    // 國語與數學道館分頁切換（每次切換皆重新隨機抽題）
     ["a", "b", "c"].forEach((t) => {
       document.getElementById(`chTab_${t}`).onclick = () => {
         SFX.playClick();
-        switchChineseTier(t);
+        switchChineseTier(t, true);
       };
       document.getElementById(`maTab_${t}`).onclick = () => {
         SFX.playClick();
-        switchMathTier(t);
+        switchMathTier(t, true);
       };
     });
 
@@ -3229,8 +6320,13 @@
         if (!currentBattle || currentBattle.busy) return;
         const cmd = btn.getAttribute("data-cmd");
         if (cmd === "run") {
+          if (currentBattle.kind === "trainer") {
+            SFX.playWrong();
+            setBattleMessage("⚠️ 訓練家正式對戰中無法逃跑！");
+            return;
+          }
           SFX.playClick();
-          showToast("💨 你安全地逃離了野生寶可夢對戰！");
+          showToast("💨 你安全地逃離了對戰！");
           closeBattle();
         } else {
           showBattleSubMenu(cmd);
@@ -3238,59 +6334,182 @@
       };
     });
 
-    // 觸控十字鍵
-    const dpadMap = {
-      dpadUp: "north",
-      dpadDown: "south",
-      dpadLeft: "west",
-      dpadRight: "east"
-    };
-    Object.entries(dpadMap).forEach(([id, dir]) => {
-      const b = document.getElementById(id);
-      if (b) {
-        b.onclick = () => movePlayer(dir);
+    // ----------------------------------------------------------------------
+    // 平板與手機觸控：支援長按連走、手指滑動換向的虛擬十字鍵 (D-Pad) 與 A 互動鍵
+    // ----------------------------------------------------------------------
+    let dpadHoldInterval = null;
+    let activeDpadDir = null;
+
+    function updateDpadVisualState(dir) {
+      document.querySelectorAll("[data-dir]").forEach((el) => {
+        el.classList.toggle("pressed", Boolean(dir && el.getAttribute("data-dir") === dir));
+      });
+    }
+
+    function startDpadMove(dir) {
+      if (!dir || isAnyModalOpen()) return;
+      walkTarget = null;
+      if (activeDpadDir === dir && dpadHoldInterval) return;
+      stopDpadMove();
+      activeDpadDir = dir;
+      updateDpadVisualState(dir);
+      movePlayer(dir);
+      dpadHoldInterval = setInterval(() => {
+        if (isAnyModalOpen()) {
+          stopDpadMove();
+          return;
+        }
+        movePlayer(activeDpadDir);
+      }, 135);
+    }
+
+    function stopDpadMove() {
+      activeDpadDir = null;
+      if (dpadHoldInterval) {
+        clearInterval(dpadHoldInterval);
+        dpadHoldInterval = null;
       }
+      updateDpadVisualState(null);
+    }
+
+    // 綁定所有帶有 data-dir 的十字鍵按鈕（含地圖左下角懸浮十字鍵與底部備用十字鍵）
+    document.querySelectorAll("[data-dir]").forEach((btn) => {
+      const dir = btn.getAttribute("data-dir");
+      btn.addEventListener(
+        "pointerdown",
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          startDpadMove(dir);
+        },
+        { passive: false }
+      );
+      btn.addEventListener("pointerup", stopDpadMove);
+      btn.addEventListener("pointercancel", stopDpadMove);
     });
 
-    // 點擊地圖 Canvas 直接互動或移動
-    overworldCanvas.addEventListener("click", (e) => {
+    // 支援手指在十字鍵區域滑動直接切換方向（不需抬起手指）
+    const onscreenDpad = document.getElementById("onscreenDpad");
+    if (onscreenDpad) {
+      onscreenDpad.addEventListener(
+        "pointermove",
+        (e) => {
+          if (!activeDpadDir) return;
+          e.preventDefault();
+          const hit = document.elementFromPoint(e.clientX, e.clientY);
+          const dirBtn = hit && hit.closest ? hit.closest("[data-dir]") : null;
+          if (dirBtn) {
+            const newDir = dirBtn.getAttribute("data-dir");
+            if (newDir && newDir !== activeDpadDir) {
+              startDpadMove(newDir);
+            }
+          }
+        },
+        { passive: false }
+      );
+    }
+
+    window.addEventListener("pointerup", stopDpadMove);
+    window.addEventListener("pointercancel", stopDpadMove);
+    window.addEventListener("blur", stopDpadMove);
+
+    // 畫面右下角懸浮「A 互動」按鈕
+    const onscreenInteractBtn = document.getElementById("onscreenInteractBtn");
+    if (onscreenInteractBtn) {
+      onscreenInteractBtn.addEventListener(
+        "pointerdown",
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          triggerObjectInteraction();
+        },
+        { passive: false }
+      );
+    }
+
+    // ----------------------------------------------------------------------
+    // 點擊或拖曳地圖 Canvas：支援平板直接點地自動尋路行走 & 按住拖曳導引移動
+    // ----------------------------------------------------------------------
+    let isCanvasDragging = false;
+    let lastDragTileKey = "";
+
+    function handleCanvasPointerTarget(clientX, clientY, isInitialTap) {
       if (isAnyModalOpen()) return;
       const rect = overworldCanvas.getBoundingClientRect();
-      const clickX = ((e.clientX - rect.left) / rect.width) * overworldCanvas.width + camX;
-      const clickY = ((e.clientY - rect.top) / rect.height) * overworldCanvas.height + camY;
+      const clickX = ((clientX - rect.left) / rect.width) * overworldCanvas.width + camX;
+      const clickY = ((clientY - rect.top) / rect.height) * overworldCanvas.height + camY;
       const gx = Math.floor(clickX / TILE_SIZE);
       const gy = Math.floor(clickY / TILE_SIZE);
       const reg = getCurrentRegion();
 
-      // 若點擊在建築物、門、寶箱或 NPC 上，直接觸發或靠近
-      for (const obj of reg.objects || []) {
-        const ow = obj.width || 1;
-        const oh = obj.height || 1;
-        if (gx >= obj.x && gx < obj.x + ow && gy >= obj.y && gy < obj.y + oh) {
-          if (obj.kind === "building") {
-            const door = (reg.objects || []).find(
-              (d) => d.kind === "door" && d.x >= obj.x && d.x < obj.x + ow
-            );
-            if (door) {
-              triggerObjectInteraction(door);
+      const tileKey = `${gx},${gy}`;
+      if (!isInitialTap && tileKey === lastDragTileKey) return;
+      lastDragTileKey = tileKey;
+
+      // 檢查是否點擊在建築物、門、寶箱或 NPC 上
+      if (isInitialTap) {
+        for (const obj of reg.objects || []) {
+          const ow = obj.width || 1;
+          const oh = obj.height || 1;
+          if (gx >= obj.x && gx < obj.x + ow && gy >= obj.y && gy < obj.y + oh) {
+            if (obj.kind === "building") {
+              const door = (reg.objects || []).find(
+                (d) => d.kind === "door" && d.x >= obj.x && d.x < obj.x + ow
+              );
+              if (door) {
+                const dist = Math.abs(state.x - door.x) + Math.abs(state.y - door.y);
+                if (dist <= 2) {
+                  triggerObjectInteraction(door);
+                } else {
+                  startAutoWalkTo(door.x, Math.min(MAP_ROWS - 1, door.y + 1), door);
+                }
+                return;
+              }
+            }
+            if (["door", "chest", "npc", "sign", "waystone"].includes(obj.kind)) {
+              const dist = Math.abs(state.x - obj.x) + Math.abs(state.y - obj.y);
+              if (dist <= 2) {
+                triggerObjectInteraction(obj);
+              } else {
+                startAutoWalkTo(obj.x, obj.y, obj);
+              }
               return;
             }
-          }
-          if (["door", "chest", "npc", "sign", "waystone"].includes(obj.kind)) {
-            triggerObjectInteraction(obj);
-            return;
           }
         }
       }
 
-      // 否則朝點擊方向移動一格
-      const dx = gx - state.x;
-      const dy = gy - state.y;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        movePlayer(dx > 0 ? "east" : "west");
-      } else if (dy !== 0) {
-        movePlayer(dy > 0 ? "south" : "north");
-      }
+      // 點擊或拖曳一般地面：啟動自動尋路走到該格
+      startAutoWalkTo(gx, gy, null);
+    }
+
+    overworldCanvas.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (isAnyModalOpen()) return;
+        e.preventDefault();
+        isCanvasDragging = true;
+        lastDragTileKey = "";
+        handleCanvasPointerTarget(e.clientX, e.clientY, true);
+      },
+      { passive: false }
+    );
+
+    overworldCanvas.addEventListener(
+      "pointermove",
+      (e) => {
+        if (!isCanvasDragging || isAnyModalOpen()) return;
+        e.preventDefault();
+        handleCanvasPointerTarget(e.clientX, e.clientY, false);
+      },
+      { passive: false }
+    );
+
+    window.addEventListener("pointerup", () => {
+      isCanvasDragging = false;
+    });
+    window.addEventListener("pointercancel", () => {
+      isCanvasDragging = false;
     });
 
     // 鍵盤 WASD / 方向鍵 / E / Space / ESC
@@ -3316,9 +6535,6 @@
       }
 
       if (isAnyModalOpen()) {
-        if (["e", "E", " ", "Enter"].includes(e.key) && !document.getElementById("menuModal").classList.contains("hidden")) {
-          // 若為一般對話視窗可按 E 關閉
-        }
         return;
       }
 
@@ -3339,6 +6555,7 @@
 
       if (keyDir) {
         e.preventDefault();
+        walkTarget = null;
         movePlayer(keyDir);
       } else if (["e", "E", " "].includes(e.key)) {
         e.preventDefault();

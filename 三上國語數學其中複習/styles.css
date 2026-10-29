@@ -1602,14 +1602,1079 @@ button kbd {
 }
 
 .numpad-btn {
-  min-width: 36px;
-  height: 36px;
+  min-width: 40px;
+  height: 40px;
   border: 2px solid #384878;
   background: #ffffff;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 900;
+  border-radius: 4px;
 }
 
-.numpad-btn:hover {
+.numpad-btn:hover,
+.numpad-btn:active {
   background: #dbeafe;
+}
+
+.topline-pill.save-pill {
+  color: #bbf7d0;
+  border-color: #22c55e;
+  background: #14532d;
+}
+
+.topline-pill.save-pill:hover {
+  background: #166534;
+}
+
+.vertical-num-row > div {
+  font-family: 'Pixelify Sans', 'Nunito', monospace;
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.digit-write-cell.correct-cell {
+  border-color: #16a34a !important;
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.quiz-option-btn.correct {
+  border-color: #16a34a !important;
+  background: #dcfce7 !important;
+  color: #14532d !important;
+}
+
+.quiz-option-btn.wrong {
+  border-color: #dc2626 !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.recognized-slot.correct {
+  border-color: #16a34a !important;
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+/* ==========================================================================
+   6. 平板 / 手機觸控優化與畫面內懸浮十字鍵 (Viewport Touch HUD & RWD)
+   ========================================================================== */
+#overworldCanvas {
+  touch-action: none;
+  cursor: pointer;
+}
+
+.viewport-touch-hud {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 12;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.onscreen-dpad {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: rgba(15, 23, 42, 0.38);
+  padding: 6px;
+  border-radius: 18px;
+  backdrop-filter: blur(2px);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+}
+
+.onscreen-dpad .dpad-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  border: 2px solid #1e293b;
+  background: rgba(248, 250, 252, 0.88);
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -3px 0 #cbd5e1, 0 3px 6px rgba(0, 0, 0, 0.35);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.onscreen-dpad .dpad-btn:active,
+.onscreen-dpad .dpad-btn.pressed {
+  background: #bfdbfe;
+  border-color: #1d4ed8;
+  color: #1e3a8a;
+  transform: translateY(2px);
+}
+
+.onscreen-dpad .dpad-btn.up    { grid-column: 2; grid-row: 1; }
+.onscreen-dpad .dpad-btn.left  { grid-column: 1; grid-row: 2; }
+.onscreen-dpad .dpad-center    {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  pointer-events: none;
+}
+.onscreen-dpad .dpad-btn.right { grid-column: 3; grid-row: 2; }
+.onscreen-dpad .dpad-btn.down  { grid-column: 2; grid-row: 3; }
+
+.onscreen-action-group {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onscreen-a-btn {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 3px solid #1e3a8a;
+  background: rgba(254, 240, 138, 0.92);
+  color: #78350f;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -4px 0 #eab308, 0 4px 8px rgba(0, 0, 0, 0.4);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.onscreen-a-btn span {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.onscreen-a-btn small {
+  font-size: 11px;
+  font-weight: 900;
+  margin-top: 2px;
+}
+
+.onscreen-a-btn:active {
+  background: #fde047;
+  transform: translateY(2px);
+}
+
+/* 存檔槽卡片樣式 */
+.save-slots-grid {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.save-slot-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 2.5px solid #94a3b8;
+  border-radius: 8px;
+}
+
+.save-slot-card.active-slot {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* 響應式設計 (Responsive Web Design — 適應桌機、iPad 橫直向、Android 平板與手機) */
+@media (max-width: 1180px) {
+  .console-shell {
+    width: min(100%, 100vw - 16px);
+    margin: 8px auto 16px;
+  }
+  .viewport {
+    max-height: 62dvh;
+    width: 100%;
+  }
+  .game-textbox {
+    padding: 10px 14px;
+    min-height: 60px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 860px) {
+  .console-shell {
+    width: calc(100vw - 10px);
+    margin: 4px auto 12px;
+  }
+  .game-topline {
+    font-size: 11px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .topline-pill {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .viewport {
+    aspect-ratio: 4 / 3;
+    max-height: 58dvh;
+  }
+  .location-sign {
+    padding: 6px 10px;
+    left: 8px;
+    top: 8px;
+    max-width: 56%;
+  }
+  .location-sign h1 {
+    font-size: 16px;
+  }
+  .location-sign .location-tier {
+    font-size: 11px;
+  }
+  .hud-leader-badge {
+    left: 8px;
+    bottom: 8px;
+    padding: 5px 8px;
+    max-width: 52%;
+  }
+  .hud-leader-badge img {
+    width: 34px;
+    height: 34px;
+  }
+  .onscreen-dpad {
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(3, 46px);
+    padding: 5px;
+  }
+  .onscreen-dpad .dpad-btn {
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+  }
+  .onscreen-a-btn {
+    width: 58px;
+    height: 58px;
+  }
+  .modal, .modal.wide {
+    width: calc(100vw - 12px);
+    max-height: 92dvh;
+    padding: 14px 14px;
+  }
+  .modal-scrim {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 560px) {
+  .viewport {
+    aspect-ratio: 1 / 1;
+    max-height: 54dvh;
+  }
+  .hud-leader-badge {
+    bottom: auto;
+    top: 64px;
+    left: 8px;
+    padding: 4px 7px;
+    font-size: 12px;
+  }
+  .onscreen-dpad {
+    grid-template-columns: repeat(3, 42px);
+    grid-template-rows: repeat(3, 42px);
+  }
+  .onscreen-dpad .dpad-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+  .onscreen-a-btn {
+    width: 52px;
+    height: 52px;
+  }
+  .place-value-header,
+  .carry-row,
+  .vertical-num-row,
+  .vertical-ans-row {
+    grid-template-columns: 36px repeat(4, 52px);
+    gap: 4px;
+  }
+  .digit-write-cell {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+  .vertical-divider {
+    width: 260px;
+  }
+  .tianzige-box {
+    width: 148px;
+    height: 148px;
+  }
+  .button {
+    font-size: 15px;
+    padding: 6px 10px;
+  }
+}
+
+/* ==========================================================================
+   6. Infinite Pokémon (skills-v0.2.0) 寶可夢戰鬥、升級與培育屋合成擴充樣式
+   ========================================================================== */
+.topline-pill.nursery-pill {
+  color: #e9d5ff;
+  border-color: #a855f7;
+  background: #2e1065;
+}
+.topline-pill.nursery-pill:hover {
+  background: #4c1d95;
+  border-color: #d8b4fe;
+}
+
+/* 左下角隊長迷你 EXP 條 */
+.hud-xp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.hud-xp-row > span {
+  font: 900 10px system-ui;
+  color: #bae6fd;
+  background: #1e3a8a;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+.hud-xp-row > div {
+  flex: 1 1;
+  height: 6px;
+  background: #334155;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hud-xp-row > div > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  transition: width 0.3s ease;
+}
+.hud-xp-row > small {
+  color: #475569;
+  font-size: 11px;
+}
+
+/* 經典 GBA 百葉窗與閃光遭遇過場 (.encounter-transition) */
+.encounter-transition {
+  background: transparent;
+  animation: none;
+}
+.encounter-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  animation: encounter-flash-v2 0.72s ease-in-out both;
+}
+.encounter-shutter {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10.5%;
+  background: #101820;
+  transform: translateX(-102%);
+  animation: encounter-shutter-slide 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.encounter-shutter.even {
+  transform: translateX(102%);
+  animation-name: encounter-shutter-slide-even;
+}
+.encounter-curtain {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 51%;
+  background: #101820;
+  animation: encounter-curtain-open 0.72s ease-in-out both;
+}
+.encounter-curtain.top {
+  top: 0;
+  transform-origin: center top;
+}
+.encounter-curtain.bottom {
+  bottom: 0;
+  transform-origin: center bottom;
+}
+@keyframes encounter-flash-v2 {
+  0%, 100% { opacity: 0; }
+  12%, 34% { opacity: 0.92; }
+  22% { opacity: 0.18; }
+}
+@keyframes encounter-shutter-slide {
+  0% { transform: translateX(-102%); }
+  45%, 72% { transform: translateX(0); }
+  100% { transform: translateX(102%); }
+}
+@keyframes encounter-shutter-slide-even {
+  0% { transform: translateX(102%); }
+  45%, 72% { transform: translateX(0); }
+  100% { transform: translateX(-102%); }
+}
+@keyframes encounter-curtain-open {
+  0%, 42% { transform: scaleY(0); }
+  66% { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+/* 對戰模式標籤 (野生 / 訓練家 / 守護者) */
+.gba-battle-mode-badge {
+  position: absolute;
+  right: 3%;
+  top: 3.5%;
+  z-index: 6;
+  padding: 0.45cqw 1.3cqw;
+  border-radius: 999px;
+  font-size: 2cqw;
+  font-weight: 900;
+  background: #1e293b;
+  color: #fef08a;
+  border: 0.3cqw solid #facc15;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* GBA 我方狀態卡內的 EXP 經驗值條 (.gba-xp) */
+.gba-xp {
+  display: flex;
+  align-items: center;
+  gap: 0.6cqw;
+  margin-top: 0.5cqw;
+  padding-top: 0.4cqw;
+  border-top: 0.25cqw solid #cbd5b0;
+}
+.gba-xp > span {
+  font: 900 1.35cqw system-ui;
+  color: #bae6fd;
+  background: #1e3a8a;
+  padding: 0.1cqw 0.45cqw;
+  border-radius: 0.3cqw;
+}
+.gba-xp > div {
+  flex: 1 1;
+  height: 0.9cqw;
+  background: #384848;
+  border-radius: 1cqw;
+  overflow: hidden;
+}
+.gba-xp > div > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  transition: width 0.35s ease;
+}
+.gba-xp > small {
+  font-size: 1.7cqw;
+  font-weight: 800;
+  color: #334155;
+}
+
+/* GBA 招式相剋與 PP 詳情小視窗 (.gba-move-info) */
+.gba-move-info {
+  width: 28%;
+  border: 0.55cqw solid #687890;
+  border-left: 0;
+  padding: 1.1cqw 1.3cqw;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4cqw;
+  font-size: 2.1cqw;
+  font-weight: 800;
+}
+.gba-move-info strong {
+  color: #1e3a8a;
+  font-size: 2.2cqw;
+}
+
+/* 戰鬥中升級慶祝橫幅 (.gba-levelup-banner) */
+.gba-levelup-banner {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #facc15 100%);
+  border: 0.5cqw solid #854d0e;
+  box-shadow: 0 0 0 0.4cqw #fff, 0 8px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 1.2cqw;
+  padding: 1.4cqw 2.4cqw;
+  text-align: center;
+  color: #422006;
+  min-width: 48%;
+  animation: levelup-pop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes levelup-pop {
+  0% { transform: translate(-50%, -40%) scale(0.7); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* 特性與世代標籤 (.trait-badge / .gen-badge) */
+.trait-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #818cf8;
+  margin-right: 4px;
+}
+.gen-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #c084fc;
+  margin-right: 4px;
+}
+.breakthrough-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  margin-right: 4px;
+}
+
+/* 培育屋孵蛋卡片與合成工作台 (.egg-card / .nursery-workbench) */
+.egg-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border: 3px solid #a855f7;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border-radius: 8px;
+}
+.egg-icon-pulse {
+  width: 56px;
+  height: 66px;
+  border-radius: 50% 50% 44% 44% / 60% 60% 40% 40%;
+  border: 3px solid #6b21a8;
+  background:
+    radial-gradient(circle at 35% 32%, #fde047 0 18%, transparent 19%),
+    radial-gradient(circle at 65% 58%, #c084fc 0 15%, transparent 16%),
+    radial-gradient(circle at 38% 72%, #86efac 0 13%, transparent 14%),
+    linear-gradient(180deg, #fffbeb 0%, #f5d0fe 100%);
+  flex-shrink: 0;
+  animation: egg-wobble 1.6s ease-in-out infinite;
+}
+@keyframes egg-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+
+.nursery-workbench {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  background: #f8fafc;
+  border: 2.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.parent-slot-box {
+  border: 2px dashed #94a3b8;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 78px;
+}
+.parent-slot-box.filled {
+  border-style: solid;
+  border-color: #7e22ce;
+  background: #faf5ff;
+}
+.parent-slot-box img {
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+.hybrid-preview-box {
+  border: 3px solid #7e22ce;
+  background: linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.hybrid-preview-box img {
+  width: 76px;
+  height: 76px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  background: #ffffff;
+  border: 2px solid #9333ea;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+@media (max-width: 680px) {
+  .nursery-workbench {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   7. PokéBonk 風格精緻商店與背包道具介面 (.pb-shop-shell / .pb-item-card)
+   ========================================================================== */
+.pb-shop-shell {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(124, 58, 237, 0.36) 0%, transparent 55%),
+    radial-gradient(circle at 85% 90%, rgba(59, 130, 246, 0.22) 0%, transparent 45%),
+    linear-gradient(180deg, #1f1738 0%, #261c45 52%, #17112b 100%);
+  border-radius: 18px;
+  padding: 20px;
+  color: #f8fafc;
+  border: 2px solid #4c3b7c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.pb-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pb-green-banner {
+  background: linear-gradient(135deg, #16a34a 0%, #4ade80 100%);
+  border-bottom: 4px solid #dc2626;
+  border-radius: 14px;
+  padding: 8px 22px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+}
+
+.pb-green-banner strong {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.pb-green-banner span {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #ecfdf5;
+}
+
+.pb-currency-pill {
+  background: #ffffff;
+  color: #1e1b2e;
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-weight: 900;
+  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.pb-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.pb-section-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.pb-section-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 1px 9px;
+  border-radius: 999px;
+}
+
+.pb-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.pb-item-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px;
+  color: #1e1b2e;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 8px 22px rgba(8, 5, 20, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pb-item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px rgba(139, 92, 246, 0.35);
+}
+
+.pb-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pb-orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pb-orb.mint {
+  background: radial-gradient(circle at 35% 30%, #f0fdf4 0%, #dcfce7 68%, #bbf7d0 100%);
+  box-shadow: inset 0 -3px 6px rgba(22, 163, 74, 0.14);
+}
+
+.pb-orb.sky {
+  background: radial-gradient(circle at 35% 30%, #f0f9ff 0%, #dbeafe 68%, #bfdbfe 100%);
+  box-shadow: inset 0 -3px 6px rgba(37, 99, 235, 0.14);
+}
+
+.pb-orb.epic-burst {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(243, 232, 255, 0.4) 52%, transparent 70%),
+    repeating-conic-gradient(from 0deg, rgba(168, 85, 247, 0.32) 0deg 12deg, rgba(243, 232, 255, 0.08) 12deg 24deg);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.28);
+}
+
+.pb-orb.gold-burst {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.92) 0%, rgba(254, 249, 195, 0.45) 52%, transparent 70%),
+    repeating-conic-gradient(from 0deg, rgba(234, 179, 8, 0.4) 0deg 12deg, rgba(254, 249, 195, 0.08) 12deg 24deg);
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.35);
+}
+
+.pb-orb img.pb-sprite {
+  width: 44px;
+  height: 44px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+  position: relative;
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.pb-item-card:hover .pb-orb img.pb-sprite {
+  transform: scale(1.12) rotate(-4deg);
+}
+
+.pb-title-wrap strong {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #1e1b2e;
+  line-height: 1.25;
+}
+
+.pb-owned-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #4b5563;
+  margin-top: 3px;
+}
+
+.pb-rarity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.pb-desc {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.45;
+  min-height: 40px;
+  margin: 4px 0 8px;
+}
+
+.pb-stock-pill {
+  background: #e6f9ed;
+  color: #16a34a;
+  font-weight: 900;
+  font-size: 0.84rem;
+  padding: 5px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.pb-stock-pill.sold-out {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.pb-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+.pb-cta-btn {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 8px 6px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+  font-weight: 900;
+  transition: all 0.16s ease;
+}
+
+.pb-cta-btn.can-buy {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.pb-cta-btn.can-buy:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  transform: scale(1.01);
+}
+
+.pb-cta-btn.shortfall {
+  background: #cbc7d8;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.pb-price-tag {
+  background: rgba(30, 27, 46, 0.32);
+  padding: 4px 11px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 900;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   8. 國語文與數學道館 — 題號進度燈條與完賽結算畫面 (.gym-settlement-card)
+   ========================================================================== */
+.gym-progress-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+}
+
+.gym-step-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gym-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gym-step-dot.current {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1e3a8a;
+  transform: scale(1.12);
+}
+
+.gym-step-dot.done {
+  border-color: #16a34a;
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.gym-settlement-card {
+  background: linear-gradient(180deg, #fffef8 0%, #fef9c3 45%, #fffbeb 100%);
+  border: 3px solid #eab308;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  text-align: center;
+  animation: levelup-pop 0.35s ease;
+}
+
+.gym-settlement-header {
+  display: inline-block;
+  background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%);
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 900;
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: 2px solid #b45309;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.35);
+  margin-bottom: 12px;
+}
+
+.gym-settlement-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.gym-settlement-stat-box {
+  background: #ffffff;
+  border: 2px solid #fde047;
+  border-radius: 12px;
+  padding: 12px 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.gym-settlement-stat-box small {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.gym-settlement-stat-box strong {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: 4px;
+}
+
+.gym-review-list {
+  text-align: left;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-height: 210px;
+  overflow-y: auto;
+  margin: 14px 0;
+}
+
+.gym-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.gym-review-row:last-child {
+  border-bottom: none;
+}
+
+
+
+/* 專案改採既有寶可夢的等級進化；培育屋合成相關控制項不再提供。 */
+#topNurseryPill,
+#btnHudNursery,
+#btnQuickNursery,
+#btnQuickNurseryBottom,
+[data-menu="nursery"],
+[data-send-nursery],
+#btnPartyToNursery,
+.nursery-workbench,
+.egg-card {
+  display: none !important;
 }

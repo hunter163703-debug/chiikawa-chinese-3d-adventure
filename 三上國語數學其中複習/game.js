@@ -331,6 +331,8 @@
     poke.type = target.type;
     poke.typeEn = target.typeEn || poke.typeEn;
     poke.typeColor = target.typeColor || poke.typeColor;
+    poke.encounterCategory = target.category || poke.encounterCategory || "normal";
+    poke.expRate = typeof target.expRate === "number" ? target.expRate : poke.expRate;
     poke.basicMove = target.basicMove || poke.basicMove;
     poke.specialMove = target.move || poke.specialMove;
     poke.baseSpeciesId = target.id;
@@ -345,12 +347,14 @@
   function getPokemonDisplayUrl(poke, mode = "portrait") {
     if (!poke) return getGen2SpriteUrl(25, false);
     const id = poke.baseSpeciesId || poke.id || 25;
+    if (id >= 900) return generatePixelCreatureDataUrl(poke.art || getDefaultArtForPokemon(poke), mode === "back");
     return getGen2SpriteUrl(id, mode === "back");
   }
 
   function getPokemonFallbackUrl(poke, mode = "portrait") {
     if (!poke) return getStaticSpriteUrl(25, false);
     const id = poke.baseSpeciesId || poke.id || 25;
+    if (id >= 900) return generatePixelCreatureDataUrl(poke.art || getDefaultArtForPokemon(poke), mode === "back");
     return getStaticSpriteUrl(id, mode === "back");
   }
 
@@ -399,6 +403,9 @@
     if (typeof p.generation !== "number") p.generation = p.isHybrid ? 1 : 0;
     if (typeof p.breakthroughStage !== "number") p.breakthroughStage = 0;
     if (typeof p.breedAfterStep !== "number") p.breedAfterStep = 0;
+    const speciesData = DATA.pokemonCatalog.find((cat) => cat.id === p.id);
+    if (!p.encounterCategory) p.encounterCategory = (speciesData && speciesData.category) || "normal";
+    if (typeof p.expRate !== "number") p.expRate = (speciesData && speciesData.expRate) || 1;
     if (!p.art) p.art = getDefaultArtForPokemon(p);
     return p;
   }
@@ -438,6 +445,8 @@
         defTrained: 0,
         traits,
         generation: cat.generation || 0,
+        encounterCategory: cat.category || "normal",
+        expRate: typeof cat.expRate === "number" ? cat.expRate : 1,
         isHybrid: Boolean(cat.isHybrid),
         breakthroughStage: 0,
         breedAfterStep: 0,
@@ -477,6 +486,8 @@
       defTrained: bonusDef,
       traits,
       generation: cat.generation || 0,
+      encounterCategory: cat.category || "normal",
+      expRate: typeof cat.expRate === "number" ? cat.expRate : 1,
       isHybrid: Boolean(cat.isHybrid),
       breakthroughStage: 0,
       breedAfterStep: 0,
@@ -504,7 +515,8 @@
   function getExpMultiplier(poke) {
     const hasCurious = poke && Array.isArray(poke.traits) && poke.traits.includes("curious");
     const luckyEggs = (state && state.items && state.items["lucky-egg"]) || 0;
-    return (hasCurious ? 1.25 : 1.0) + luckyEggs * 0.25;
+    const rarityRate = poke && typeof poke.expRate === "number" ? poke.expRate : 1;
+    return ((hasCurious ? 1.25 : 1.0) + luckyEggs * 0.25) * rarityRate;
   }
 
   // 為商店與背包道具產生精緻像素/向量 SVG 圖示（當離線或外部圖片載入失敗時亦可呈現高質感圖示）
@@ -594,8 +606,10 @@
 
       poke.maxHp += hpUp;
       poke.hp = Math.min(poke.maxHp, poke.hp + hpUp + 4);
-      poke.atk += atkUp;
-      poke.def += defUp;
+      poke.atk = Math.min(120, poke.atk + atkUp);
+      poke.def = Math.min(120, poke.def + defUp);
+      // 下一級所需經驗會隨等級增加，避免每次道館答題都直接升級。
+      poke.xpToNext = getNextLevelExp(poke.level);
 
       totalHpGain += hpUp;
       totalAtkGain += atkUp;
@@ -660,6 +674,8 @@
       egg: null,              // 培育屋正在孵化的合成蛋 { parentNames, stepsRemaining, childSpecies }
       defeatedTrainers: [],   // 已擊敗的路線訓練家
       defeatedGuardians: [],  // 已擊敗的路標石守護者
+      guardianAttempts: {},   // 每區特殊守護者的有限挑戰次數
+      regionEncounterCounts: {}, // 每區稀有／古代／傳說寶可夢出現次數
       journal: ["歡迎來到若葉鎮！先前往國語與數學道館特訓，讓寶可夢依照等級進化！"],
       visitedRegions: ["0,0"],
       collectedChests: [],    // 已開啟的寶箱 ID
@@ -695,6 +711,7 @@
       mathScore: 0,
       completedQuestions: [],
       badges: { chinese: false, math: false },
+      masterBadges: { chinese: false, math: false },
       lastSavedAt: "尚未存檔"
     };
   }
@@ -710,6 +727,10 @@
           const merged = Object.assign(getDefaultState(), parsed);
           merged.items = Object.assign(getDefaultState().items, parsed.items || {});
           merged.shopPurchased = Object.assign({}, parsed.shopPurchased || {});
+          merged.badges = Object.assign(getDefaultState().badges, parsed.badges || {});
+          merged.masterBadges = Object.assign(getDefaultState().masterBadges, parsed.masterBadges || {});
+          merged.guardianAttempts = Object.assign({}, parsed.guardianAttempts || {});
+          merged.regionEncounterCounts = Object.assign({}, parsed.regionEncounterCounts || {});
           merged.party = (merged.party || []).map(ensurePokemonFields);
           merged.storage = (merged.storage || []).map(ensurePokemonFields);
           return merged;
@@ -1485,12 +1506,14 @@
       return;
     }
 
-    // 檢查是否踏入深草叢 (tile === 3) 觸發野生寶可夢遭遇戰
+    // 草叢、水域與深層草叢使用區域遭遇表，稀有物種另受各區次數上限控制。
     const steppedTile = reg.tiles[ny * MAP_COLS + nx];
-    if (steppedTile === 3 && state.repelSteps <= 0) {
-      if (Math.random() < 0.24) {
+    if ((steppedTile === 3 || steppedTile === 7) && state.repelSteps <= 0) {
+      const zone = getEncounterZone(reg, nx, ny);
+      const encounterChance = zone === "deep" ? 0.34 : steppedTile === 7 ? 0.18 : 0.24;
+      if (Math.random() < encounterChance) {
         stopAutoWalk();
-        startWildEncounter(reg.id);
+        startWildEncounter(reg.id, zone);
       }
     }
 
@@ -1674,9 +1697,36 @@
     return false;
   }
 
+  function hasDefeatedRegionGuardian(regionId) {
+    const region = DATA.regions[regionId];
+    const stone = (region && region.objects || []).find((obj) => obj.kind === "waystone");
+    return Boolean(stone && (state.defeatedGuardians || []).includes(`${regionId}:${stone.id}`));
+  }
+
+  function getRequirementStatus(requirement = {}) {
+    const reasons = [];
+    const chineseScore = state.chineseScore || 0;
+    const mathScore = state.mathScore || 0;
+    if (chineseScore < (requirement.chinese || 0)) reasons.push(`國語文 ${requirement.chinese - chineseScore} 分`);
+    if (mathScore < (requirement.math || 0)) reasons.push(`數學 ${requirement.math - mathScore} 分`);
+    if (requirement.requireGymBadges && !(state.badges.chinese && state.badges.math)) reasons.push("國語文與數學初階徽章");
+    if (requirement.requireMasterBadges && !(state.masterBadges.chinese && state.masterBadges.math)) reasons.push("兩枚道館大師徽章");
+    if (requirement.guardianRegion && !hasDefeatedRegionGuardian(requirement.guardianRegion)) {
+      const guardianRegion = DATA.regions[requirement.guardianRegion];
+      reasons.push(`${guardianRegion ? guardianRegion.name.split(" ")[0] : "前一區"}守護者挑戰`);
+    }
+    return { unlocked: reasons.length === 0, reasons };
+  }
+
   function travelToRegion(targetRegionId, spawnX = null, spawnY = null) {
     const nextReg = DATA.regions[targetRegionId];
     if (!nextReg) return;
+    const gate = (DATA.regionUnlocks && DATA.regionUnlocks[targetRegionId]) || { chinese: 0, math: 0 };
+    const gateStatus = getRequirementStatus(gate);
+    if (!gateStatus.unlocked) {
+      showToast(`🔒【${nextReg.name}】尚未解鎖！還需要：${gateStatus.reasons.join("、")}。`);
+      return;
+    }
     SFX.playClick();
     state.regionId = targetRegionId;
     state.x = spawnX !== null ? spawnX : nextReg.spawn.x;
@@ -1785,12 +1835,19 @@
       SFX.playClick();
       const guardianKey = `${state.regionId}:${obj.id}`;
       const defeated = (state.defeatedGuardians || []).includes(guardianKey);
+      const reg = getCurrentRegion();
+      const rules = reg.encounterRules || {};
+      const boss = DATA.pokemonCatalog.find((cat) => cat.id === rules.guardianPokemonId);
+      const guardianCaught = boss && state.caughtIds.includes(boss.id);
+      const requirement = getRequirementStatus(rules.guardianRequirement || {});
+      const attempts = state.guardianAttempts[reg.id] || 0;
+      const maxAttempts = rules.guardianMaxAttempts || 3;
       openDialogueModal(
-        `🗿 ${obj.name || "古老路標石"} ${defeated ? "（👑 已擊敗守護者）" : "（⚡ 可召喚石碑守護者 BOSS）"}`,
-        `${obj.text || getCurrentRegion().description}\n\n✨ 石碑中沉睡著本區域的【遠古守護者寶可夢】！挑戰成功可獲得高額金幣 ₽120+、經驗糖果 S 與大量升級經驗值 EXP！`,
+        `🗿 ${obj.name || "古老路標石"} ${guardianCaught ? "（✅ 守護者已收服）" : defeated ? "（👑 已擊敗，可再挑戰收服）" : "（⚡ 特殊區域守護者）"}`,
+        `${obj.text || reg.description}\n\n✨ 本區首領：【${boss ? boss.name : "守護者"}】${reg.tier === 5 ? " · Lv.35～40 傳說挑戰" : " · 超出一般野外等級"}\n🗝️ 挑戰條件：${requirement.unlocked ? "已符合" : requirement.reasons.join("、")}\n🎟️ 特殊挑戰次數：${Math.max(0, maxAttempts - attempts)} / ${maxAttempts}${defeated ? "\n✅ 已擊敗首領；若尚未收服，仍可再次挑戰。" : ""}\n🏆 勝利可獲得高額金幣、經驗糖果與前往下一區的資格。`,
         [
           {
-            label: "⚡ 召喚並挑戰【石碑守護者 BOSS】！",
+            label: `⚡ 挑戰【${boss ? boss.name : "石碑守護者"}】！`,
             onClick: () => startGuardianBattle(obj)
           }
         ]
@@ -1917,18 +1974,80 @@
     setBattleMessage(introMessage);
   }
 
-  function startWildEncounter(regionId) {
+  function getPokemonEncounterCategory(cat) {
+    if (!cat) return "normal";
+    if (["normal", "evolved", "rare", "ancient", "legendary"].includes(cat.category)) return cat.category;
+    if (cat.id === 150) return "legendary";
+    if ([142, 911, 912].includes(cat.id)) return "ancient";
+    if ([93, 121, 123, 130, 131, 149, 181, 248, 448].includes(cat.id)) return "rare";
+    return Object.values(DATA.evolutionRules || {}).some((rule) => rule.to === cat.id) ? "evolved" : "normal";
+  }
+
+  function getEncounterZone(reg, x, y) {
+    const tile = reg.tiles[y * MAP_COLS + x];
+    const rules = reg.encounterRules || {};
+    const inDeepPatch = (rules.deepZones || []).some((zone) => x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2);
+    if (inDeepPatch && (tile === 3 || tile === 7)) return "deep";
+    return tile === 7 ? "water" : "ordinary";
+  }
+
+  function getRegionEncounterPool(reg, mode = "wild", zone = "ordinary") {
+    const rules = reg.encounterRules || {};
+    if (mode === "guardian") {
+      const boss = DATA.pokemonCatalog.find((p) => p.id === rules.guardianPokemonId && p.regionId === reg.id);
+      return boss ? [boss] : [];
+    }
+    let allowed = rules[zone] || rules.ordinary;
+    if (!allowed) {
+      const tier = reg.tier || 1;
+      allowed = tier <= 1 ? ["normal"] : tier === 2 ? ["normal", "evolved"] : tier === 3 ? ["evolved", "rare"] : tier === 4 ? ["evolved", "rare"] : ["rare", "ancient"];
+    }
+    let pool = DATA.pokemonCatalog.filter((p) => {
+      if (p.regionId !== reg.id || p.isHybrid) return false;
+      const spawnMinLevel = (rules.levelOverrides && rules.levelOverrides[p.id]) || p.minLevel || p.minLv || 1;
+      if (reg.levelRange && spawnMinLevel > reg.levelRange[1]) return false;
+      const category = getPokemonEncounterCategory(p);
+      if (!allowed.includes(category)) return false;
+      if (reg.tier === 1 && category === "evolved" && !(rules.initialEvolutionIds || []).includes(p.id)) return false;
+      if (category === "legendary") return false; // 傳說寶可夢只從特殊守護者戰出現
+      const caps = rules.rareCaps || {};
+      if (["rare", "ancient", "legendary"].includes(category)) {
+        const key = `${reg.id}:${category}`;
+        if ((state.regionEncounterCounts[key] || 0) >= (caps[category] || 0)) return false;
+      }
+      return true;
+    });
+    if (mode === "trainer") {
+      pool = pool.filter((p) => !["ancient", "legendary"].includes(getPokemonEncounterCategory(p)));
+    }
+    return pool;
+  }
+
+  function startWildEncounter(regionId, zone = "ordinary") {
     const lead = getLeadPokemon();
     if (!lead) return;
     const reg = DATA.regions[regionId] || getCurrentRegion();
-    const pool = DATA.pokemonCatalog.filter((p) => p.regionId === regionId && p.id < 900);
+    const pool = getRegionEncounterPool(reg, "wild", zone);
+    if (!pool.length) {
+      showToast("這一帶的稀有遭遇次數已用完，換個區域探索看看！");
+      return;
+    }
     const chosenCat =
       pool.length > 0
         ? pool[Math.floor(Math.random() * pool.length)]
         : DATA.pokemonCatalog.find((p) => p.regionId === "0,0");
 
-    const [minLv, maxLv] = reg.levelRange || [3, 5];
+    const [regionMinLv, regionMaxLv] = reg.levelRange || [3, 5];
+    const configuredMin = (reg.encounterRules && reg.encounterRules.levelOverrides && reg.encounterRules.levelOverrides[chosenCat.id]) || chosenCat.minLevel || chosenCat.minLv || regionMinLv;
+    const minLv = Math.max(regionMinLv, configuredMin);
+    const maxLv = Math.max(minLv, Math.min(regionMaxLv, chosenCat.maxLevel || regionMaxLv));
     const enemyLv = minLv + Math.floor(Math.random() * (maxLv - minLv + 1));
+    const category = getPokemonEncounterCategory(chosenCat);
+    if (["rare", "ancient", "legendary"].includes(category)) {
+      const key = `${reg.id}:${category}`;
+      state.regionEncounterCounts[key] = (state.regionEncounterCounts[key] || 0) + 1;
+      saveGame();
+    }
     const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.1;
     const enemyTraits = pickTraitsForSeed(chosenCat.id * 11 + enemyLv, chosenCat.traits);
 
@@ -1940,6 +2059,8 @@
       type: chosenCat.type,
       typeEn: chosenCat.typeEn || "NORMAL",
       level: enemyLv,
+      category,
+      encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
       hp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
       atk: Math.round(chosenCat.baseAtk * scale),
@@ -1971,7 +2092,7 @@
     const lead = getLeadPokemon();
     if (!lead) return;
     const reg = getCurrentRegion();
-    const pool = DATA.pokemonCatalog.filter((p) => p.regionId === reg.id && p.id < 900);
+    const pool = getRegionEncounterPool(reg, "trainer");
     const chosenCat = pool.length > 0 ? pool[pool.length - 1] : DATA.pokemonCatalog[4];
     const [, maxLv] = reg.levelRange || [3, 5];
     const enemyLv = maxLv + 1;
@@ -1986,6 +2107,8 @@
       type: chosenCat.type,
       typeEn: chosenCat.typeEn || "NORMAL",
       level: enemyLv,
+      category: getPokemonEncounterCategory(chosenCat),
+      encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + 10,
       hp: Math.round(chosenCat.baseHp * scale) + 10,
       atk: Math.round(chosenCat.baseAtk * scale) + 3,
@@ -2014,14 +2137,31 @@
     const lead = getLeadPokemon();
     if (!lead) return;
     const reg = getCurrentRegion();
-    const extraPool = DATA.pokemonCatalog.filter((p) => p.id < 900 && p.regionId === reg.id);
-    const chosenCat =
-      extraPool.length > 0
-        ? extraPool[extraPool.length - 1]
-        : DATA.pokemonCatalog.filter((p) => p.regionId === reg.id).slice(-1)[0] || DATA.pokemonCatalog[0];
+    const guardianRules = reg.encounterRules || {};
+    const guardianGate = getRequirementStatus(guardianRules.guardianRequirement || {});
+    if (!guardianGate.unlocked) {
+      showToast(`🔒 守護者尚未接受挑戰：${guardianGate.reasons.join("、")}。`);
+      return;
+    }
+    const guardianKey = `${reg.id}:${waystoneObj.id}`;
+    const guardianSpecies = DATA.pokemonCatalog.find((cat) => cat.id === guardianRules.guardianPokemonId);
+    if ((state.defeatedGuardians || []).includes(guardianKey) && guardianSpecies && state.caughtIds.includes(guardianSpecies.id)) {
+      showToast("🏅 本區守護者已擊敗且已收服，挑戰完成！");
+      return;
+    }
+    const attempts = state.guardianAttempts[reg.id] || 0;
+    const maxAttempts = guardianRules.guardianMaxAttempts || 3;
+    if (attempts >= maxAttempts) {
+      showToast(`🪨 本區守護者的挑戰次數已用完（${maxAttempts} 次）。`);
+      return;
+    }
+    state.guardianAttempts[reg.id] = attempts + 1;
+    saveGame();
+    const extraPool = getRegionEncounterPool(reg, "guardian");
+    const chosenCat = extraPool[0] || DATA.pokemonCatalog[0];
 
     const [, maxLv] = reg.levelRange || [3, 5];
-    const enemyLv = maxLv + 2;
+    const enemyLv = reg.tier === 5 ? [35, 38, 40][attempts % 3] : maxLv + 2;
     const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.12;
 
     const enemy = {
@@ -2031,6 +2171,8 @@
       type: chosenCat.type,
       typeEn: chosenCat.typeEn || "DRAGON",
       level: enemyLv,
+      category: getPokemonEncounterCategory(chosenCat),
+      encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + 18,
       hp: Math.round(chosenCat.baseHp * scale) + 18,
       atk: Math.round(chosenCat.baseAtk * scale) + 4,
@@ -2080,8 +2222,9 @@
       .join("/");
     document.getElementById("battleEnemyName").textContent = enemy.name;
     document.getElementById("battleEnemyLv").textContent = `Lv.${enemy.level}`;
+    const categoryLabel = { normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說" }[enemy.category || "normal"];
     document.getElementById("battleEnemyStats").textContent =
-      `⚔️${enemy.atk} · 🛡️${enemy.def} · ${enemy.type}系${eTraitTxt ? ` · ✦${eTraitTxt}` : ""}`;
+      `⚔️${enemy.atk} · 🛡️${enemy.def} · ${categoryLabel} · ${enemy.type}系${eTraitTxt ? ` · ✦${eTraitTxt}` : ""}`;
     const ePct = Math.max(0, Math.min(100, (enemy.hp / enemy.maxHp) * 100));
     const eBar = document.getElementById("battleEnemyHpBar");
     eBar.style.width = `${ePct}%`;
@@ -2554,9 +2697,10 @@
       ballEl.style.display = "block";
       SFX.playBallThrow();
       const elusivePenalty = (enemy.traits || []).includes("elusive") ? 0.08 : 0;
+      const categoryRate = { normal: 1, evolved: 0.9, rare: 0.72, ancient: 0.52, legendary: 0.34 }[enemy.category || "normal"];
       const baseRate = item.guaranteedCapture
         ? 1.0
-        : Math.max(0.25, (enemy.defeated ? item.power : item.power * 0.65) - elusivePenalty);
+        : Math.max(0.18, ((enemy.defeated ? item.power : item.power * 0.65) - elusivePenalty) * categoryRate);
       setBattleMessage(
         `🟣 你丟出了【${item.name}】！（收服成功率 ${item.guaranteedCapture ? "100% 必定成功！" : `約 ${Math.round(baseRate * 100)}%`}）……咕嚕……咕嚕……`
       );
@@ -2567,8 +2711,11 @@
 
         if (success) {
           SFX.playCaptureSuccess();
-          const bonusLv = (state.items["rare-candy"] || 0) * 2;
-          const newPoke = createPokemonInstance(enemy.baseSpeciesId || enemy.id, enemy.level + bonusLv, false);
+          const bonusLv = Math.min(2, (state.items["rare-candy"] || 0));
+          const captureReg = DATA.regions[currentBattle.regionId] || getCurrentRegion();
+          const captureRange = captureReg.levelRange || [3, 6];
+          const captureLv = Math.max(captureRange[0], Math.min(enemy.level + bonusLv, captureRange[1]));
+          const newPoke = createPokemonInstance(enemy.baseSpeciesId || enemy.id, captureLv, false);
           if (state.party.length < 6) {
             state.party.push(newPoke);
           } else {
@@ -2595,7 +2742,7 @@
           currentBattle.busy = false;
           if (enemy.defeated) {
             setBattleMessage(
-              `💨 哎呀！差一點點！【${enemy.name}】從球裡掙脫了！（即使打敗對手，收服機率約為六成，牠還沒有逃走，可再從 BAG 丟一顆球試試！）`
+              `💨 哎呀！差一點點！【${enemy.name}】從球裡掙脫了！（本次收服率約 ${Math.round(baseRate * 100)}%，牠還沒有逃走，可再從 BAG 丟一顆球試試！）`
             );
           } else {
             setBattleMessage(`💨 【${enemy.name}】掙脫了精靈球！先把牠的 HP 打到 0 再投球成功率更高喔！`);
@@ -3446,10 +3593,30 @@
           const chestsInMap = (r.objects || []).filter((o) => o.kind === "chest");
           const openedInMap = chestsInMap.filter((o) => state.collectedChests.includes(o.id)).length;
           const wildList = DATA.pokemonCatalog
-            .filter((p) => p.regionId === rId)
-            .map((p) => `${p.name}(Lv.${p.minLv})`)
+            .filter((p) => {
+              const rules = r.encounterRules || {};
+              const categoryAllowed = [...(rules.ordinary || []), ...(rules.deep || [])].includes(p.category);
+              const isFirstAreaEvolution = r.tier !== 1 || p.category !== "evolved" || (rules.initialEvolutionIds || []).includes(p.id);
+              const spawnMin = (rules.levelOverrides && rules.levelOverrides[p.id]) || p.minLevel || p.minLv || 1;
+              return p.regionId === rId && !p.isHybrid && (categoryAllowed || p.id === rules.guardianPokemonId) && isFirstAreaEvolution && spawnMin <= r.levelRange[1];
+            })
+            .map((p) => `${p.name}·${({ normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說" }[p.category] || "一般")}(Lv.${(r.encounterRules && r.encounterRules.levelOverrides && r.encounterRules.levelOverrides[p.id]) || p.minLevel || p.minLv})`)
             .join("、");
           const powerEnough = lead && lead.atk >= r.recAtk && lead.def >= r.recDef;
+          const gate = (DATA.regionUnlocks && DATA.regionUnlocks[rId]) || { chinese: 0, math: 0, label: "" };
+          const gateStatus = getRequirementStatus(gate);
+          const gateOpen = gateStatus.unlocked;
+          const zones = r.encounterRules && r.encounterRules.zoneLabels || {};
+          const encounterRules = r.encounterRules || {};
+          const limitedEncounters = Object.entries(encounterRules.rareCaps || {})
+            .filter(([, limit]) => limit > 0)
+            .map(([category, limit]) => {
+              const label = { rare: "稀有", ancient: "古代", legendary: "傳說" }[category] || category;
+              const used = state.regionEncounterCounts[`${rId}:${category}`] || 0;
+              return `${label} ${Math.max(0, limit - used)}/${limit}`;
+            })
+            .join(" · ");
+          const guardianAttemptsLeft = Math.max(0, (encounterRules.guardianMaxAttempts || 3) - (state.guardianAttempts[rId] || 0));
 
           return `
           <div class="${isHere ? "here" : ""}">
@@ -3466,13 +3633,18 @@
               <div style="font-size:13px;font-weight:800;color:#1e3a8a;margin-top:6px;">
                 ⚔️ 建議攻擊力：${r.recAtk}+ · 🛡️ 建議防禦力：${r.recDef}+ · 🎁 寶箱：${openedInMap}/${chestsInMap.length}
               </div>
+              <div style="font-size:13px;color:#475569;margin-top:3px;">🌿 遭遇區：${zones.ordinary || "普通草叢"} · ${zones.deep || "深層區域"} · ${zones.special || "特殊首領區"}</div>
+              <div style="font-size:13px;color:#7c2d12;margin-top:3px;">🎟️ 限定遭遇：${limitedEncounters || "一般遭遇"} · 🗿 首領挑戰：${guardianAttemptsLeft} 次</div>
+              <div style="font-size:13px;font-weight:800;color:${gateOpen ? "#166534" : "#9a3412"};margin-top:3px;">
+                ${gateOpen ? "🔓 已解鎖" : `🔒 解鎖條件：${gate.label}（尚缺：${gateStatus.reasons.join("、")}）`}
+              </div>
               <div style="font-size:13px;color:#475569;margin-top:3px;">
                 🐾 出沒寶可夢：${wildList}
               </div>
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:6px;">
-              <button type="button" class="button ${isHere ? "" : "primary"}" data-travel-id="${rId}" ${isHere ? "disabled" : ""}>
-                ${isHere ? "📍 目前所在區域" : `🚀 傳送前往 ${r.name.split(" ")[0]}`}
+              <button type="button" class="button ${isHere ? "" : "primary"}" data-travel-id="${rId}" ${isHere || !gateOpen ? "disabled" : ""}>
+                ${isHere ? "📍 目前所在區域" : !gateOpen ? "🔒 尚未解鎖" : `🚀 傳送前往 ${r.name.split(" ")[0]}`}
               </button>
             </div>
           </div>
@@ -3482,8 +3654,8 @@
 
       bodyEl.innerHTML = `
         <p style="font-size:16px;color:#334155;">
-          你可以從<strong>柳溪 (Willowbrook)</strong> 往北、南、東、西四個出口走到各個野外地圖，或直接點擊下方按鈕快速前往。<br />
-          <strong style="color:#b91c1c;">⚠️ 提示：初始寶可夢只有 Lv.1，請先在柳溪的「國語文道館」與「數學道館」訓練達標後，再依序挑戰第 1～5 階地圖！</strong>
+          你可以從<strong>若葉鎮</strong>往北、南、東、西四個出口前往其他區域，或直接使用下方傳送按鈕。每張地圖都有普通區、深層區與石碑首領特殊區。<br />
+          <strong style="color:#b91c1c;">⚠️ 提示：初始寶可夢只有 Lv.1，請先完成兩座道館訓練，再按徽章、守護者與大師課程條件逐步解鎖地圖！</strong>
         </p>
         <div class="world-atlas">${atlasCards}</div>
       `;
@@ -3499,7 +3671,7 @@
     }
 
     if (tab === "codex") {
-      const fullCatalog = DATA.pokemonCatalog.filter((cat) => cat.id < 900);
+      const fullCatalog = DATA.pokemonCatalog.filter((cat) => !cat.isHybrid);
       const codexHtml = fullCatalog
         .map((cat) => {
           const caught = state.caughtIds.includes(cat.id) || Boolean(cat.isHybrid);
@@ -3518,7 +3690,7 @@
                 ${caught ? "✅ 已收服" : "🔒 未收服"}
               </strong>
               <p>${cat.desc}</p>
-              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 來源：${regName} (Lv.${cat.minLv}+) · 絕招：${cat.move}</small>
+              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 分類：${({ normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說" }[cat.category] || "一般")} · 來源：${regName} (Lv.${cat.minLevel || cat.minLv}+) · 絕招：${cat.move}</small>
             </div>
           </div>
         `;
@@ -3527,7 +3699,7 @@
 
       bodyEl.innerHTML = `
         <p style="margin-bottom:10px;font-weight:800;">
-          📖 寶可夢圖鑑紀錄：<strong>已收服 ${state.caughtIds.length} / ${fullCatalog.length} 種</strong>（依金銀版既有寶可夢與等級進化）
+          📖 寶可夢圖鑑紀錄：<strong>已收服 ${state.caughtIds.length} / ${fullCatalog.length} 種</strong>（包含原創古代型與傳說型寶可夢）
         </p>
         <div class="catalog-list">${codexHtml}</div>
       `;
@@ -3538,7 +3710,7 @@
     // Tab: 冒險排行榜與日誌 (RECORDS — 移植自 infinite-pokemon VarietyPanels.tsx)
     // ------------------------------------------------------------------------
     if (tab === "records") {
-      const badgeCount = (state.badges.chinese ? 1 : 0) + (state.badges.math ? 1 : 0);
+      const badgeCount = (state.badges.chinese ? 1 : 0) + (state.badges.math ? 1 : 0) + (state.masterBadges.chinese ? 1 : 0) + (state.masterBadges.math ? 1 : 0);
       const hybridCount = (state.customSpecies || []).length;
       const trainerWins = (state.defeatedTrainers || []).length + (state.defeatedGuardians || []).length;
       const playerScore =
@@ -3593,7 +3765,7 @@
           <div>
             <strong style="font-size:28px;font-weight:900;">訓練家：${state.trainerName}</strong>
             <div style="font-size:16px;color:#475569;margin-top:4px;">
-              稱號：${state.atkBonus >= 20 && state.defBonus >= 20 ? "🏆 文武雙全道館大師" : "🌱 柳溪谷見習訓練家"}
+              稱號：${state.masterBadges.chinese && state.masterBadges.math ? "🏆 文武雙全道館大師" : "🌱 柳溪谷見習訓練家"}
             </div>
           </div>
         </div>
@@ -3604,6 +3776,7 @@
           <div style="background:#dbeafe;padding:10px;border:2px solid #60a5fa;">🛡️ 數學道館防禦加成：<strong>+${state.defBonus}</strong></div>
           <div style="background:#fef9c3;padding:10px;border:2px solid #facc15;">🪙 持有金幣：<strong>₽ ${state.coins}</strong></div>
           <div style="background:#f3e8ff;padding:10px;border:2px solid #c084fc;">🎁 已開啟地圖寶箱：<strong>${state.collectedChests.length} / 16</strong></div>
+          <div style="grid-column:1/-1;background:#fff7ed;padding:10px;border:2px solid #fb923c;">🏅 道館徽章：${state.badges.chinese ? "國語初階 ✓" : "國語初階 ○"} · ${state.badges.math ? "數學初階 ✓" : "數學初階 ○"} · ${state.masterBadges.chinese ? "國語大師 ✓" : "國語大師 ○"} · ${state.masterBadges.math ? "數學大師 ✓" : "數學大師 ○"}</div>
         </div>
         ${lead ? `<p style="font-size:16px;color:#334155;">目前出戰隊長：<strong>${lead.name} Lv.${lead.level}</strong>（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def} / HP ${lead.hp}/${lead.maxHp}）</p>` : ""}
       `;
@@ -3889,18 +4062,8 @@
     } else if (item.effect === "repel") {
       state.repelSteps = 100;
       showToast("🌿 已噴灑除蟲噴霧！接下來 100 步內不會遇到野生寶可夢。");
-    } else if (item.effect === "atk-boost") {
-      state.atkBonus += item.power;
-      state.party.forEach((p) => (p.atk += item.power));
-      showToast(`⚔️ 全隊攻擊力永久提升 +${item.power}！`);
-    } else if (item.effect === "def-boost") {
-      state.defBonus += item.power;
-      state.party.forEach((p) => {
-        p.def += item.power;
-        p.maxHp += 15;
-        p.hp = p.maxHp;
-      });
-      showToast(`🛡️ 全隊防禦力永久提升 +${item.power}、最大HP +15！`);
+    } else if (item.effect === "atk-boost" || item.effect === "def-boost") {
+      showToast("🏫 這類強化必須透過國語文與數學道館完成，商店道具不會直接提升永久攻防。請回道館訓練！");
     }
     saveGame();
     updateAllHUD();
@@ -4097,8 +4260,20 @@
     switchChineseTier(chState.tier, false);
   }
 
+  function isGymTierUnlocked(tier, subject) {
+    const score = subject === "chinese" ? state.chineseScore || 0 : state.mathScore || 0;
+    const required = tier === "a" ? 0 : tier === "b" ? 30 : 90;
+    if (score >= required) return true;
+    showToast(`🔒 ${subject === "chinese" ? "國語文" : "數學"}道館的${tier === "b" ? "中階" : "進階"}課程需要先累積 ${required} 分，目前還差 ${required - score} 分。`);
+    return false;
+  }
+
   function switchChineseTier(tier, shouldResample = true) {
     clearChineseAdvanceTimer();
+    if (!isGymTierUnlocked(tier, "chinese")) {
+      tier = "a";
+      shouldResample = true;
+    }
     chState.tier = tier;
     if (shouldResample) {
       resampleChineseTier(tier);
@@ -4180,6 +4355,13 @@
     const totalCount = totalMap[tier] || 10;
     const bonusItem = bonusItemMap[tier];
     const extraCoins = Math.round((bonusCoinMap[tier] || 150) * getCoinMultiplier());
+
+    if (tier === "c" && !state.masterBadges.chinese) {
+      state.masterBadges.chinese = true;
+      addJournalEntry("🏅 完成國語文道館最高階課程，取得國語文大師徽章！");
+      showToast("🏅 恭喜取得【國語文大師徽章】！");
+      saveGame();
+    }
 
     if (!st.bonusClaimed) {
       st.bonusClaimed = true;
@@ -4982,29 +5164,36 @@
     };
   }
 
+  function getGymTrainingExp(qId) {
+    const id = String(qId || "");
+    if (id.includes("_c_")) return 12;
+    if (id.includes("_b_")) return 8;
+    return 4;
+  }
+
   function rewardChineseTraining(atkBonus, qId) {
     const lead = getLeadPokemon();
     const baseCoin = atkBonus >= 7 ? 100 : atkBonus >= 5 ? 70 : 50;
     const coinGain = Math.round(baseCoin * getCoinMultiplier());
     if (!lead) return { atkGain: atkBonus, coinGain };
 
-    state.atkBonus = (state.atkBonus || 0) + atkBonus;
+    state.atkBonus = Math.min(120, (state.atkBonus || 0) + atkBonus);
     state.coins = (state.coins || 0) + coinGain;
 
     state.party.forEach((p, i) => {
       ensurePokemonFields(p);
       const gain = i === state.activeIndex ? atkBonus : Math.max(2, Math.round(atkBonus * 0.7));
-      p.atk += gain;
+      p.atk = Math.min(120, p.atk + gain);
       p.atkTrained = (p.atkTrained || 0) + gain;
       p.maxHp += 6;
       p.hp = p.maxHp;
-      gainPokemonExp(p, p.xpToNext || 20, false);
+      gainPokemonExp(p, getGymTrainingExp(qId), false);
     });
     state.storage.forEach((p) => {
       ensurePokemonFields(p);
       const gain = Math.max(2, Math.round(atkBonus * 0.5));
-      p.atk += gain;
-      gainPokemonExp(p, p.xpToNext || 20, false);
+      p.atk = Math.min(120, p.atk + gain);
+      gainPokemonExp(p, Math.max(2, Math.round(getGymTrainingExp(qId) * 0.7)), false);
     });
 
     state.chineseScore = (state.chineseScore || 0) + 10;
@@ -5091,6 +5280,10 @@
 
   function switchMathTier(tier, shouldResample = true) {
     clearMathAdvanceTimer();
+    if (!isGymTierUnlocked(tier, "math")) {
+      tier = "a";
+      shouldResample = true;
+    }
     maState.tier = tier;
     if (shouldResample) {
       resampleMathTier(tier);
@@ -5171,6 +5364,13 @@
     const totalCount = totalMap[tier] || 10;
     const bonusItem = bonusItemMap[tier];
     const extraCoins = Math.round((bonusCoinMap[tier] || 150) * getCoinMultiplier());
+
+    if (tier === "c" && !state.masterBadges.math) {
+      state.masterBadges.math = true;
+      addJournalEntry("🏅 完成數學道館最高階課程，取得數學大師徽章！");
+      showToast("🏅 恭喜取得【數學大師徽章】！");
+      saveGame();
+    }
 
     if (!st.bonusClaimed) {
       st.bonusClaimed = true;
@@ -6036,25 +6236,25 @@
     const coinGain = Math.round(baseCoin * getCoinMultiplier());
     if (!lead) return { defGain: defBonus, hpGain, coinGain };
 
-    state.defBonus = (state.defBonus || 0) + defBonus;
+    state.defBonus = Math.min(120, (state.defBonus || 0) + defBonus);
     state.coins = (state.coins || 0) + coinGain;
 
     state.party.forEach((p, i) => {
       ensurePokemonFields(p);
       const dGain = i === state.activeIndex ? defBonus : Math.max(2, Math.round(defBonus * 0.7));
-      p.def += dGain;
+      p.def = Math.min(120, p.def + dGain);
       p.defTrained = (p.defTrained || 0) + dGain;
       p.maxHp += hpGain;
       p.hp = p.maxHp;
-      gainPokemonExp(p, p.xpToNext || 20, false);
+      gainPokemonExp(p, getGymTrainingExp(qId), false);
     });
     state.storage.forEach((p) => {
       ensurePokemonFields(p);
       const dGain = Math.max(2, Math.round(defBonus * 0.5));
-      p.def += dGain;
+      p.def = Math.min(120, p.def + dGain);
       p.maxHp += 10;
       p.hp = p.maxHp;
-      gainPokemonExp(p, p.xpToNext || 20, false);
+      gainPokemonExp(p, Math.max(2, Math.round(getGymTrainingExp(qId) * 0.7)), false);
     });
 
     state.mathScore = (state.mathScore || 0) + 10;

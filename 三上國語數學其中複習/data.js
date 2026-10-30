@@ -10,6 +10,14 @@ window.GAME_DATA = {
   // showStarterModal 在讀取 s.id 時中斷，導致整個開局選擇器無法渲染。
   starterIds: [25, 4, 1],
   regionsOrder: ["0,0", "0,1", "0,-1", "1,0", "-1,0"],
+  // 地圖必須依照兩座道館的學習進度解鎖；分數每答對一題累積 10 點。
+  regionUnlocks: {
+    "0,0": { chinese: 0, math: 0, label: "完成初始選擇即可進入" },
+    "0,1": { chinese: 30, math: 30, label: "國語文與數學道館各完成基礎訓練" },
+    "0,-1": { chinese: 60, math: 60, requireGymBadges: true, label: "兩座道館各完成指定訓練並取得初階徽章" },
+    "1,0": { chinese: 90, math: 90, guardianRegion: "0,-1", label: "完成進階道館訓練並擊敗櫟樹林守護者" },
+    "-1,0": { chinese: 120, math: 120, requireMasterBadges: true, guardianRegion: "1,0", label: "完成兩座道館最高階課程，取得兩枚大師徽章並擊敗海岸守護者" }
+  },
   evolutionRules: {
     "1":{"level":16,"to":2},"2":{"level":32,"to":3},"4":{"level":16,"to":5},"5":{"level":36,"to":6},
     "7":{"level":16,"to":8},"8":{"level":36,"to":9},"10":{"level":7,"to":11},"11":{"level":10,"to":12},
@@ -7984,3 +7992,150 @@ window.GAME_DATA = {
     ]
   }
 };
+
+// 題庫擴充：對應題庫-完整擷取中的新增試卷，保留初階／中階／進階分流。
+window.GAME_DATA.questionBankSources = {
+  chinese: ["國exam.pdf", "國exam2.pdf", "國exam3.pdf", "國exam4.pdf", "國exam5.pdf"],
+  math: ["數exam6.pdf", "數exam7.pdf", "數exam8.pdf", "數exam9.pdf", "數exam10.pdf"]
+};
+window.GAME_DATA.chineseGym.dictationQuestions.push(
+  { id: "ch_a_extra_01", lesson: "新增題庫：第一課", word: "持續", bopomofo: "ㄔˊ ㄒㄩˋ", voicePrompt: "持續", radicals: ["手", "糸"], firstStrokes: ["一", "ㄥ"], strokeCounts: [10, 11], atkBonus: 4 },
+  { id: "ch_a_extra_02", lesson: "新增題庫：第二課", word: "約定", bopomofo: "ㄩㄝ ㄉㄧㄥˋ", voicePrompt: "約定", radicals: ["糸", "宀"], firstStrokes: ["ㄥ", "丶"], strokeCounts: [9, 8], atkBonus: 4 },
+  { id: "ch_a_extra_03", lesson: "新增題庫：第三課", word: "操場", bopomofo: "ㄘㄠ ㄔㄤˇ", voicePrompt: "操場", radicals: ["手", "土"], firstStrokes: ["一", "一"], strokeCounts: [16, 12], atkBonus: 4 },
+  { id: "ch_a_extra_04", lesson: "新增題庫：第六課", word: "辦法", bopomofo: "ㄅㄢˋ ㄈㄚˇ", voicePrompt: "辦法", radicals: ["辛", "水"], firstStrokes: ["丶", "丶"], strokeCounts: [16, 8], atkBonus: 4 }
+);
+window.GAME_DATA.chineseGym.middleQuestions.push(
+  { id: "ch_b_extra_01", lesson: "新增題庫：字詞辨析", category: "改錯字", question: "請選出正確的詞語：我們要彼此（　）持，完成團隊任務。", options: ["支", "枝", "只", "知"], answer: "支", explanation: "支持表示贊同、幫助。", atkBonus: 6 },
+  { id: "ch_b_extra_02", lesson: "新增題庫：多音字", category: "多音字", question: "下列哪一組「行」字讀音相同？", options: ["行走／行動", "銀行／行走", "行家／行動", "行列／行家"], answer: "行走／行動", explanation: "兩字都讀ㄒㄧㄥˊ。", atkBonus: 6 },
+  { id: "ch_b_extra_03", lesson: "新增題庫：修辭", category: "擬人法", question: "哪一句使用了擬人法？", options: ["小鳥在樹上唱歌。", "太陽對大地露出笑臉。", "天空是藍色的。", "弟弟跑得很快。"], answer: "太陽對大地露出笑臉。", explanation: "把太陽當成人來描寫。", atkBonus: 6 },
+  { id: "ch_b_extra_04", lesson: "新增題庫：語意", category: "詞語理解", question: "「心灰意冷」最接近哪個意思？", options: ["非常開心", "失望而沒有信心", "生氣大叫", "快速行動"], answer: "失望而沒有信心", explanation: "形容遭受挫折後失望、沮喪。", atkBonus: 6 }
+);
+window.GAME_DATA.chineseGym.readingQuestions.push(
+  { id: "ch_c_extra_01", lesson: "新增題庫：閱讀素養", title: "把失敗變成力量", passage: "小安參加接力賽時不小心掉棒，隊友沒有責怪他，而是一起練習交棒。第二次比賽，他們雖然沒有第一名，卻比上次進步很多。", questions: [
+    { question: "隊友如何幫助小安？", options: ["責怪他", "陪他練習", "取消比賽", "替他比賽"], answer: 1, explanation: "隊友和小安一起練習交棒。" },
+    { question: "這篇文章想告訴我們什麼？", options: ["只要第一名", "遇到失敗可以合作改進", "比賽一定要放棄", "不能相信隊友"], answer: 1, explanation: "合作與練習能讓人進步。" }
+  ], atkBonus: 9 },
+  { id: "ch_c_extra_02", lesson: "新增題庫：閱讀素養", title: "圖書館的約定", passage: "圖書館老師請大家輕聲說話、愛護書本。小美發現一本書的書頁折角，便用書籤夾好並告訴老師，讓下一位同學也能好好閱讀。", questions: [
+    { question: "小美發現書頁折角後怎麼做？", options: ["撕掉書頁", "把書藏起來", "用書籤夾好並告訴老師", "帶回家"], answer: 2, explanation: "她愛護書本並通知老師。" },
+    { question: "哪一項符合圖書館約定？", options: ["大聲聊天", "在書上畫畫", "輕聲閱讀", "搶走別人的書"], answer: 2, explanation: "圖書館需要保持安靜並愛護書籍。" }
+  ], atkBonus: 9 }
+);
+window.GAME_DATA.mathGym.verticalQuestions.push(
+  { id: "ma_a_extra_01", unit: 1, story: "柳溪道館收到 1240 顆能量石，又收到 356 顆，現在共有幾顆？", op: "+", num1: 1240, num2: 356, answer: 1596, hint: "先從個位開始對齊相加。", defBonus: 4 },
+  { id: "ma_a_extra_02", unit: 1, story: "倉庫有 2000 顆球，用掉 785 顆，還剩幾顆？", op: "−", num1: 2000, num2: 785, answer: 1215, hint: "注意千位與百位的借位。", defBonus: 4 },
+  { id: "ma_a_extra_03", unit: 2, story: "道館準備 3 盒，每盒 214 張貼紙，一共有幾張？", op: "×", num1: 214, num2: 3, answer: 642, hint: "把 214 重複加三次。", defBonus: 4 },
+  { id: "ma_a_extra_04", unit: 2, story: "地圖步道長 1 公尺 25 公分，另一段長 75 公分，合起來多長？", op: "+", num1: 125, num2: 75, answer: 200, hint: "先統一用公分計算。", defBonus: 4 }
+);
+window.GAME_DATA.mathGym.middleQuestions.push(
+  { id: "ma_b_extra_01", qType: "選擇題", unit: 1, question: "4 個千、8 個百、3 個十和 6 個一合起來是多少？", options: ["4836", "4863", "8436", "40836"], answer: "4836", hint: "依千、百、十、個位排列。", defBonus: 6 },
+  { id: "ma_b_extra_02", qType: "選擇題", unit: 2, question: "3 公分 5 毫米等於幾毫米？", options: ["8", "35", "305", "350"], answer: "35", hint: "1 公分等於 10 毫米。", defBonus: 6 },
+  { id: "ma_b_extra_03", qType: "填空題", unit: 3, question: "一盒彩筆有 6 枝，5 盒共有幾枝？", placeholder: "請輸入數字", answer: "30", hint: "用乘法計算 6 × 5。", defBonus: 6 },
+  { id: "ma_b_extra_04", qType: "選擇題", unit: 4, question: "直角有幾度？", options: ["45 度", "90 度", "180 度", "360 度"], answer: "90 度", hint: "教室牆角通常是直角。", defBonus: 6 }
+);
+window.GAME_DATA.mathGym.wordProblems.push(
+  { id: "ma_c_extra_01", unit: 3, title: "道館徽章分配", question: "老師有 4 盒徽章，每盒 18 枚，送出 25 枚後還剩幾枚？", stepsHint: "先算 18 × 4，再減去 25。", options: ["47 枚", "57 枚", "67 枚", "72 枚"], answer: "47 枚", defBonus: 9 },
+  { id: "ma_c_extra_02", unit: 4, title: "旅行時間", question: "小隊上午走 35 分鐘，休息 10 分鐘，再走 25 分鐘，一共花多少分鐘？", stepsHint: "把走路和休息時間全部相加。", options: ["60 分鐘", "65 分鐘", "70 分鐘", "75 分鐘"], answer: "70 分鐘", defBonus: 9 },
+  { id: "ma_c_extra_03", unit: 1, title: "寶箱金幣", question: "三個寶箱各有 125 枚金幣，買道具花掉 180 枚，還剩多少枚？", stepsHint: "先算 125 × 3，再減去 180。", options: ["185 枚", "195 枚", "205 枚", "215 枚"], answer: "195 枚", defBonus: 9 },
+  { id: "ma_c_extra_04", unit: 2, title: "隊伍分組", question: "有 36 位同學，每 4 人一組，可以分成幾組？", stepsHint: "用 36 ÷ 4 計算。", options: ["7 組", "8 組", "9 組", "10 組"], answer: "9 組", defBonus: 9 }
+);
+
+// 從本機整理的 112～114 學年度期中評量中，挑選題意與答案可清楚核對的題目。
+// 保留試卷來源標籤；含圖題與 OCR 辨識不完整的題目不放入互動題庫。
+window.GAME_DATA.chineseGym.middleQuestions.push(
+  { id: "ch_b_exam_01", lesson: "期中評量題庫：國exam3", category: "課文理解", question: "課文〈下課十分鐘〉主要提醒我們怎麼做？", options: ["下課時間一直玩", "每個人都做同一件事", "利用下課從事有興趣的活動", "下課時間應該變長"], answer: "利用下課從事有興趣的活動", explanation: "選擇符合課文主旨的做法，並善用下課時間。", atkBonus: 6 },
+  { id: "ch_b_exam_02", lesson: "期中評量題庫：國exam3", category: "詞語理解", question: "「留住今天的太陽」在課文中的意思是什麼？", options: ["把握時間", "用相機拍下太陽", "把太陽畫下來", "不讓太陽下山"], answer: "把握時間", explanation: "這裡用太陽比喻時間，提醒我們珍惜並把握今天。", atkBonus: 6 },
+  { id: "ch_b_exam_03", lesson: "期中評量題庫：國exam3", category: "詞語理解", question: "小鳥有「清脆」的歌聲，「清脆」最接近哪個意思？", options: ["聲音低沉", "聲音刺耳", "聲音清亮悅耳", "聲音聽不清楚"], answer: "聲音清亮悅耳", explanation: "清脆常用來形容清楚、響亮而悅耳的聲音。", atkBonus: 6 },
+  { id: "ch_b_exam_04", lesson: "期中評量題庫：國exam3", category: "句型理解", question: "「只要……就……」這組句型表示什麼關係？", options: ["提出條件和結果", "表示先後順序", "提出兩件相反的事", "表示同時發生"], answer: "提出條件和結果", explanation: "前半句提出條件，後半句說明符合條件後會有的結果。", atkBonus: 6 },
+  { id: "ch_b_exam_05", lesson: "期中評量題庫：國exam5", category: "詞語理解", question: "考試考得好時「不要得意忘形」，這句話提醒我們什麼？", options: ["考得好也要保持謙虛", "考試後不用檢查", "考得不好就放棄", "把考卷藏起來"], answer: "考得好也要保持謙虛", explanation: "得意忘形是因為高興而失去平常態度，這裡提醒我們保持謙虛。", atkBonus: 6 },
+  { id: "ch_b_exam_06", lesson: "期中評量題庫：國exam5", category: "詞語理解", question: "「一……便……」最適合用來表示什麼？", options: ["一個動作發生後，另一個動作緊接著發生", "一件事永遠不會發生", "兩件事互相矛盾", "只列出相同的事物"], answer: "一個動作發生後，另一個動作緊接著發生", explanation: "例如「鐘聲一響，大家便回到教室」，表示前後動作緊接。", atkBonus: 6 }
+);
+
+window.GAME_DATA.chineseGym.readingQuestions.push(
+  {
+    id: "ch_c_exam_01", lesson: "期中評量閱讀練習：國exam5", title: "毛頭和小紅帽（節選）",
+    passage: "海婆婆收養了失去母親的小狼毛頭。一天，小紅帽要來看婆婆，毛頭擔心婆婆只疼小紅帽，便想假扮婆婆嚇走她。小紅帽進屋後，毛頭從床上跳起來，不小心撞到天花板，痛得大叫。婆婆回家聽見小紅帽說話，開心地發現小紅帽終於會說話了。婆婆沒有責怪毛頭，還替牠包紮；毛頭也明白婆婆仍然愛牠，小紅帽最後成了牠的好朋友。",
+    questions: [
+      { q: "毛頭為什麼想嚇走小紅帽？", options: ["牠怕小紅帽弄壞房子", "牠以為婆婆會因此不再愛牠", "牠不喜歡小紅帽的紅帽子", "牠想讓婆婆出門",], answer: 1, explanation: "毛頭擔心婆婆只疼小紅帽，所以想把她嚇走。" },
+      { q: "婆婆回家後最開心地發現什麼？", options: ["毛頭學會煮牛奶", "小紅帽終於會說話", "小紅帽找到了新帽子", "毛頭打敗了獵人"], answer: 1, explanation: "小紅帽被毛頭嚇到後說出話來，婆婆因此很開心。" },
+      { q: "故事最後，毛頭明白了什麼？", options: ["婆婆仍然愛牠", "小紅帽要搬去森林", "獵人住在婆婆家", "假扮別人一定成功"], answer: 0, explanation: "婆婆替毛頭包紮，讓牠知道自己仍被愛著。" }
+    ], atkBonus: 9
+  },
+  {
+    id: "ch_c_exam_02", lesson: "期中評量閱讀練習：國exam5", title: "長平之戰的計策（節選）",
+    passage: "秦國攻打趙國時，趙國名將廉頗帶兵堅守長平，不和秦軍交戰。秦軍久攻不下，便設法讓趙王懷疑廉頗。趙王中了計，調回廉頗，改派趙括出戰。秦將白起故意讓趙括取得幾次小勝，趙括因此大意追擊，結果趙軍被包圍，糧食也遭切斷。這場戰役讓趙國大敗。",
+    questions: [
+      { q: "廉頗採用什麼策略？", options: ["堅守不出戰", "假裝投降", "一路追趕秦軍", "派兵攻打秦王"], answer: 0, explanation: "短文說廉頗帶兵堅守長平，不和秦軍交戰。" },
+      { q: "趙括為什麼會落入秦軍的計策？", options: ["他不認識自己的士兵", "他取得幾次小勝後大意追擊", "他忘了帶糧食出發", "他把軍隊交給廉頗"], answer: 1, explanation: "白起故意讓趙括小勝，趙括大意追擊後遭到包圍。" },
+      { q: "「正中下懷」最接近哪個意思？", options: ["正合心意", "向下看", "完成工作", "十分害怕"], answer: 0, explanation: "正中下懷是指結果恰好符合心中所想。" }
+    ], atkBonus: 9
+  }
+);
+
+window.GAME_DATA.mathGym.middleQuestions.push(
+  { id: "ma_b_exam_01", qType: "choice", unit: "期中評量題庫：數exam10・估算", question: "小王有 1300 元，買了一本 299 元的書。估算大約還剩多少元？", options: ["1100 元", "1000 元", "900 元", "800 元"], answer: "1000 元", hint: "把 299 元估成 300 元，再算 1300－300。", defBonus: 6 },
+  { id: "ma_b_exam_02", qType: "choice", unit: "期中評量題庫：數exam10・位值", question: "個位數字是 5、十位數字是 6、千位數字是 2，哪個四位數符合條件？", options: ["2056", "2065", "5603", "5630"], answer: "2065", hint: "依序檢查千位、十位和個位，百位可以是 0。", defBonus: 6 },
+  { id: "ma_b_exam_03", qType: "choice", unit: "期中評量題庫：數exam10・加法", question: "貓熊得到 2569 票，無尾熊得到 1691 票。兩種票數合起來是多少票？", options: ["3160 票", "4260 票", "3168 票", "4268 票"], answer: "4260 票", hint: "把 2569 和 1691 對齊位值相加。", defBonus: 6 },
+  { id: "ma_b_exam_04", qType: "choice", unit: "期中評量題庫：數exam10・化聚", question: "8 個千、1 個百和 16 個十合起來是多少？", options: ["8116", "8160", "8260", "8360"], answer: "8260", hint: "16 個十是 160，所以 8000＋100＋160。", defBonus: 6 },
+  { id: "ma_b_exam_05", qType: "choice", unit: "期中評量題庫：數exam10・估算乘法", question: "一套郵票 296 元，買 4 套大約要多少元？", options: ["800 元", "1000 元", "1200 元", "2000 元"], answer: "1200 元", hint: "把 296 元估成 300 元，再算 300×4。", defBonus: 6 },
+  { id: "ma_b_exam_06", qType: "choice", unit: "期中評量題庫：數exam8・長度", question: "70 毫米等於幾公分？", options: ["700 公分", "70 公分", "7 公分", "5 公分"], answer: "7 公分", hint: "10 毫米等於 1 公分。", defBonus: 6 },
+  { id: "ma_b_exam_07", qType: "choice", unit: "期中評量題庫：數exam8・乘法", question: "一個鉛筆盒 95 元，買 3 個要多少元？", options: ["285 元", "275 元", "265 元", "255 元"], answer: "285 元", hint: "計算 95×3，可以把 95 看成 100－5。", defBonus: 6 },
+  { id: "ma_b_exam_08", qType: "choice", unit: "期中評量題庫：數exam6・長度比較", question: "甲線長 55 毫米，乙線長 6 公分 2 毫米，丙線長 5 公分 8 毫米。哪一條最短？", options: ["甲線", "乙線", "丙線", "三條一樣長"], answer: "甲線", hint: "先換成毫米：乙是 62 毫米，丙是 58 毫米。", defBonus: 6 }
+);
+
+window.GAME_DATA.mathGym.wordProblems.push(
+  { id: "ma_c_exam_01", unit: "期中評量題庫：數exam10・生活應用", title: "吉祥物票選", question: "貓熊得到 2569 票，無尾熊得到 1691 票。每人投一票，參加票選的共有多少人？", stepsHint: "每人只投一票，所以把兩種票數相加：2569＋1691＝4260。", options: ["3160 人", "4260 人", "3168 人", "4268 人"], answer: "4260 人", defBonus: 9 },
+  { id: "ma_c_exam_02", unit: "期中評量題庫：數exam8・生活應用", title: "餅乾找零", question: "一盒餅乾 101 元，小玉買 5 盒並付 1000 元，應找回多少元？", stepsHint: "先算總價：101×5＝505（元）。再算找零：1000－505＝495（元）。", options: ["495 元", "505 元", "595 元", "485 元"], answer: "495 元", defBonus: 9 },
+  { id: "ma_c_exam_03", unit: "期中評量題庫：數exam8・乘法應用", title: "動物園參觀人數", question: "動物園一天有 2916 位遊客，隔天比這天多 100 位。隔天有多少位遊客？", stepsHint: "比 2916 多 100，只要在百位增加 1：2916＋100＝3016。", options: ["2926 人", "3016 人", "3916 人", "3926 人"], answer: "3016 人", defBonus: 9 }
+);
+
+// 五區遭遇資料：分類直接附在圖鑑物種上，遭遇階級與解鎖條件由區域規則決定。
+(() => {
+  const D = window.GAME_DATA;
+  const evolvedIds = new Set(Object.values(D.evolutionRules || {}).map((rule) => rule.to));
+  const rareIds = new Set([93, 121, 123, 130, 131, 149, 181, 248, 448]);
+  const ancientIds = new Set([142, 911, 912]);
+  const categoryTier = { normal: 1, evolved: 2, rare: 3, ancient: 4, legendary: 5 };
+  D.pokemonCatalog.forEach((p) => {
+    p.category = p.id === 150 ? "legendary" : ancientIds.has(p.id) ? "ancient" : rareIds.has(p.id) ? "rare" : evolvedIds.has(p.id) ? "evolved" : "normal";
+    const region = D.regions[p.regionId];
+    p.encounterTier = region ? region.tier : categoryTier[p.category];
+    const range = region && region.levelRange ? region.levelRange : [p.minLv || 1, p.minLv || 1];
+    p.minLevel = Math.max(range[0], p.minLv || range[0]);
+    p.maxLevel = Math.max(p.minLevel, range[1]);
+    p.unlockRequirement = Object.assign({}, D.regionUnlocks[p.regionId] || {});
+    p.expRate = { normal: 1, evolved: 0.9, rare: 0.78, ancient: 0.65, legendary: 0.5 }[p.category];
+  });
+
+  const profile = (ordinary, deep, extras = {}) => Object.assign({ ordinary, deep, rareCaps: { rare: 4, ancient: 2 } }, extras);
+  D.regions["0,0"].encounterRules = profile(["normal", "evolved"], ["normal", "evolved"], {
+    deepZones: [{ x1: 6, y1: 18, x2: 8, y2: 20 }],
+    zoneLabels: { ordinary: "普通草叢", deep: "深層草叢", special: "城鎮守護者石碑" },
+    levelOverrides: { 11: 5, 14: 5 },
+    initialEvolutionIds: [11, 14], guardianPokemonId: 43, guardianMaxAttempts: 3,
+    guardianRequirement: { chinese: 0, math: 0 }
+  });
+  D.regions["0,1"].encounterRules = profile(["normal"], ["normal", "evolved"], {
+    deepZones: [{ x1: 8, y1: 16, x2: 10, y2: 18 }],
+    zoneLabels: { ordinary: "普通河岸", deep: "深層河灣", water: "水域", special: "海灣守護者石碑" },
+    levelOverrides: { 8: 10 },
+    guardianPokemonId: 60, guardianMaxAttempts: 3, guardianRequirement: { chinese: 30, math: 30 }
+  });
+  D.regions["0,-1"].encounterRules = profile(["evolved"], ["evolved", "rare"], {
+    deepZones: [{ x1: 4, y1: 14, x2: 5, y2: 15 }],
+    zoneLabels: { ordinary: "櫟樹林草叢", deep: "森林深處", special: "古祠守護者石碑" },
+    guardianPokemonId: 123, guardianMaxAttempts: 3,
+    guardianRequirement: { chinese: 60, math: 60, requireGymBadges: true }
+  });
+  D.regions["1,0"].encounterRules = profile(["evolved", "rare"], ["rare"], {
+    deepZones: [{ x1: 6, y1: 17, x2: 9, y2: 19 }],
+    zoneLabels: { ordinary: "海岸草叢／水域", deep: "燈塔深層海灣", special: "燈塔守護者石碑" },
+    guardianPokemonId: 130, guardianMaxAttempts: 3,
+    guardianRequirement: { chinese: 90, math: 90, guardianRegion: "0,-1" }
+  });
+  D.regions["-1,0"].encounterRules = profile(["rare"], ["rare", "ancient"], {
+    deepZones: [{ x1: 5, y1: 20, x2: 7, y2: 21 }],
+    zoneLabels: { ordinary: "遺跡外圍", deep: "古代遺跡深層", special: "傳說寶可夢首領戰" },
+    guardianPokemonId: 150, guardianMaxAttempts: 3,
+    guardianRequirement: { chinese: 120, math: 120, requireMasterBadges: true, guardianRegion: "1,0" }
+  });
+})();

@@ -13,7 +13,9 @@
   "use strict";
 
   const DATA = window.GAME_DATA;
-  const SAVE_KEY = "G3_POKEMON_WILLOW_VALLEY_V2";
+  // 每次正式發布若存檔格式或遊戲規則有重大變更，就提高版本號。
+  // 不讀取舊版本，避免同一網址在平板上沿用上一版角色進度。
+  const SAVE_KEY = "G3_POKEMON_WILLOW_VALLEY_V3";
   const MAP_COLS = 32;
   const MAP_ROWS = 24;
   const TILE_SIZE = 16;
@@ -636,9 +638,9 @@
   }
 
   const SAVE_SLOT_KEYS = [
-    "G3_POKEMON_WILLOW_SLOT_1",
-    "G3_POKEMON_WILLOW_SLOT_2",
-    "G3_POKEMON_WILLOW_SLOT_3"
+    "G3_POKEMON_WILLOW_V3_SLOT_1",
+    "G3_POKEMON_WILLOW_V3_SLOT_2",
+    "G3_POKEMON_WILLOW_V3_SLOT_3"
   ];
 
   function getDefaultState() {
@@ -3658,6 +3660,9 @@
           <button type="button" class="button primary" id="btnQuickSaveNow" style="background:#15803d;border-color:#14532d;color:#fff;">
             💾 立即手動存檔
           </button>
+          <button type="button" class="button danger" id="btnStartFreshGame" style="background:#fff1f2;color:#be123c;border-color:#fb7185;">
+            🆕 開始全新冒險
+          </button>
         </div>
 
         <h3 style="font-size:18px;font-weight:900;color:#1e293b;margin-bottom:6px;">🗂️ 多重存檔槽（可為不同同學或不同階段保存進度）：</h3>
@@ -3681,6 +3686,15 @@
       document.getElementById("btnQuickSaveNow").onclick = () => {
         saveGame(true);
         openMenuModal("save");
+      };
+
+      document.getElementById("btnStartFreshGame").onclick = () => {
+        if (!confirm("確定要清除這台裝置上的目前進度與存檔槽，重新選擇初始寶可夢嗎？此操作無法復原。")) return;
+        try {
+          localStorage.removeItem(SAVE_KEY);
+          SAVE_SLOT_KEYS.forEach((key) => localStorage.removeItem(key));
+        } catch (e) {}
+        location.reload();
       };
 
       bodyEl.querySelectorAll("button[data-save-slot]").forEach((btn) => {
@@ -6256,6 +6270,7 @@
         else if (m === "reset") {
           if (confirm("確定要重置冒險進度並重新選擇初始寶可夢（皮卡丘／噴火龍／妙蛙種子）嗎？")) {
             localStorage.removeItem(SAVE_KEY);
+            SAVE_SLOT_KEYS.forEach((key) => localStorage.removeItem(key));
             location.reload();
           }
         } else {

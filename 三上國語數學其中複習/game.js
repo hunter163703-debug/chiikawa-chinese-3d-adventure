@@ -184,20 +184,16 @@
 
   // 寶可夢圖像：參考 The Spriters Resource《寶可夢 金／銀》(Game Boy Color) 像素圖，
   // 使用 PokeAPI 收錄的第二世代金版透明背景精靈圖（正面 / 背面）
-  const GEN2_SPRITE_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ii";
+  const POKEMON_SPRITE_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
   function getPortraitUrl(id4) {
     const id = parseInt(id4, 10) || 25;
     return getGen2SpriteUrl(id, false);
   }
   function getGen2SpriteUrl(id, back = false) {
-    return back
-      ? `${GEN2_SPRITE_BASE}/gold/transparent/back/${id}.png`
-      : `${GEN2_SPRITE_BASE}/gold/transparent/${id}.png`;
+    return back ? `${POKEMON_SPRITE_BASE}/back/${id}.png` : `${POKEMON_SPRITE_BASE}/${id}.png`;
   }
   function getStaticSpriteUrl(id, back = false) {
-    return back
-      ? `${GEN2_SPRITE_BASE}/crystal/transparent/back/${id}.png`
-      : `${GEN2_SPRITE_BASE}/crystal/transparent/${id}.png`;
+    return back ? `${POKEMON_SPRITE_BASE}/back/${id}.png` : `${POKEMON_SPRITE_BASE}/${id}.png`;
   }
   function getAnimSpriteUrl(id, back = false) {
     return getGen2SpriteUrl(id, back);
@@ -313,6 +309,16 @@
       horns: Boolean((catOrPoke.id || 1) % 2 === 0),
       wings: typeStr.includes("FLY") || typeStr.includes("DRAGON") || typeStr.includes("FIRE")
     };
+  }
+
+  // PokeAPI 精靈圖使用一致的畫布；為透明留白較多的物種微調可視大小。
+  const POKEMON_DISPLAY_SCALE = { 172: 1.42, 173: 1.42, 174: 1.42, 175: 1.32, 176: 1.2, 177: 1.22, 187: 1.15, 188: 1.15, 189: 1.15, 238: 1.2, 239: 1.2, 240: 1.2, 360: 1.3, 406: 1.25, 433: 1.25, 438: 1.25, 439: 1.2, 440: 1.25, 447: 1.25, 448: 1.32, 449: 1.15, 669: 1.2, 702: 1.2, 744: 1.2, 848: 1.2 };
+  function getPokemonDisplayScale(poke) {
+    const id = poke && (poke.baseSpeciesId || poke.id);
+    return poke && typeof poke.displayScale === "number" ? poke.displayScale : POKEMON_DISPLAY_SCALE[id] || 1.12;
+  }
+  function applyPokemonDisplayScale(img, poke) {
+    img.style.setProperty("--pokemon-sprite-scale", getPokemonDisplayScale(poke));
   }
 
   // 依 52Poke 的最低等級規則進化；不再使用合成或突破石改變物種。
@@ -464,7 +470,7 @@
     const scale = 1 + Math.max(0, lv - (cat.minLv || 1)) * 0.08;
     const bonusAtk = state ? Math.round((state.atkBonus || 0) * 0.6) : 0;
     const bonusDef = state ? Math.round((state.defBonus || 0) * 0.6) : 0;
-    const maxHp = Math.round(cat.baseHp * scale) + bonusDef * 2 + traitHp;
+    const maxHp = Math.round(cat.baseHp * scale) + bonusDef * 2 + traitHp + (state ? state.natureHpBonus || 0 : 0);
     return ensurePokemonFields({
       uid: "pk_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
       id: cat.id,
@@ -709,9 +715,11 @@
       defBonus: 0,
       chineseScore: 0,
       mathScore: 0,
+      natureScore: 0,
+      natureHpBonus: 0,
       completedQuestions: [],
-      badges: { chinese: false, math: false },
-      masterBadges: { chinese: false, math: false },
+      badges: { chinese: false, math: false, nature: false },
+      masterBadges: { chinese: false, math: false, nature: false },
       lastSavedAt: "尚未存檔"
     };
   }
@@ -1385,6 +1393,7 @@
       !document.getElementById("menuModal").classList.contains("hidden") ||
       !document.getElementById("chineseGymModal").classList.contains("hidden") ||
       !document.getElementById("mathGymModal").classList.contains("hidden") ||
+      !document.getElementById("natureGymModal").classList.contains("hidden") ||
       !document.getElementById("gbaBattle").classList.contains("hidden")
     );
   }
@@ -1499,7 +1508,7 @@
       state.repelSteps--;
     }
 
-    // 培育屋合成蛋步數孵化推進 (參考 infinite-pokemon world.ts stepEgg)
+    // 培育屋培育蛋步數孵化推進
     if (stepEggHatch()) {
       saveGame();
       updateAllHUD();
@@ -1528,98 +1537,33 @@
   let nurserySelB = null;
   let nurseryCustomName = "";
 
-  function buildSynthesizedSpecies(parentA, parentB, customName = "") {
+  function buildSynthesizedSpecies(parentA, parentB) {
     ensurePokemonFields(parentA);
     ensurePokemonFields(parentB);
 
-    // 結合雙親中文名稱與英文名稱 (例如：皮卡丘 + 噴火龍 => 皮卡火龍)
-    const nameA = parentA.name.replace(/·.*$/, "").trim();
-    const nameB = parentB.name.replace(/·.*$/, "").trim();
-    const prefix = nameA.slice(0, Math.max(1, Math.ceil(nameA.length / 2)));
-    const suffix = nameB.slice(Math.floor(nameB.length / 2));
-    const defaultZhName = (prefix + suffix === nameA || prefix + suffix === nameB)
-      ? `${nameA.slice(0, 2)}${nameB.slice(-1)}獸`
-      : `${prefix}${suffix}`;
-    const finalName = (customName && customName.trim()) ? customName.trim() : defaultZhName;
-
-    const enA = (parentA.enName || "Pika").slice(0, 4);
-    const enB = (parentB.enName || "drake").slice(-4).toLowerCase();
-    const enName = `${enA}${enB}`;
-
-    // 雙屬性融合
-    const typesArr = Array.from(
-      new Set(
-        [parentA.type, parentB.type]
-          .join(" / ")
-          .split("/")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      )
-    ).slice(0, 2);
-    const combinedType = typesArr.join(" / ") || "一般";
-
-    // 繼承雙親特性 (最多 2 個) + 世代計算
-    const combinedTraits = Array.from(
-      new Set([...(parentA.traits || []), ...(parentB.traits || []), "radiant"])
-    ).slice(0, 2);
-    const generation = 1 + Math.max(parentA.generation || 0, parentB.generation || 0);
-
-    // 結合雙親像素外型特徵 (form 來自親代 A，配色、翅膀、角、花紋融合雙親)
-    const artA = parentA.art || getDefaultArtForPokemon(parentA);
-    const artB = parentB.art || getDefaultArtForPokemon(parentB);
-    const patterns = ["stripes", "spots", "crest"];
-    const childArt = {
-      form: artA.form || "quadruped",
-      primary: artA.primary || parentA.typeColor || "#6fa66a",
-      accent: artB.accent !== artA.primary ? (artB.primary || artB.accent || "#f5cf6b") : "#fde047",
-      pattern: patterns[(generation + (parentA.level || 5) + (parentB.level || 5)) % patterns.length],
-      horns: Boolean(artA.horns || artB.horns || generation >= 2),
-      wings: Boolean(artA.wings || artB.wings || combinedType.includes("飛") || combinedType.includes("龍") || combinedType.includes("火"))
-    };
-
-    // 合成後代初始等級與繼承能力值加成
-    const childLv = Math.max(5, Math.round(((parentA.level || 5) + (parentB.level || 5)) * 0.55));
-    const inheritedHp = Math.round(((parentA.maxHp || 40) + (parentB.maxHp || 40)) * 0.58) + generation * 8;
-    const inheritedAtk = Math.round(((parentA.atk || 15) + (parentB.atk || 15)) * 0.58) + generation * 4;
-    const inheritedDef = Math.round(((parentA.def || 14) + (parentB.def || 14)) * 0.58) + generation * 4;
-
-    const moveA = parentA.specialMove || "十萬伏特";
-    const moveB = parentB.specialMove || "噴射火焰";
-    const hybridMove = moveA === moveB ? `${moveA}・極` : `${moveA.slice(0, 2)}${moveB.slice(-2)}`;
-
-    const hybridId = 1000 + ((state.customSpecies ? state.customSpecies.length : 0) + 1);
+    // 新孵化個體必須使用圖鑑既有物種；舊存檔中的合成種仍可保留與使用。
+    const candidates = [parentA.id, parentB.id]
+      .map((id) => DATA.pokemonCatalog.find((species) => species.id === id && !species.isHybrid))
+      .filter(Boolean);
+    const catalogFallback = DATA.pokemonCatalog.find((species) => species.regionId === (state.regionId || "0,0") && !species.isHybrid) || DATA.pokemonCatalog[0];
+    const selected = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : catalogFallback;
     return {
-      id: hybridId,
-      id4: String(hybridId).padStart(4, "0"),
-      speciesKey: `hybrid-${parentA.speciesKey || parentA.id}-${parentB.speciesKey || parentB.id}-g${generation}`,
-      name: finalName,
-      enName,
-      type: combinedType,
-      typeEn: parentA.typeEn || "NORMAL",
-      typeColor: childArt.primary,
-      regionId: state.regionId || "0,0",
-      minLv: childLv,
-      baseHp: inheritedHp,
-      baseAtk: inheritedAtk,
-      baseDef: inheritedDef,
-      move: hybridMove,
-      basicMove: parentB.basicMove || parentA.basicMove || "神速撞擊",
-      specialPp: 22,
-      traits: combinedTraits,
-      generation,
-      isHybrid: true,
-      customSprite: true,
+      ...selected,
+      regionId: selected.regionId,
+      isHybrid: false,
+      customSprite: false,
+      generation: 0,
       parentNames: [parentA.name, parentB.name],
-      art: childArt,
-      desc: `【第 ${generation} 代培育屋合成寶可夢】由親代【${parentA.name}】與【${parentB.name}】跨種合成誕生！兼備雙親的屬性、特性與道館修練潛能！`
+      desc: `【培育屋孵化】孵化結果為圖鑑內的【${selected.name}】，所有新孵化物種均可在寶可夢圖鑑查閱。`
     };
   }
 
   function hatchCurrentEgg() {
     if (!state.egg || !state.egg.childSpecies) return null;
     const sp = state.egg.childSpecies;
+    const legacyOutOfCatalog = !DATA.pokemonCatalog.some((species) => species.id === sp.id);
     if (!state.customSpecies) state.customSpecies = [];
-    if (!state.customSpecies.some((c) => c.id === sp.id)) {
+    if (legacyOutOfCatalog && !state.customSpecies.some((c) => c.id === sp.id)) {
       state.customSpecies.push(sp);
     }
     if (!state.caughtIds.includes(sp.id)) {
@@ -1627,7 +1571,7 @@
     }
 
     const childPoke = ensurePokemonFields({
-      uid: "pk_hybrid_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
+      uid: "pk_egg_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
       id: sp.id,
       id4: sp.id4,
       speciesKey: sp.speciesKey,
@@ -1639,18 +1583,18 @@
       level: sp.minLv || 5,
       xp: 0,
       xpToNext: 20,
-      maxHp: sp.baseHp,
-      hp: sp.baseHp,
+      maxHp: sp.baseHp + (state.natureHpBonus || 0),
+      hp: sp.baseHp + (state.natureHpBonus || 0),
       atk: sp.baseAtk,
       def: sp.baseDef,
       atkTrained: Math.round((state.atkBonus || 0) * 0.5),
       defTrained: Math.round((state.defBonus || 0) * 0.5),
       traits: sp.traits || ["radiant", "bold"],
-      generation: sp.generation || 1,
-      isHybrid: true,
-      customSprite: true,
+      generation: legacyOutOfCatalog ? (sp.generation || 1) : 0,
+      isHybrid: legacyOutOfCatalog,
+      customSprite: legacyOutOfCatalog,
       parentNames: sp.parentNames || [],
-      breakthroughStage: 1,
+      breakthroughStage: legacyOutOfCatalog ? 1 : 0,
       breedAfterStep: (state.steps || 0) + 20,
       art: sp.art,
       basicMove: sp.basicMove || "神速撞擊",
@@ -1670,7 +1614,9 @@
 
     state.egg = null;
     SFX.playHatch();
-    addJournalEntry(`🐣 合成蛋孵化成功！誕生了第 ${childPoke.generation} 代合成獸【${childPoke.name} Lv.${childPoke.level}】！`);
+    addJournalEntry(legacyOutOfCatalog
+      ? `🐣 舊存檔合成蛋孵化成功：【${childPoke.name} Lv.${childPoke.level}】已加入圖鑑的舊存檔物種欄。`
+      : `🐣 培育蛋孵化成功！圖鑑物種【${childPoke.name} Lv.${childPoke.level}】加入隊伍！`);
     saveGame();
     updateAllHUD();
     return { childPoke, inParty };
@@ -1686,7 +1632,7 @@
       const p = res.childPoke;
       openDialogueModal(
         `🐣 喀嚓！培育屋合成蛋孵化了！`,
-        `恭喜你！由【${(p.parentNames || []).join(" × ")}】合成的精靈蛋成功孵化出第 ${p.generation} 代合成寶可夢——\n\n✨ 【${p.name} · Lv.${p.level}】（${p.type}系）\n⚔️ 攻擊力：${p.atk} ｜ 🛡️ 防禦力：${p.def} ｜ ❤️ HP：${p.maxHp}\n🌟 融合絕招：${p.specialMove} ｜ 已加入你的${res.inParty ? "隨身出戰隊伍" : "電腦倉庫"}！`,
+        `${p.isHybrid ? `舊存檔合成蛋【${(p.parentNames || []).join(" × ")}】孵化成功。這隻舊存檔寶可夢已加入圖鑑。` : `培育蛋孵化成功！孵化出圖鑑物種【${p.name}】。`}\n\n✨ 【${p.name} · Lv.${p.level}】（${p.type}系）\n⚔️ 攻擊力：${p.atk} ｜ 🛡️ 防禦力：${p.def} ｜ ❤️ HP：${p.maxHp}\n已加入你的${res.inParty ? "隨身出戰隊伍" : "電腦倉庫"}！`,
         [
           { label: "🐾 查看寶可夢隊伍", onClick: () => openMenuModal("party") },
           { label: "🧬 繼續合成新寶可夢", onClick: () => openMenuModal("nursery") }
@@ -1707,10 +1653,13 @@
     const reasons = [];
     const chineseScore = state.chineseScore || 0;
     const mathScore = state.mathScore || 0;
+    const natureScore = state.natureScore || 0;
     if (chineseScore < (requirement.chinese || 0)) reasons.push(`國語文 ${requirement.chinese - chineseScore} 分`);
     if (mathScore < (requirement.math || 0)) reasons.push(`數學 ${requirement.math - mathScore} 分`);
+    if (natureScore < (requirement.nature || 0)) reasons.push(`自然 ${requirement.nature - natureScore} 分`);
     if (requirement.requireGymBadges && !(state.badges.chinese && state.badges.math)) reasons.push("國語文與數學初階徽章");
     if (requirement.requireMasterBadges && !(state.masterBadges.chinese && state.masterBadges.math)) reasons.push("兩枚道館大師徽章");
+    if (requirement.requireAllMasterBadges && !(state.masterBadges.chinese && state.masterBadges.math && state.masterBadges.nature)) reasons.push("國語文、數學與自然三枚大師徽章");
     if (requirement.guardianRegion && !hasDefeatedRegionGuardian(requirement.guardianRegion)) {
       const guardianRegion = DATA.regions[requirement.guardianRegion];
       reasons.push(`${guardianRegion ? guardianRegion.name.split(" ")[0] : "前一區"}守護者挑戰`);
@@ -1761,6 +1710,8 @@
         openChineseGym("a");
       } else if (obj.action === "math-gym") {
         openMathGym("a");
+      } else if (obj.action === "nature-gym") {
+        openNatureGym("a");
       } else if (obj.action === "poke-shop") {
         healAllParty(false);
         openMenuModal("shop");
@@ -1803,6 +1754,10 @@
         openDialogueModal(obj.name, obj.text, [
           { label: "📘 立即進入數學道館特訓 (+防禦力)", onClick: () => openMathGym("a") }
         ]);
+      } else if (obj.role === "nature-gym") {
+        openDialogueModal(obj.name, obj.text, [
+          { label: "🌱 立即進入自然道館特訓 (+最大 HP)", onClick: () => openNatureGym("a") }
+        ]);
       } else if (obj.role === "poke-shop") {
         healAllParty(false);
         openDialogueModal(obj.name, obj.text, [
@@ -1810,14 +1765,14 @@
         ]);
       } else if (obj.role === "breeder") {
         openDialogueModal(obj.name, obj.text, [
-          { label: "🧬 開啟培育屋（寶可夢跨種合成與孵蛋）", onClick: () => openMenuModal("nursery") }
+          { label: "🥚 開啟培育屋（培育圖鑑內的寶可夢）", onClick: () => openMenuModal("nursery") }
         ]);
       } else if (obj.role === "trainer") {
         const trainerKey = `${state.regionId}:${obj.id}`;
         const alreadyWon = (state.defeatedTrainers || []).includes(trainerKey);
         openDialogueModal(
           `⚔️ ${obj.name} ${alreadyWon ? "（✅ 已擊敗過）" : "（🔥 路線訓練家挑戰）"}`,
-          `${obj.text}\n\n💡 擊敗路線訓練家可獲得豐厚獎金（₽）、傷藥補給與大量戰鬥經驗值（EXP）！要與我進行寶可夢對戰嗎？`,
+          `${obj.text}\n\n💡 首次擊敗可獲得適量訓練獎勵；再次挑戰可練習，不會重複領取獎勵。要與我對戰嗎？`,
           [
             {
               label: `⚔️ 與 ${obj.name.split(" ")[0]} 進行訓練家對戰！`,
@@ -1991,10 +1946,14 @@
     return tile === 7 ? "water" : "ordinary";
   }
 
+  function getRegionEnemyStatMultiplier(reg) {
+    return 1.1 + Math.max(0, (reg.tier || 1) - 1) * 0.05;
+  }
+
   function getRegionEncounterPool(reg, mode = "wild", zone = "ordinary") {
     const rules = reg.encounterRules || {};
     if (mode === "guardian") {
-      const boss = DATA.pokemonCatalog.find((p) => p.id === rules.guardianPokemonId && p.regionId === reg.id);
+      const boss = DATA.pokemonCatalog.find((p) => p.id === rules.guardianPokemonId);
       return boss ? [boss] : [];
     }
     let allowed = rules[zone] || rules.ordinary;
@@ -2003,7 +1962,8 @@
       allowed = tier <= 1 ? ["normal"] : tier === 2 ? ["normal", "evolved"] : tier === 3 ? ["evolved", "rare"] : tier === 4 ? ["evolved", "rare"] : ["rare", "ancient"];
     }
     let pool = DATA.pokemonCatalog.filter((p) => {
-      if (p.regionId !== reg.id || p.isHybrid) return false;
+      const regionSpecies = Array.isArray(rules.speciesIds) ? rules.speciesIds.includes(p.id) : p.regionId === reg.id;
+      if (!regionSpecies || p.isHybrid) return false;
       const spawnMinLevel = (rules.levelOverrides && rules.levelOverrides[p.id]) || p.minLevel || p.minLv || 1;
       if (reg.levelRange && spawnMinLevel > reg.levelRange[1]) return false;
       const category = getPokemonEncounterCategory(p);
@@ -2048,7 +2008,10 @@
       state.regionEncounterCounts[key] = (state.regionEncounterCounts[key] || 0) + 1;
       saveGame();
     }
-    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.1;
+    const scale = reg.tier >= 6
+      ? 1 + Math.max(0, enemyLv - regionMinLv) * 0.05
+      : 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.1;
+    const powerScale = getRegionEnemyStatMultiplier(reg);
     const enemyTraits = pickTraitsForSeed(chosenCat.id * 11 + enemyLv, chosenCat.traits);
 
     const enemy = {
@@ -2063,8 +2026,8 @@
       encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
       hp: Math.round(chosenCat.baseHp * scale) + (enemyTraits.includes("hearty") ? 6 : 0),
-      atk: Math.round(chosenCat.baseAtk * scale),
-      def: Math.round(chosenCat.baseDef * scale),
+      atk: Math.round(chosenCat.baseAtk * scale * powerScale),
+      def: Math.round(chosenCat.baseDef * scale * powerScale),
       traits: enemyTraits,
       art: chosenCat.art || null,
       move: chosenCat.move || "撞擊",
@@ -2096,7 +2059,10 @@
     const chosenCat = pool.length > 0 ? pool[pool.length - 1] : DATA.pokemonCatalog[4];
     const [, maxLv] = reg.levelRange || [3, 5];
     const enemyLv = maxLv + 1;
-    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.11;
+    const scale = reg.tier >= 6
+      ? 1 + Math.max(0, enemyLv - (reg.levelRange || [enemyLv])[0]) * 0.05
+      : 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.11;
+    const powerScale = getRegionEnemyStatMultiplier(reg);
     const enemyTraits = ["bold", "sturdy"];
 
     const enemy = {
@@ -2111,8 +2077,8 @@
       encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + 10,
       hp: Math.round(chosenCat.baseHp * scale) + 10,
-      atk: Math.round(chosenCat.baseAtk * scale) + 3,
-      def: Math.round(chosenCat.baseDef * scale) + 3,
+      atk: Math.round(chosenCat.baseAtk * scale * powerScale) + 3,
+      def: Math.round(chosenCat.baseDef * scale * powerScale) + 3,
       traits: enemyTraits,
       art: chosenCat.art || null,
       move: chosenCat.move || "全力一擊",
@@ -2123,13 +2089,14 @@
       {
         kind: "trainer",
         trainerKey: `${reg.id}:${npcObj.id}`,
+        repeatChallenge: (state.defeatedTrainers || []).includes(`${reg.id}:${npcObj.id}`),
         trainerName: npcObj.name,
         regionId: reg.id,
         regionName: reg.name,
         enemy,
         busy: false
       },
-      `⚔️ 路線訓練家【${npcObj.name}】派出了王牌【${enemy.name} Lv.${enemy.level}】！\n（訓練家對戰無法逃跑或收服，獲勝可贏得豐厚獎金與大量 EXP！）`
+      `⚔️ 路線訓練家【${npcObj.name}】派出了王牌【${enemy.name} Lv.${enemy.level}】！\n（訓練家對戰無法逃跑或收服；首次勝利可得適量獎勵，重賽為練習。）`
     );
   }
 
@@ -2162,7 +2129,10 @@
 
     const [, maxLv] = reg.levelRange || [3, 5];
     const enemyLv = reg.tier === 5 ? [35, 38, 40][attempts % 3] : maxLv + 2;
-    const scale = 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.12;
+    const scale = reg.tier >= 6
+      ? 1 + Math.max(0, enemyLv - (reg.levelRange || [enemyLv])[0]) * 0.05
+      : 1 + Math.max(0, enemyLv - chosenCat.minLv) * 0.12;
+    const powerScale = getRegionEnemyStatMultiplier(reg);
 
     const enemy = {
       id: chosenCat.id,
@@ -2175,8 +2145,8 @@
       encounterTier: chosenCat.encounterTier || reg.tier,
       maxHp: Math.round(chosenCat.baseHp * scale) + 18,
       hp: Math.round(chosenCat.baseHp * scale) + 18,
-      atk: Math.round(chosenCat.baseAtk * scale) + 4,
-      def: Math.round(chosenCat.baseDef * scale) + 4,
+      atk: Math.round(chosenCat.baseAtk * scale * powerScale) + 4,
+      def: Math.round(chosenCat.baseDef * scale * powerScale) + 4,
       traits: ["radiant", "hearty"],
       art: chosenCat.art || getDefaultArtForPokemon(chosenCat),
       move: chosenCat.move || "遠古星爆",
@@ -2233,6 +2203,7 @@
 
     const eImg = document.getElementById("battleEnemySprite");
     eImg.src = getPokemonDisplayUrl(enemy, "front");
+    applyPokemonDisplayScale(eImg, enemy);
     eImg.onerror = () => {
       eImg.src = getPokemonFallbackUrl(enemy, "front");
     };
@@ -2263,6 +2234,7 @@
 
     const pImg = document.getElementById("battlePlayerSprite");
     pImg.src = getPokemonDisplayUrl(lead, "back");
+    applyPokemonDisplayScale(pImg, lead);
     pImg.onerror = () => {
       pImg.src = getPokemonFallbackUrl(lead, "back");
     };
@@ -2517,12 +2489,13 @@
       // 勝利獎勵計算：金幣 + 傷藥掉落 + 戰鬥經驗值 EXP (對齊 infinite-pokemon world.ts)
       const isGuardian = currentBattle.kind === "guardian";
       const isTrainer = currentBattle.kind === "trainer";
-      const coinDrop = isGuardian ? 120 + enemy.level * 6 : isTrainer ? 50 + enemy.level * 8 : 35 + enemy.level * 5;
-      // 對外戰鬥只提供象徵性 EXP；主要升級必須回到國語文／數學道館完成訓練。
-      const expReward = isGuardian ? 3 : isTrainer ? 2 : 1;
+      const isTrainerRematch = isTrainer && currentBattle.repeatChallenge;
+      const coinDrop = isGuardian ? 120 + enemy.level * 6 : isTrainer ? (isTrainerRematch ? 0 : 15 + enemy.level * 2) : 35 + enemy.level * 5;
+      // 訓練家重賽保留對戰練習，不再重複提供可刷等級的經驗值。
+      const expReward = isGuardian ? 3 : isTrainer ? (isTrainerRematch ? 0 : 1) : 1;
 
       state.coins = (state.coins || 0) + coinDrop;
-      state.items["potion"] = Math.min(30, (state.items["potion"] || 0) + 1);
+      if (!isTrainerRematch) state.items["potion"] = Math.min(30, (state.items["potion"] || 0) + 1);
       if (isGuardian) {
         state.items["exp-candy-s"] = (state.items["exp-candy-s"] || 0) + 1;
         if (currentBattle.guardianKey && !state.defeatedGuardians.includes(currentBattle.guardianKey)) {
@@ -2534,10 +2507,10 @@
       }
 
       // 賦予經驗值並檢查是否升級
-      const lvResult = gainPokemonExp(lead, expReward, true);
+      const lvResult = expReward > 0 ? gainPokemonExp(lead, expReward, true) : { leveledUp: false, levelsGained: 0, expGain: 0 };
       // 隊伍其他成員只獲得極少量共享經驗值，避免靠外戰快速升級。
       state.party.forEach((member, idx) => {
-        if (idx !== state.activeIndex && member.hp > 0) {
+        if (expReward > 0 && idx !== state.activeIndex && member.hp > 0) {
           gainPokemonExp(member, 1, false);
         }
       });
@@ -2553,11 +2526,11 @@
       if (isTrainer) {
         addJournalEntry(`🏆 擊敗了路線訓練家【${currentBattle.trainerName}】，贏得 ₽${coinDrop}！`);
         setBattleMessage(
-          `🎉 【${lead.name}】使出「${moveName}」${critNote}${effNote}造成 ${dmg} 點傷害，擊敗了訓練家【${currentBattle.trainerName}】的寶可夢！\n🪙 獲得獎金 ₽${coinDrop} 與 傷藥 ×1！${lvUpTxt}`
+          `🎉 【${lead.name}】使出「${moveName}」${critNote}${effNote}造成 ${dmg} 點傷害，擊敗了訓練家【${currentBattle.trainerName}】的寶可夢！\n🪙 ${isTrainerRematch ? "重賽不重複發放獎勵。" : `獲得獎金 ₽${coinDrop} 與 傷藥 ×1！`}${lvUpTxt}`
         );
         setTimeout(() => {
           closeBattle();
-          showToast(`🏆 訓練家對戰勝利！獲得 ₽${coinDrop} 與 +${lvResult.expGain} EXP！`);
+          showToast(isTrainerRematch ? "🏆 訓練家重賽勝利！本次為練習賽，沒有重複獎勵。" : `🏆 首次擊敗訓練家！獲得 ₽${coinDrop} 與 +${lvResult.expGain} EXP！`);
         }, 2600);
         return;
       }
@@ -2816,7 +2789,7 @@
       nursery: "POKÉMON PARTY · 等級進化隊伍",
       bag: "YOUR BAG · 背包道具與補給",
       shop: "POKÉMON SHOP · 柳溪寶可夢商店（購買精靈球、經驗糖果與特殊道具）",
-      map: "TOWN MAP · 五大區域地圖與等級劃分",
+      map: "TOWN MAP · 九大區域地圖與等級劃分",
       codex: "COMPANION CODEX · 寶可夢收服與合成圖鑑",
       records: "ADVENTURE RECORDS · 柳溪谷冒險排行榜與日誌",
       trainer: "TRAINER CARD · 訓練家狀態名片",
@@ -2845,7 +2818,7 @@
           return `
           <div class="companion-card ${isLeader ? "active" : ""}" style="flex-wrap:wrap;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:14px;flex:1 1 320px;cursor:pointer;" data-party-idx="${idx}" title="點擊設為出戰隊長">
-              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" alt="${p.name}" style="width:68px;height:68px;image-rendering:pixelated;object-fit:contain;background:rgba(255,255,255,0.75);border-radius:6px;border:2px solid #94a3b8;" />
+              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" alt="${p.name}" style="width:68px;height:68px;image-rendering:pixelated;object-fit:contain;transform:scale(${getPokemonDisplayScale(p)});background:rgba(255,255,255,0.75);border-radius:6px;border:2px solid #94a3b8;" />
               <div style="flex:1 1;">
                 <strong style="font-size:20px;">
                   ${p.name} <span style="font-size:15px;color:#1e40af;">Lv.${p.level} ${isLeader ? "· ★ 出戰隊長" : ""}</span>
@@ -2891,7 +2864,7 @@
           ensurePokemonFields(p);
           return `
           <div class="catalog-row">
-            <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:48px;height:48px;image-rendering:pixelated;object-fit:contain;" />
+            <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:48px;height:48px;image-rendering:pixelated;object-fit:contain;transform:scale(${getPokemonDisplayScale(p)});" />
             <div>
               <strong>${p.name} · Lv.${p.level} ${p.generation ? `(🧬第${p.generation}代)` : ""}</strong>
               <p>${p.type}系 · ⚔️ATK ${p.atk} · 🛡️DEF ${p.def} · HP ${p.hp}/${p.maxHp}</p>
@@ -3071,10 +3044,10 @@
             <div class="egg-icon-pulse"></div>
             <div style="flex:1 1 240px;">
               <strong style="font-size:20px;color:#581c87;">
-                🥚 正在孵化的合成蛋：【${state.egg.childSpecies?.name || "神祕合成獸"}】（第 ${state.egg.childSpecies?.generation || 1} 代）
+                🥚 正在孵化的培育蛋：【${state.egg.childSpecies?.name || "圖鑑寶可夢"}】
               </strong>
               <p style="font-size:14px;color:#4c1d95;margin-top:2px;">
-                親代組合：${(state.egg.parentNames || []).join(" × ")} ｜ 屬性：${state.egg.childSpecies?.type || "雙屬性"} ｜ 距離孵化剩餘：<strong>${state.egg.stepsRemaining} 步</strong>
+                親代組合：${(state.egg.parentNames || []).join(" × ")} ｜ 圖鑑屬性：${state.egg.childSpecies?.type || "一般"} ｜ 距離孵化剩餘：<strong>${state.egg.stepsRemaining} 步</strong>
               </p>
               <div class="health" style="margin-top:6px;">
                 <span>孵化進度</span>
@@ -3103,7 +3076,7 @@
         }
         return `
           <div class="parent-slot-box filled">
-            <img src="${getPokemonDisplayUrl(pObj, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(pObj, "portrait")}'" alt="${pObj.name}" />
+            <img src="${getPokemonDisplayUrl(pObj, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(pObj, "portrait")}'" alt="${pObj.name}" style="transform:scale(${getPokemonDisplayScale(pObj)});" />
             <div>
               <strong style="font-size:18px;color:#4c1d95;">${slotLabel}：${pObj.name} (Lv.${pObj.level})</strong>
               <div style="font-size:13px;color:#334155;font-weight:800;">
@@ -3118,37 +3091,30 @@
       const previewHtml = previewChild
         ? `
           <div class="hybrid-preview-box">
-            <img src="${generatePixelCreatureDataUrl(previewChild.art, false)}" alt="${previewChild.name}" />
+            <img src="${getPokemonDisplayUrl(previewChild, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(previewChild, "portrait")}'" alt="${previewChild.name}" style="transform:scale(${getPokemonDisplayScale(previewChild)});" />
             <div style="flex:1 1 260px;">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span class="gen-badge">🧬 第 ${previewChild.generation} 代合成物種預覽</span>
+                <span class="gen-badge">📖 圖鑑物種預覽</span>
                 <strong style="font-size:22px;color:#4c1d95;">【${previewChild.name}】 (${previewChild.enName})</strong>
                 <span style="font-size:14px;font-weight:900;color:#1e40af;">初始 Lv.${previewChild.minLv}</span>
               </div>
               <div style="font-size:14px;color:#334155;font-weight:800;margin-top:4px;">
-                融合雙屬性：<strong>${previewChild.type}系</strong> ｜ 繼承能力：❤️HP <strong>${previewChild.baseHp}</strong> · ⚔️ATK <strong>${previewChild.baseAtk}</strong> · 🛡️DEF <strong>${previewChild.baseDef}</strong> ｜ 融合絕招：<strong>${previewChild.move}</strong>
-              </div>
-              <div style="margin-top:4px;">
-                繼承特性：${formatTraitBadges(previewChild.traits)}
-              </div>
-              <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <label style="font-size:14px;font-weight:800;color:#581c87;">✏️ 自訂合成獸名稱：</label>
-                <input type="text" id="inputHybridName" value="${nurseryCustomName}" placeholder="留空則使用「${previewChild.name}」" maxlength="10" style="padding:4px 8px;border:2px solid #a855f7;border-radius:4px;font-size:15px;width:190px;" />
+                圖鑑屬性：<strong>${previewChild.type}系</strong> ｜ ❤️HP <strong>${previewChild.baseHp}</strong> · ⚔️ATK <strong>${previewChild.baseAtk}</strong> · 🛡️DEF <strong>${previewChild.baseDef}</strong> ｜ 招式：<strong>${previewChild.move}</strong>
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <button type="button" class="button primary" id="btnBreedInstant" ${state.coins < 120 ? "disabled" : ""} style="background:#7e22ce;border-color:#4c1d95;color:#fff;">
-                ⚡ 立即合成誕生 (₽120)
+                ⚡ 立即孵化圖鑑物種 (₽120)
               </button>
               <button type="button" class="button gold" id="btnBreedEgg" ${state.egg || state.coins < 120 ? "disabled" : ""}>
-                🥚 領取合成蛋 (₽120 · 走32步孵化)
+                🥚 領取圖鑑物種蛋 (₽120 · 走32步孵化)
               </button>
             </div>
           </div>
         `
         : `
           <div style="background:#fef2f2;border:2px solid #f87171;border-radius:8px;padding:12px 14px;margin-bottom:12px;color:#991b1b;font-weight:800;font-size:15px;">
-            💡 請在下方選擇 <strong>2 隻達 Lv.5 以上的健康寶可夢</strong> 作為「親代 A」與「親代 B」，即可預覽並合成出繼承雙親屬性、特性與高能力值的全新合成寶可夢！（親代不會消失，會留在你的隊伍中！）
+            💡 請選擇 <strong>2 隻達 Lv.5 以上的健康寶可夢</strong>。培育蛋會從其中一位親代的圖鑑物種孵化，不會產生圖鑑以外的新寶可夢；親代不會消失。
           </div>
         `;
 
@@ -3159,7 +3125,7 @@
           const lvOk = p.level >= 5 && p.hp > 0;
           return `
             <div class="catalog-row" style="background:${isA || isB ? "#f3e8ff" : lvOk ? "#e8ecd8" : "#f1f5f9"};border-color:${isA || isB ? "#7e22ce" : "#a0b0a8"};">
-              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:52px;height:52px;image-rendering:pixelated;object-fit:contain;background:#fff;border-radius:6px;border:2px solid #94a3b8;" />
+              <img src="${getPokemonDisplayUrl(p, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(p, "portrait")}'" style="width:52px;height:52px;image-rendering:pixelated;object-fit:contain;transform:scale(${getPokemonDisplayScale(p)});background:#fff;border-radius:6px;border:2px solid #94a3b8;" />
               <div>
                 <strong>
                   ${p.name} · Lv.${p.level}
@@ -3192,7 +3158,7 @@
       bodyEl.innerHTML = `
         <div class="wallet" style="background:#f3e8ff;border-color:#a855f7;color:#581c87;">
           <span>🪙 訓練家金幣：₽ ${state.coins}（培育屋合成費：₽ 120 / 次 · 雙親保留不消失）</span>
-          <span style="font-size:15px;">🧬 已合成新物種：${(state.customSpecies || []).length} 種</span>
+          <span style="font-size:15px;">📖 已保留舊存檔物種：${(state.customSpecies || []).length} 種</span>
         </div>
 
         ${eggHtml}
@@ -3216,7 +3182,7 @@
         hatchNowBtn.onclick = () => {
           const res = hatchCurrentEgg();
           if (res && res.childPoke) {
-            showToast(`🐣 孵化成功！第 ${res.childPoke.generation} 代合成獸【${res.childPoke.name} Lv.${res.childPoke.level}】已加入隊伍！`);
+            showToast(`🐣 圖鑑寶可夢【${res.childPoke.name} Lv.${res.childPoke.level}】孵化成功！`);
             openMenuModal("nursery");
           }
         };
@@ -3252,15 +3218,15 @@
           const res = hatchCurrentEgg();
           if (res && res.childPoke) {
             showToast(
-              `🎉 合成成功！第 ${res.childPoke.generation} 代合成寶可夢【${res.childPoke.name} Lv.${res.childPoke.level}】已加入你的${res.inParty ? "出戰隊伍" : "倉庫"}！`
+              `🎉 培育成功！圖鑑寶可夢【${res.childPoke.name} Lv.${res.childPoke.level}】已加入你的${res.inParty ? "出戰隊伍" : "倉庫"}！`
             );
           }
         } else {
           SFX.playHeal();
-          addJournalEntry(`🥚 在培育屋由【${parentA.name} × ${parentB.name}】獲得了合成精靈蛋！`);
+          addJournalEntry(`🥚 在培育屋由【${parentA.name} × ${parentB.name}】領取了圖鑑寶可夢培育蛋！`);
           saveGame();
           updateAllHUD();
-          showToast(`🥚 已領取【${childSp.name}】的合成蛋！在地圖走 32 步或點擊「立即孵化」即可誕生！`);
+          showToast(`🥚 已領取【${childSp.name}】的培育蛋！走 32 步或點擊「立即孵化」即可孵化！`);
         }
         openMenuModal("nursery");
       };
@@ -3598,7 +3564,8 @@
               const categoryAllowed = [...(rules.ordinary || []), ...(rules.deep || [])].includes(p.category);
               const isFirstAreaEvolution = r.tier !== 1 || p.category !== "evolved" || (rules.initialEvolutionIds || []).includes(p.id);
               const spawnMin = (rules.levelOverrides && rules.levelOverrides[p.id]) || p.minLevel || p.minLv || 1;
-              return p.regionId === rId && !p.isHybrid && (categoryAllowed || p.id === rules.guardianPokemonId) && isFirstAreaEvolution && spawnMin <= r.levelRange[1];
+              const regionSpecies = Array.isArray(rules.speciesIds) ? rules.speciesIds.includes(p.id) : p.regionId === rId;
+              return regionSpecies && !p.isHybrid && (categoryAllowed || p.id === rules.guardianPokemonId) && isFirstAreaEvolution && spawnMin <= r.levelRange[1];
             })
             .map((p) => `${p.name}·${({ normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說" }[p.category] || "一般")}(Lv.${(r.encounterRules && r.encounterRules.levelOverrides && r.encounterRules.levelOverrides[p.id]) || p.minLevel || p.minLv})`)
             .join("、");
@@ -3654,8 +3621,8 @@
 
       bodyEl.innerHTML = `
         <p style="font-size:16px;color:#334155;">
-          你可以從<strong>若葉鎮</strong>往北、南、東、西四個出口前往其他區域，或直接使用下方傳送按鈕。每張地圖都有普通區、深層區與石碑首領特殊區。<br />
-          <strong style="color:#b91c1c;">⚠️ 提示：初始寶可夢只有 Lv.1，請先完成兩座道館訓練，再按徽章、守護者與大師課程條件逐步解鎖地圖！</strong>
+          可從地圖出口前往相鄰區域，或使用下方傳送按鈕。九張地圖都有普通區、深層區與守護者挑戰區。<br />
+          <strong style="color:#b91c1c;">⚠️ 挑戰地圖需取得國語文、數學與自然三枚大師徽章，並逐一擊敗前區守護者！</strong>
         </p>
         <div class="world-atlas">${atlasCards}</div>
       `;
@@ -3671,7 +3638,15 @@
     }
 
     if (tab === "codex") {
-      const fullCatalog = DATA.pokemonCatalog.filter((cat) => !cat.isHybrid);
+      const catalogIds = new Set(DATA.pokemonCatalog.map((cat) => cat.id));
+      const legacySpecies = new Map();
+      [...(state.customSpecies || []), ...state.party, ...state.storage, state.egg && state.egg.childSpecies]
+        .filter((species) => species && species.isHybrid && !catalogIds.has(species.id))
+        .forEach((species) => legacySpecies.set(species.id, species));
+      const fullCatalog = [
+        ...DATA.pokemonCatalog.filter((cat) => !cat.isHybrid),
+        ...Array.from(legacySpecies.values()).map((species) => ({ ...species, isHybrid: true, legacyDexEntry: true, category: "legacy" }))
+      ];
       const codexHtml = fullCatalog
         .map((cat) => {
           const caught = state.caughtIds.includes(cat.id) || Boolean(cat.isHybrid);
@@ -3682,7 +3657,7 @@
             : DATA.regions[cat.regionId]?.name || cat.regionId;
           return `
           <div class="catalog-row" style="opacity:${caught ? "1" : "0.65"};background:${cat.isHybrid ? "#f3e8ff" : caught ? "#e8f5e9" : "#f1f5f9"};">
-            <img src="${getPokemonDisplayUrl(cat, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(cat, "portrait")}'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;border-radius:6px;border:2px solid #94a3b8;background:#fff;" />
+            <img src="${getPokemonDisplayUrl(cat, "portrait")}" onerror="this.src='${getPokemonFallbackUrl(cat, "portrait")}'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;transform:scale(${getPokemonDisplayScale(cat)});border-radius:6px;border:2px solid #94a3b8;background:#fff;" />
             <div>
               <strong>
                 #${cat.id4} ${cat.name} (${cat.enName})
@@ -3690,7 +3665,7 @@
                 ${caught ? "✅ 已收服" : "🔒 未收服"}
               </strong>
               <p>${cat.desc}</p>
-              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 分類：${({ normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說" }[cat.category] || "一般")} · 來源：${regName} (Lv.${cat.minLevel || cat.minLv}+) · 絕招：${cat.move}</small>
+              <small style="color:#1e40af;font-weight:800;">屬性：${cat.type} · 分類：${({ normal: "一般", evolved: "進化型", rare: "稀有", ancient: "古代", legendary: "傳說", legacy: "舊存檔合成種" }[cat.category] || "一般")} · 來源：${regName} (Lv.${cat.minLevel || cat.minLv}+) · 絕招：${cat.move}</small>
             </div>
           </div>
         `;
@@ -3699,7 +3674,7 @@
 
       bodyEl.innerHTML = `
         <p style="margin-bottom:10px;font-weight:800;">
-          📖 寶可夢圖鑑紀錄：<strong>已收服 ${state.caughtIds.length} / ${fullCatalog.length} 種</strong>（包含原創古代型與傳說型寶可夢）
+          📖 寶可夢圖鑑紀錄：<strong>已收服 ${new Set(state.caughtIds).size} / ${fullCatalog.length} 種</strong>（包含舊存檔物種，所有持有寶可夢都列於圖鑑）
         </p>
         <div class="catalog-list">${codexHtml}</div>
       `;
@@ -3710,7 +3685,7 @@
     // Tab: 冒險排行榜與日誌 (RECORDS — 移植自 infinite-pokemon VarietyPanels.tsx)
     // ------------------------------------------------------------------------
     if (tab === "records") {
-      const badgeCount = (state.badges.chinese ? 1 : 0) + (state.badges.math ? 1 : 0) + (state.masterBadges.chinese ? 1 : 0) + (state.masterBadges.math ? 1 : 0);
+      const badgeCount = (state.badges.chinese ? 1 : 0) + (state.badges.math ? 1 : 0) + (state.badges.nature ? 1 : 0) + (state.masterBadges.chinese ? 1 : 0) + (state.masterBadges.math ? 1 : 0) + (state.masterBadges.nature ? 1 : 0);
       const hybridCount = (state.customSpecies || []).length;
       const trainerWins = (state.defeatedTrainers || []).length + (state.defeatedGuardians || []).length;
       const playerScore =
@@ -3765,7 +3740,7 @@
           <div>
             <strong style="font-size:28px;font-weight:900;">訓練家：${state.trainerName}</strong>
             <div style="font-size:16px;color:#475569;margin-top:4px;">
-              稱號：${state.masterBadges.chinese && state.masterBadges.math ? "🏆 文武雙全道館大師" : "🌱 柳溪谷見習訓練家"}
+              稱號：${state.masterBadges.chinese && state.masterBadges.math && state.masterBadges.nature ? "🏆 三科全能道館大師" : "🌱 柳溪谷見習訓練家"}
             </div>
           </div>
         </div>
@@ -3775,8 +3750,9 @@
           <div style="background:#fee2e2;padding:10px;border:2px solid #f87171;">⚔️ 國語文道館攻擊加成：<strong>+${state.atkBonus}</strong></div>
           <div style="background:#dbeafe;padding:10px;border:2px solid #60a5fa;">🛡️ 數學道館防禦加成：<strong>+${state.defBonus}</strong></div>
           <div style="background:#fef9c3;padding:10px;border:2px solid #facc15;">🪙 持有金幣：<strong>₽ ${state.coins}</strong></div>
-          <div style="background:#f3e8ff;padding:10px;border:2px solid #c084fc;">🎁 已開啟地圖寶箱：<strong>${state.collectedChests.length} / 16</strong></div>
-          <div style="grid-column:1/-1;background:#fff7ed;padding:10px;border:2px solid #fb923c;">🏅 道館徽章：${state.badges.chinese ? "國語初階 ✓" : "國語初階 ○"} · ${state.badges.math ? "數學初階 ✓" : "數學初階 ○"} · ${state.masterBadges.chinese ? "國語大師 ✓" : "國語大師 ○"} · ${state.masterBadges.math ? "數學大師 ✓" : "數學大師 ○"}</div>
+          <div style="background:#f3e8ff;padding:10px;border:2px solid #c084fc;">🎁 已開啟地圖寶箱：<strong>${state.collectedChests.length} / 20</strong></div>
+          <div style="grid-column:1/-1;background:#fff7ed;padding:10px;border:2px solid #fb923c;">🏅 道館徽章：${state.badges.chinese ? "國語初階 ✓" : "國語初階 ○"} · ${state.badges.math ? "數學初階 ✓" : "數學初階 ○"} · ${state.badges.nature ? "自然初階 ✓" : "自然初階 ○"} · ${state.masterBadges.chinese ? "國語大師 ✓" : "國語大師 ○"} · ${state.masterBadges.math ? "數學大師 ✓" : "數學大師 ○"} · ${state.masterBadges.nature ? "自然大師 ✓" : "自然大師 ○"}</div>
+          <div style="grid-column:1/-1;background:#ecfdf5;padding:10px;border:2px solid #86a878;">🌱 自然道館最大 HP 加成：<strong>+${state.natureHpBonus || 0}</strong> · 自然科分數：${state.natureScore || 0}</div>
         </div>
         ${lead ? `<p style="font-size:16px;color:#334155;">目前出戰隊長：<strong>${lead.name} Lv.${lead.level}</strong>（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def} / HP ${lead.hp}/${lead.maxHp}）</p>` : ""}
       `;
@@ -5185,8 +5161,7 @@
       const gain = i === state.activeIndex ? atkBonus : Math.max(2, Math.round(atkBonus * 0.7));
       p.atk = Math.min(120, p.atk + gain);
       p.atkTrained = (p.atkTrained || 0) + gain;
-      p.maxHp += 6;
-      p.hp = p.maxHp;
+      p.hp = Math.min(p.maxHp, p.hp + 6);
       gainPokemonExp(p, getGymTrainingExp(qId), false);
     });
     state.storage.forEach((p) => {
@@ -6231,7 +6206,7 @@
 
   function rewardMathTraining(defBonus, qId) {
     const lead = getLeadPokemon();
-    const hpGain = Math.round(defBonus * 3);
+    const hpGain = 0;
     const baseCoin = defBonus >= 7 ? 100 : defBonus >= 5 ? 70 : 50;
     const coinGain = Math.round(baseCoin * getCoinMultiplier());
     if (!lead) return { defGain: defBonus, hpGain, coinGain };
@@ -6244,16 +6219,12 @@
       const dGain = i === state.activeIndex ? defBonus : Math.max(2, Math.round(defBonus * 0.7));
       p.def = Math.min(120, p.def + dGain);
       p.defTrained = (p.defTrained || 0) + dGain;
-      p.maxHp += hpGain;
-      p.hp = p.maxHp;
       gainPokemonExp(p, getGymTrainingExp(qId), false);
     });
     state.storage.forEach((p) => {
       ensurePokemonFields(p);
       const dGain = Math.max(2, Math.round(defBonus * 0.5));
       p.def = Math.min(120, p.def + dGain);
-      p.maxHp += 10;
-      p.hp = p.maxHp;
       gainPokemonExp(p, Math.max(2, Math.round(getGymTrainingExp(qId) * 0.7)), false);
     });
 
@@ -6272,6 +6243,178 @@
     saveGame();
     updateAllHUD();
     return { defGain: defBonus, hpGain, coinGain };
+  }
+
+  // --------------------------------------------------------------------------
+  // 自然道館：初階選擇、中階填空、進階混合；答對提升最大 HP。
+  // --------------------------------------------------------------------------
+  const naState = {
+    tier: "a", pool: [], index: 0, done: new Set(), mistakes: 0,
+    advanceTimer: null, hpEarned: 0
+  };
+
+  function clearNatureAdvanceTimer() {
+    if (naState.advanceTimer) clearTimeout(naState.advanceTimer);
+    naState.advanceTimer = null;
+  }
+
+  function resampleNatureTier(tier) {
+    clearNatureAdvanceTimer();
+    naState.tier = tier;
+    naState.pool = sampleQuestions(
+      tier === "a" ? DATA.natureGym.choiceQuestions : tier === "b" ? DATA.natureGym.fillQuestions : DATA.natureGym.mixedQuestions,
+      DATA.natureGym.questionCounts[tier]
+    );
+    naState.index = 0;
+    naState.done = new Set();
+    naState.mistakes = 0;
+    naState.hpEarned = 0;
+  }
+
+  function openNatureGym(defaultTier = "a") {
+    SFX.playClick();
+    clearNatureAdvanceTimer();
+    document.getElementById("natureGymModal").classList.remove("hidden");
+    ["a", "b", "c"].forEach(resampleNatureTier);
+    switchNatureTier(defaultTier, false);
+  }
+
+  function switchNatureTier(tier, shouldResample = true) {
+    clearNatureAdvanceTimer();
+    const score = state.natureScore || 0;
+    const required = tier === "a" ? 0 : tier === "b" ? 30 : 90;
+    if (score < required) {
+      showToast(`🔒 自然道館${tier === "b" ? "中階" : "進階"}需要先累積 ${required} 分，目前還差 ${required - score} 分。`);
+      tier = "a";
+      shouldResample = true;
+    }
+    if (shouldResample) resampleNatureTier(tier);
+    naState.tier = tier;
+    ["a", "b", "c"].forEach((t) => {
+      const tab = document.getElementById(`naTab_${t}`);
+      tab.classList.toggle("active", t === tier);
+      tab.classList.toggle("active-nature", t === tier);
+    });
+    renderNatureQuestion();
+  }
+
+  function normalizeNatureAnswer(value) {
+    return String(value || "").normalize("NFKC").toLowerCase().replace(/[\s，。、「」『』：:！？!?,.]/g, "").trim();
+  }
+
+  function renderNatureQuestion() {
+    const body = document.getElementById("natureGymBody");
+    if (!body || !naState.pool.length) return;
+    const q = naState.pool[naState.index];
+    const tier = naState.tier;
+    const total = naState.pool.length;
+    const hpGain = DATA.natureGym.maxHpBonus[tier];
+    const choices = q.qType === "choice" ? `<div class="nature-choice-list">${q.options.map((option, i) => `
+      <button type="button" class="button nature-choice" data-nature-choice="${i}">${option}</button>`).join("")}</div>` : `
+      <label class="nature-fill-label" for="natureFillAnswer">請填入答案</label>
+      <input id="natureFillAnswer" class="nature-fill-input" type="text" autocomplete="off" placeholder="輸入答案後按送出" />`;
+    body.innerHTML = `
+      <section class="nature-question-card">
+        <div class="nature-progress">${tier === "a" ? "初階選擇題" : tier === "b" ? "中階填空題" : "進階混合挑戰"} · 第 ${naState.index + 1} / ${total} 題 · 答對最大 HP +${hpGain}</div>
+        <h3>${q.question}</h3>
+        ${choices}
+        <button type="button" class="button primary" id="btnNatureSubmit">確認答案</button>
+        <p id="natureQuestionFeedback" class="nature-feedback" aria-live="polite"></p>
+        <small class="nature-hint">主題：${q.topic || "自然探究"}${q.source ? ` · 來源：${q.source}` : ""}</small>
+      </section>`;
+    let selected = null;
+    body.querySelectorAll("[data-nature-choice]").forEach((button) => {
+      button.onclick = () => {
+        body.querySelectorAll("[data-nature-choice]").forEach((item) => item.classList.remove("selected"));
+        button.classList.add("selected");
+        selected = Number(button.dataset.natureChoice);
+      };
+    });
+    const submit = body.querySelector("#btnNatureSubmit");
+    submit.onclick = () => {
+      let correct = false;
+      if (q.qType === "choice") {
+        correct = selected !== null && q.options[selected] === q.answer;
+      } else {
+        const answer = normalizeNatureAnswer(body.querySelector("#natureFillAnswer").value);
+        const acceptable = [q.answer, ...(q.acceptedAnswers || [])].map(normalizeNatureAnswer);
+        correct = Boolean(answer) && acceptable.includes(answer);
+      }
+      const feedback = body.querySelector("#natureQuestionFeedback");
+      if (!correct) {
+        naState.mistakes++;
+        SFX.playWrong();
+        feedback.textContent = `再想一想。提示：${q.hint || q.explanation || "回想題目中的自然觀察重點。"}`;
+        feedback.classList.add("wrong");
+        return;
+      }
+      if (naState.done.has(naState.index)) return;
+      naState.done.add(naState.index);
+      const result = rewardNatureTraining(hpGain, q.id);
+      naState.hpEarned += result.hpGain;
+      SFX.playCorrect();
+      feedback.textContent = `答對了！${q.explanation || ""} 全隊最大 HP +${result.hpGain}。`;
+      feedback.classList.remove("wrong");
+      submit.disabled = true;
+      body.querySelectorAll("[data-nature-choice], #natureFillAnswer").forEach((item) => { item.disabled = true; });
+      naState.advanceTimer = setTimeout(() => {
+        if (naState.done.size >= total) renderNatureSettlement(tier);
+        else {
+          naState.index = (naState.index + 1) % total;
+          renderNatureQuestion();
+        }
+      }, 850);
+    };
+  }
+
+  function rewardNatureTraining(hpGain, qId) {
+    const appliedHpGain = Math.min(hpGain, Math.max(0, 240 - (state.natureHpBonus || 0)));
+    state.natureHpBonus = (state.natureHpBonus || 0) + appliedHpGain;
+    state.natureScore = (state.natureScore || 0) + 10;
+    if (qId && !state.completedQuestions.includes(qId)) state.completedQuestions.push(qId);
+    [...state.party, ...state.storage].forEach((pokemon) => {
+      pokemon.maxHp = (pokemon.maxHp || 1) + appliedHpGain;
+      pokemon.hp = Math.min(pokemon.maxHp, (pokemon.hp || 0) + appliedHpGain);
+      pokemon.natureHpTrained = (pokemon.natureHpTrained || 0) + appliedHpGain;
+    });
+    if (state.natureScore >= 30 && !state.badges.nature) {
+      state.badges.nature = true;
+      addJournalEntry("🌱 獲得【自然道館・自然觀察徽章】！全隊最大 HP 增加。");
+      showToast("🌱 恭喜獲得自然道館初階徽章！");
+    }
+    saveGame();
+    updateAllHUD();
+    return { hpGain: appliedHpGain };
+  }
+
+  function renderNatureSettlement(tier) {
+    clearNatureAdvanceTimer();
+    if (tier === "c" && !state.masterBadges.nature) {
+      state.masterBadges.nature = true;
+      addJournalEntry("🌱 完成自然道館進階課程，取得自然大師徽章！");
+      showToast("🏅 恭喜取得【自然道館大師徽章】！");
+    }
+    saveGame();
+    updateAllHUD();
+    const nextTier = tier === "a" ? "b" : tier === "b" ? "c" : null;
+    const nextLabel = tier === "a" ? "挑戰中階填空題" : tier === "b" ? "挑戰進階混合題" : "";
+    const body = document.getElementById("natureGymBody");
+    body.innerHTML = `
+      <section class="nature-settlement">
+        <div style="font-size:42px;">🌱</div>
+        <h3>自然道館${tier === "a" ? "初階" : tier === "b" ? "中階" : "進階"}完成！</h3>
+        <p>答對 ${naState.done.size} 題 · 最大 HP 提升 +${naState.hpEarned} · 自然科累積 ${state.natureScore} 分</p>
+        ${state.masterBadges.nature ? "<strong>🏅 已取得自然道館大師徽章</strong>" : ""}
+        <div class="nature-settlement-actions">
+          <button type="button" class="button" id="btnNatureRetry">再練一次</button>
+          ${nextTier ? `<button type="button" class="button primary" id="btnNatureNext">${nextLabel}</button>` : ""}
+          <button type="button" class="button" id="btnNatureClose">返回地圖</button>
+        </div>
+      </section>`;
+    body.querySelector("#btnNatureRetry").onclick = () => { resampleNatureTier(tier); renderNatureQuestion(); };
+    const next = body.querySelector("#btnNatureNext");
+    if (next) next.onclick = () => switchNatureTier(nextTier, true);
+    body.querySelector("#btnNatureClose").onclick = () => document.getElementById("natureGymModal").classList.add("hidden");
   }
 
   // --------------------------------------------------------------------------
@@ -6301,10 +6444,12 @@
     } else if (obj.kind === "npc") {
       if (obj.role === "breeder") {
         txt.textContent = `🧬 與 ${obj.name.split(" ")[0]} 開啟培育屋合成`;
-        hint.textContent = "點擊「A 互動」開啟寶可夢基因合成與孵蛋工坊！";
+        hint.textContent = "點擊「A 互動」開啟圖鑑寶可夢培育與孵蛋工坊！";
       } else if (obj.role === "trainer") {
         txt.textContent = `⚔️ 向 ${obj.name} 發起訓練家對戰`;
-        hint.textContent = "點擊「A 互動」進行訓練家切磋對戰，贏取豐厚 EXP 與金幣！";
+        hint.textContent = (state.defeatedTrainers || []).includes(`${state.regionId}:${obj.id}`)
+          ? "訓練家重賽可練習戰鬥，不會重複取得 EXP 或金幣。"
+          : "首次勝利可獲得適量 EXP、金幣與傷藥；再戰可練習。";
       } else {
         txt.textContent = `💬 與 ${obj.name.split(" ")[0]} 對話`;
         hint.textContent = "點擊「A 互動」或按 E 聽取指引或開啟訓練！";
@@ -6328,6 +6473,7 @@
     document.getElementById("topPartyPill").textContent = `🐾 寶可夢：${totalPokes} 隻`;
     document.getElementById("topAtkPill").textContent = `⚔️ 國語攻擊 +${state.atkBonus || 0}`;
     document.getElementById("topDefPill").textContent = `🛡️ 數學防禦 +${state.defBonus || 0}`;
+    document.getElementById("topNaturePill").textContent = `🌱 自然生命 +${state.natureHpBonus || 0}`;
     document.getElementById("topCoinsPill").textContent = `🪙 金幣 ₽ ${state.coins || 0}`;
     const totalBalls =
       (state.items["poke-ball"] || 0) + (state.items["great-ball"] || 0) + (state.items["ultra-ball"] || 0);
@@ -6338,9 +6484,9 @@
     const topNurseryPill = document.getElementById("topNurseryPill");
     if (topNurseryPill) {
       if (state.egg) {
-        topNurseryPill.textContent = `🥚 合成蛋：剩 ${state.egg.stepsRemaining} 步`;
+        topNurseryPill.textContent = `🥚 培育蛋：剩 ${state.egg.stepsRemaining} 步`;
       } else {
-        topNurseryPill.textContent = `🧬 培育屋合成`;
+        topNurseryPill.textContent = `🥚 培育屋`;
       }
     }
 
@@ -6350,7 +6496,7 @@
     document.getElementById("menuTrainerName").textContent = `${state.trainerName} 名片`;
     const menuEggTxt = document.getElementById("menuEggTxt");
     if (menuEggTxt) {
-      menuEggTxt.textContent = state.egg ? `剩 ${state.egg.stepsRemaining} 步` : `孵蛋/合成`;
+      menuEggTxt.textContent = state.egg ? `剩 ${state.egg.stepsRemaining} 步` : `培育圖鑑寶可夢`;
     }
 
     // 腳踏車按鈕
@@ -6361,12 +6507,13 @@
     }
 
     // 寶箱進度
-    document.getElementById("worldChestCounter").textContent = `🎁 已開啟地圖寶箱：${state.collectedChests.length} / 16 · 走出城鎮四個路口可前往五大地圖`;
+    document.getElementById("worldChestCounter").textContent = `🎁 已開啟地圖寶箱：${state.collectedChests.length} / 20 · 完成道館與守護者挑戰可逐步前往九張地圖`;
 
     if (lead) {
       ensurePokemonFields(lead);
       const hudImg = document.getElementById("hudLeaderImg");
       hudImg.src = getPokemonDisplayUrl(lead, "portrait");
+      applyPokemonDisplayScale(hudImg, lead);
       hudImg.onerror = () => {
         hudImg.src = getPokemonFallbackUrl(lead, "front");
       };
@@ -6393,7 +6540,7 @@
         objTitle.textContent = `📍 當前目標：先到「國語文道館」與「數學道館」訓練你的【${lead.name} Lv.${lead.level}】！`;
         objDesc.textContent = `目前【${lead.name}】攻擊力 ${lead.atk}、防禦力 ${lead.def}，還打不贏柳溪草地（建議 ⚔️12 / 🛡️10）的野生怪獸！請點選道館按鈕或走進城鎮建築特訓！`;
       } else {
-        objTitle.textContent = `📍 當前目標：探索五大地圖、對戰升級並觸發等級進化！`;
+        objTitle.textContent = `📍 當前目標：探索九張地圖、完成三科道館與守護者挑戰！`;
         objDesc.textContent = `你的【${lead.name} Lv.${lead.level}】（⚔️ATK ${lead.atk} / 🛡️DEF ${lead.def}）已具備實戰能力！可走進草叢收服寶可夢、向訓練家與石碑守護者挑戰，達到進化等級後會自動進化！`;
       }
     }
@@ -6425,11 +6572,12 @@
     document.getElementById("topPartyPill").onclick = () => openMenuModal("party");
     document.getElementById("topAtkPill").onclick = () => openChineseGym("a");
     document.getElementById("topDefPill").onclick = () => openMathGym("a");
+    document.getElementById("topNaturePill").onclick = () => openNatureGym("a");
     document.getElementById("topCoinsPill").onclick = () => openMenuModal("shop");
     document.getElementById("topBagPill").onclick = () => openMenuModal("bag");
     document.getElementById("hudLeaderBadge").onclick = () => openMenuModal("party");
 
-    // 培育屋合成按鈕綁定
+    // 培育屋按鈕綁定
     const topNurseryPill = document.getElementById("topNurseryPill");
     if (topNurseryPill) topNurseryPill.onclick = () => openMenuModal("nursery");
     const btnHudNursery = document.getElementById("btnHudNursery");
@@ -6467,6 +6615,7 @@
         if (m === "close") return;
         if (m === "chinese-gym") openChineseGym("a");
         else if (m === "math-gym") openMathGym("a");
+        else if (m === "nature-gym") openNatureGym("a");
         else if (m === "reset") {
           if (confirm("確定要重置冒險進度並重新選擇初始寶可夢（皮卡丘／噴火龍／妙蛙種子）嗎？")) {
             localStorage.removeItem(SAVE_KEY);
@@ -6486,6 +6635,8 @@
       document.getElementById("chineseGymModal").classList.add("hidden");
     document.getElementById("closeMathGym").onclick = () =>
       document.getElementById("mathGymModal").classList.add("hidden");
+    document.getElementById("closeNatureGym").onclick = () =>
+      document.getElementById("natureGymModal").classList.add("hidden");
 
     // 國語與數學道館分頁切換（每次切換皆重新隨機抽題）
     ["a", "b", "c"].forEach((t) => {
@@ -6496,6 +6647,10 @@
       document.getElementById(`maTab_${t}`).onclick = () => {
         SFX.playClick();
         switchMathTier(t, true);
+      };
+      document.getElementById(`naTab_${t}`).onclick = () => {
+        SFX.playClick();
+        switchNatureTier(t, true);
       };
     });
 

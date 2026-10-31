@@ -1033,7 +1033,7 @@ window.GAME_DATA = {
         "x": 18,
         "y": 15,
         "solid": true,
-        "text": "古老的城都地區石碑散發著微光。【城都五大地圖等級指南】★ 第1階：若葉鎮(Lv.3~6) ★ 第2階(南)：吉花市海灣(Lv.7~12) ★ 第3階(北)：檜皮鎮・櫟樹林(Lv.12~18) ★ 第4階(東)：淺蔥市海岸(Lv.18~25) ★ 第5階(西)：煙墨市・白銀山(Lv.26~36)。"
+        "text": "古老的城都地區石碑散發著微光。完成國語文、數學與自然三科道館大師課程後，可依序挑戰自然研究區、化石峽谷、磁力山谷與星冠天文台。每區都要先擊敗守護者，才能前往下一區。"
       },
       {
         "id": "town-sign",
@@ -1965,7 +1965,7 @@ window.GAME_DATA = {
         "solid": true,
         "sprite": "lass",
         "facing": "south",
-        "text": "我是駐守在【吉花市海灣】的訓練家莉娜！打贏我能獲得豐厚經驗值，讓你的寶可夢更快達到進化等級喔！"
+        "text": "我是駐守在【吉花市海灣】的訓練家莉娜！首次勝利可獲得適量訓練獎勵，再戰時就當作戰鬥練習吧！"
       },
       {
         "id": "waystone",
@@ -8138,4 +8138,187 @@ window.GAME_DATA.mathGym.wordProblems.push(
     guardianPokemonId: 150, guardianMaxAttempts: 3,
     guardianRequirement: { chinese: 120, math: 120, requireMasterBadges: true, guardianRegion: "1,0" }
   });
+})();
+
+// 自然道館題庫與四張後期地圖。題目來自「題庫完整擷取／結構化題庫_自然.json」，
+// 數據直接封裝在遊戲資料，靜態網站發布時不依賴本機題庫資料夾。
+(() => {
+  const D = window.GAME_DATA;
+  D.natureQuestionBank = { categories: { "選擇題": [
+    { id: "MC-01", source: "自然exam1", topic: "植物基本特性", question: "下面關於植物的敘述，哪一項正確？", options: ["①植物是生物會生長和繁殖", "②植物只會開花不會結果", "③植物是非生物", "④植物會走動"], answer: "①" },
+    { id: "MC-02", source: "自然exam1", topic: "植物吸收水分器官", question: "植物缺水時，要在土壤上澆水，這是要讓植物的哪個部位吸收水分？", options: ["①根", "②莖", "③葉", "④種子"], answer: "①" },
+    { id: "MC-03", source: "自然exam1", topic: "果實與種子數量", question: "下列哪一種植物，果實裡面種子數量最多？", options: ["①龍眼", "②月橘", "③木瓜", "④臺灣欒樹"], answer: "③" },
+    { id: "MC-04", source: "自然exam2", topic: "磁極磁力分布", question: "用一塊棒狀磁鐵隔著透明塑膠袋去吸引鐵粉，會有什麼現象？", options: ["①鐵粉都沒有被吸引", "②鐵粉都集中在磁鐵兩端", "③鐵粉平均分布在磁鐵上", "④鐵粉都集中在磁鐵的中間"], answer: "②" },
+    { id: "MC-05", source: "自然exam2", topic: "施力方向", question: "球被拋向天空時，手對球的施力方向是什麼？", options: ["①向上", "②向下", "③向左", "④向後"], answer: "①" },
+    { id: "MC-06", source: "自然exam3", topic: "自然觀察素養", question: "進行校園觀察時，下列哪一個行為比較適當？", options: ["①品嚐教室外的薄荷葉", "②用手摘開花朵", "③採摘樹上的芭樂", "④捕捉飛行中的蝴蝶拍照後放走"], answer: "④" },
+    { id: "MC-07", source: "自然exam3", topic: "生物與非生物歸納", question: "「木棉樹、螞蟻、鞦韆、長春花、鴿子、單槓」，根據以上項目正確敘述的是？", options: ["①非生物共有4個", "②生物共有4個", "③非生物共有3個", "④生物共有2個"], answer: "②" },
+    { id: "MC-08", source: "自然exam3", topic: "磁鐵與鐵製品區別", question: "下列哪一個物品沒有N極和S極？", options: ["①圓形磁鐵", "②長條形磁鐵", "③U形磁鐵", "④鐵尺"], answer: "④" },
+    { id: "MC-09", source: "自然exam4", topic: "葉序定義", question: "下列關於葉序的敘述，何者正確？", options: ["①葉序為葉子在根上不同的生長方式", "②葉序可分為互生、對生和輪生", "③一個節長出兩片葉子稱為輪生", "④互生是每個節長出三片以上葉子"], answer: "②" },
+    { id: "MC-10", source: "自然exam4", topic: "磁鐵隔物與吸金屬辨析", question: "磁鐵無法吸引下列哪種物品？", options: ["①鐵絲", "②十元硬幣", "③迴紋針", "④鐵釘"], answer: "②" },
+    { id: "MC-11", source: "自然exam5", topic: "根的功能", question: "植物的哪一個部位會牢牢的抓住泥土、固定植物？", options: ["①根", "②莖", "③葉", "④花瓣"], answer: "①" },
+    { id: "MC-12", source: "自然exam5", topic: "植物食用部位", question: "我們平常食用的水果是植物的什麼部位？", options: ["①根", "②莖", "③葉", "④果實"], answer: "④" },
+    { id: "MC-13", source: "自然exam5", topic: "力的三要素", question: "下列何者不是力的三要素之一？", options: ["①力的大小", "②力的來源", "③力的方向", "④力的作用點"], answer: "②" },
+    { id: "MC-14", source: "自然exam5", topic: "物體沉浮與浮力應用", question: "若想讓油泥（塑膠泥）浮在水面上，可以將油泥做成什麼形狀？", options: ["①像橡皮擦的棒狀", "②圓圓的球形", "③碗狀或船形", "④厚厚長條形"], answer: "③" },
+    { id: "MC-15", source: "自然exam5", topic: "磁鐵隔物吸引", question: "用塑膠袋包住磁鐵吸地上的鐵粉，是利用了磁鐵的什麼特性？", options: ["①異極相吸", "②磁鐵隔著物品仍有磁力", "③磁鐵有不同磁極", "④磁鐵可以吸起塑膠袋"], answer: "②" }
+  ] } };
+  const source = D.natureQuestionBank;
+  const sourceChoices = (source.categories && source.categories["選擇題"]) || [];
+  const circled = ["①", "②", "③", "④"];
+
+  D.natureGym = {
+    choiceQuestions: sourceChoices.map((q) => {
+      const answerIndex = Math.max(0, circled.indexOf(q.answer));
+      return {
+        id: `na_a_${q.id}`,
+        qType: "choice",
+        source: q.source,
+        topic: q.topic,
+        question: q.question,
+        options: (q.options || []).map((option) => option.replace(/^\s*[①②③④]\s*/, "")),
+        answer: (q.options || [])[answerIndex].replace(/^\s*[①②③④]\s*/, ""),
+        explanation: q.topic
+      };
+    }),
+    fillQuestions: [
+      { id: "na_b_01", qType: "fill", source: "自然exam1", topic: "植物吸水", question: "植物主要由哪一個部位吸收土壤中的水分和養分？", answer: "根", acceptedAnswers: ["根部"], hint: "想想看，植物哪個部位長在土壤裡？" },
+      { id: "na_b_02", qType: "fill", source: "自然exam2", topic: "根系分類", question: "由一條較粗的主根和許多細根組成的根系，稱為＿＿根。", answer: "軸", acceptedAnswers: ["軸根"], hint: "另一種常見根系是鬚根。" },
+      { id: "na_b_03", qType: "fill", source: "自然exam3", topic: "葉序", question: "每個莖節只長出一片葉子，並且交錯排列，這種葉序稱為＿＿生。", answer: "互", acceptedAnswers: ["互生"], hint: "葉序有互生、對生和輪生。" },
+      { id: "na_b_04", qType: "fill", source: "自然exam3", topic: "花朵構造", question: "花粉通常由花朵的＿＿蕊產生。", answer: "雄", acceptedAnswers: ["雄蕊"], hint: "花朵構造包括花萼、花瓣、雄蕊和雌蕊。" },
+      { id: "na_b_05", qType: "fill", source: "自然exam4", topic: "磁鐵磁極", question: "磁鐵的兩端稱為磁＿＿，磁力通常最強。", answer: "極", acceptedAnswers: ["磁極"], hint: "磁鐵有 N 極和 S 極。" },
+      { id: "na_b_06", qType: "fill", source: "自然exam5", topic: "磁極作用", question: "兩個相同的磁極靠近時會互相＿＿。", answer: "排斥", acceptedAnswers: ["推開"], hint: "相同磁極的作用和不同磁極相反。" },
+      { id: "na_b_07", qType: "fill", source: "自然exam5", topic: "力的三要素", question: "描述一個力時，通常要知道力的大小、方向和作用＿＿。", answer: "點", acceptedAnswers: ["作用點"], hint: "力的三要素中，最後一項指出力施加在哪裡。" },
+      { id: "na_b_08", qType: "fill", source: "自然exam4", topic: "浮力", question: "物體放入水中會受到一個向上的力，稱為水的＿＿力。", answer: "浮", acceptedAnswers: ["浮力"], hint: "這個力能幫助船浮在水面上。" },
+      { id: "na_b_09", qType: "fill", source: "自然exam1", topic: "莖的分類", question: "大樹粗壯、直立的莖稱為＿＿本莖。", answer: "木", acceptedAnswers: ["木本"], hint: "莖可分為木本莖和草本莖。" },
+      { id: "na_b_10", qType: "fill", source: "自然exam5", topic: "種子傳播", question: "椰子果實能漂浮在海面，主要利用＿＿力把種子傳到遠方。", answer: "水", acceptedAnswers: ["水流"], hint: "題庫的閱讀文章比較了風、水和果莢彈跳。" },
+      { id: "na_b_11", qType: "fill", source: "自然exam3", topic: "葉序", question: "同一個莖節相對長出兩片葉子，稱為＿＿生。", answer: "對", acceptedAnswers: ["對生"], hint: "注意題目說的是同一個莖節、兩片葉子。" },
+      { id: "na_b_12", qType: "fill", source: "自然exam2", topic: "力的作用", question: "物體受力後，可能改變形狀，也可能移動＿＿。", answer: "位置", acceptedAnswers: ["所在位置"], hint: "力的作用可以從形變或移動看出來。" }
+    ],
+    mixedQuestions: [
+      { id: "na_c_01", qType: "choice", source: "自然exam3 素養閱讀", topic: "磁鐵生活應用", question: "閱讀磁鐵文章後，哪一項同時符合磁鐵的性質與安全使用方式？", options: ["用磁鐵吸引銅線，再拿來分類銅器", "磁鐵隔著塑膠袋仍可吸引鐵粉", "永久磁鐵受到撞擊後一定更強", "司南是靠水流決定方向"], answer: "磁鐵隔著塑膠袋仍可吸引鐵粉", explanation: "磁鐵可以隔著部分物品吸引鐵製品；文章也提到司南利用磁性指示方向。" },
+      { id: "na_c_02", qType: "fill", source: "自然exam5 素養閱讀", topic: "種子傳播", question: "桃花心木的種子像長了薄翅膀，主要靠＿＿傳播。", answer: "風", acceptedAnswers: ["風力"], explanation: "種子隨風旋轉飄落。" },
+      { id: "na_c_03", qType: "choice", source: "自然exam3 觀察實驗", topic: "葉序判讀", question: "觀察到某枝條每一個莖節都長出三片以上的葉子，最合理的判斷是？", options: ["互生", "對生", "輪生", "鬚根"], answer: "輪生", explanation: "每個莖節長出三片或以上葉子稱為輪生。" },
+      { id: "na_c_04", qType: "fill", source: "自然exam5", topic: "受力與沉浮", question: "把油泥捏成碗狀或船形，較容易浮起，表示物體形狀會影響它在水中的＿＿情形。", answer: "沉浮", acceptedAnswers: ["浮沉"], explanation: "題庫用油泥形狀改變說明浮力與物體沉浮。" },
+      { id: "na_c_05", qType: "choice", source: "自然exam2 自然探究", topic: "磁力與材質", question: "要測試磁鐵能否隔著物品吸引迴紋針，哪一種做法最能公平比較？", options: ["每次更換磁鐵，也更換迴紋針", "固定同一塊磁鐵和迴紋針，只改變中間隔著的材料", "每次都改變磁鐵與迴紋針的距離", "先把迴紋針剪成不同大小"], answer: "固定同一塊磁鐵和迴紋針，只改變中間隔著的材料", explanation: "公平比較時一次只改變一個條件。" },
+      { id: "na_c_06", qType: "fill", source: "自然exam1", topic: "植物繁殖", question: "植物的花經過傳粉、受精後，通常會形成果實和＿＿。", answer: "種子", acceptedAnswers: ["種子"], explanation: "題庫涵蓋花、果實與種子的構造。" },
+      { id: "na_c_07", qType: "choice", source: "自然exam5 素養閱讀", topic: "種子傳播比較", question: "桃花心木、非洲鳳仙花和椰子的種子傳播方式，依序是哪一組？", options: ["隨風、果莢彈跳、隨水", "隨水、隨風、果莢彈跳", "果莢彈跳、隨水、隨風", "隨風、隨水、動物傳播"], answer: "隨風、果莢彈跳、隨水", explanation: "文章分別說明風力、自體彈跳和水流傳播。" },
+      { id: "na_c_08", qType: "fill", source: "自然exam5", topic: "磁極", question: "兩個磁鐵互相排斥時，靠近的兩端是＿＿磁極。", answer: "相同", acceptedAnswers: ["同名"], explanation: "同極相斥、異極相吸。" },
+      { id: "na_c_09", qType: "choice", source: "自然exam2", topic: "力的作用", question: "推牆時牆壁沒有移動，以下哪個推論最合理？", options: ["牆壁一定沒有受到力", "只有移動中的物體才會受到力", "牆壁可能受力但沒有明顯移動", "只要物體不動就不可能有力"], answer: "牆壁可能受力但沒有明顯移動", explanation: "是否移動不能單獨判斷物體有沒有受到力。" },
+      { id: "na_c_10", qType: "fill", source: "自然exam3", topic: "花朵構造", question: "花朵中含有柱頭和子房的構造是＿＿蕊。", answer: "雌", acceptedAnswers: ["雌蕊"], explanation: "雌蕊包括柱頭、花柱和子房。" }
+    ],
+    questionCounts: { a: 10, b: 8, c: 5 },
+    maxHpBonus: { a: 4, b: 6, c: 8 }
+  };
+
+  const makeArea = (cfg) => {
+    const cols = 32, rows = 24;
+    const tiles = Array(cols * rows).fill(0);
+    for (let x = 0; x < cols; x++) { tiles[x] = 2; tiles[(rows - 1) * cols + x] = 2; }
+    for (let y = 0; y < rows; y++) { tiles[y * cols] = 2; tiles[y * cols + cols - 1] = 2; }
+    tiles[16] = 1; tiles[(rows - 1) * cols + 16] = 1;
+    for (let x = 2; x < cols - 2; x++) { tiles[12 * cols + x] = 1; tiles[20 * cols + x] = 1; }
+    for (let y = 2; y < rows - 2; y++) { tiles[y * cols + 16] = 1; }
+    const patch = (x1, y1, x2, y2, tile = 3) => {
+      for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) {
+        if (!(x <= 10 && y >= 14)) tiles[y * cols + x] = tile;
+      }
+    };
+    patch(22, 4, 27, 7);
+    patch(22, 16, 27, 18);
+    if (cfg.water) patch(3, 5, 8, 8, 4);
+    if (cfg.rocks) { patch(7, 8, 8, 8, 8); patch(24, 10, 25, 10, 8); }
+    for (let y = 2; y < 7; y++) for (let x = 2; x < 9; x++) tiles[y * cols + x] = 6;
+    for (let y = 2; y < 7; y++) for (let x = 23; x < 30; x++) tiles[y * cols + x] = 6;
+    const objects = [
+      ...(cfg.natureGym ? [
+        { id: `${cfg.id}-gym-building`, kind: "building", name: "自然科學研究館", x: 2, y: 2, width: 7, height: 5, solid: false, sprite: "lab", badge: "🌱 自然道館", badgeColor: "#15803d" },
+        { id: `${cfg.id}-gym-door`, kind: "door", name: "進入自然道館", x: 5, y: 6, solid: false, action: "nature-gym" }
+      ] : []),
+      { id: `${cfg.id}-rest-building`, kind: "building", name: "研究員休息站", x: 23, y: 2, width: 7, height: 5, solid: false, sprite: "house", badge: "🏥 免費治療", badgeColor: "#16a34a" },
+      { id: `${cfg.id}-rest-door`, kind: "door", name: "進入研究員休息站", x: 26, y: 6, solid: false, action: "heal-station" },
+      { id: `${cfg.id}-guide`, kind: "npc", role: "guide", name: cfg.guideName, x: 16, y: 11, solid: true, sprite: "scientist", facing: "south", text: `${cfg.name}（${cfg.levelRange[0]}～${cfg.levelRange[1]}級）。請先完成三科道館課程，再挑戰本區守護者。` },
+      { id: `${cfg.id}-trainer`, kind: "npc", role: "trainer", name: cfg.trainerName, x: 10, y: 12, solid: true, sprite: "hiker", facing: "south", text: `我是${cfg.name}的巡護訓練家。初次勝利有訓練獎勵，再戰可練習。` },
+      { id: `${cfg.id}-guardian`, kind: "waystone", name: `${cfg.name}守護石`, x: 16, y: 19, solid: true, text: `${cfg.name}深處的守護者正在等待符合資格的訓練家。` },
+      { id: `${cfg.id}-sign`, kind: "sign", name: "區域導覽牌", x: 18, y: 10, solid: true, text: `${cfg.name}：普通草地在東北，深層遭遇區在東南。西南角不設草叢，避免畫面遮擋。` },
+      { id: `${cfg.id}-chest`, kind: "chest", name: `${cfg.name}補給箱`, x: 12, y: 8, solid: true, coins: 80, bonusItem: "great-ball", bonusCount: 1, text: `發現${cfg.name}補給箱！獲得金幣 ₽80 與超級球×1。` }
+    ];
+    return {
+      id: cfg.id, name: cfg.name, enName: cfg.enName, tier: cfg.tier,
+      tierLabel: `第 ${cfg.tier} 階（挑戰區 · Lv.${cfg.levelRange[0]}～${cfg.levelRange[1]}）`,
+      levelRange: cfg.levelRange, recAtk: cfg.recAtk, recDef: cfg.recDef,
+      biome: cfg.biome, gx: -1, gy: -cfg.tier + 5, seed: cfg.seed,
+      spawn: { x: 16, y: 21 }, description: cfg.description,
+      exits: cfg.exits, tiles, objects,
+      encounterRules: {
+        ordinary: cfg.ordinary, deep: cfg.deep,
+        speciesIds: cfg.speciesIds,
+        deepZones: [{ x1: 22, y1: 16, x2: 27, y2: 18 }],
+        zoneLabels: { ordinary: "普通探索區", deep: "深層探索區", special: "守護者挑戰區" },
+        rareCaps: { rare: 4, ancient: 2 },
+        guardianPokemonId: cfg.guardianPokemonId,
+        guardianMaxAttempts: 3,
+        guardianRequirement: cfg.guardianRequirement
+      }
+    };
+  };
+
+  const allMasterGate = { requireAllMasterBadges: true };
+  const fifthGuardianGate = { guardianRegion: "1,0" };
+  D.regions["0,-2"] = makeArea({
+    id: "0,-2", name: "森野自然研究區／自然學院", enName: "Verdant Nature Institute", tier: 6,
+    levelRange: [35, 42], recAtk: 75, recDef: 70, biome: "forest", seed: 821736,
+    guideName: "研究員青禾", trainerName: "巡護員阿岳", water: true, natureGym: true,
+    description: "三科道館大師才能抵達的自然研究區。完成自然道館後，挑戰更深處的守護者。",
+    ordinary: ["rare"], deep: ["rare", "ancient"], speciesIds: [93, 121, 149, 181, 248, 448, 142, 911, 912], guardianPokemonId: 248,
+    guardianRequirement: { chinese: 120, math: 120, requireMasterBadges: true, guardianRegion: "1,0" },
+    exits: { south: { target: "-1,0", name: "返回韋斯頓露台", x: 20, y: 1 }, north: { target: "0,-3", name: "前往化石峽谷", x: 16, y: 22 } }
+  });
+  D.regions["0,-3"] = makeArea({
+    id: "0,-3", name: "化石峽谷", enName: "Fossil Canyon", tier: 7,
+    levelRange: [42, 50], recAtk: 88, recDef: 82, biome: "ruins", seed: 928371,
+    guideName: "地質學家磊石", trainerName: "探險家小嵐", rocks: true,
+    description: "化石峽谷棲息著高階與古代寶可夢，必須通過國語文、數學及自然道館進階課程。",
+    ordinary: ["rare"], deep: ["rare", "ancient"], speciesIds: [93, 121, 123, 142, 149, 248, 911], guardianPokemonId: 142,
+    guardianRequirement: allMasterGate,
+    exits: { south: { target: "0,-2", name: "返回森野自然研究區", x: 16, y: 1 }, north: { target: "0,-4", name: "前往磁力山谷", x: 16, y: 22 } }
+  });
+  D.regions["0,-4"] = makeArea({
+    id: "0,-4", name: "磁力山谷", enName: "Magnetic Vale", tier: 8,
+    levelRange: [50, 58], recAtk: 105, recDef: 98, biome: "ruins", seed: 163729,
+    guideName: "磁力研究員小磁", trainerName: "探險家阿拓", rocks: true,
+    description: "磁力山谷的古代型寶可夢更為強大，需擊敗化石峽谷守護者才能深入。",
+    ordinary: ["rare"], deep: ["rare", "ancient"], speciesIds: [121, 123, 142, 149, 248, 448, 911, 912], guardianPokemonId: 912,
+    guardianRequirement: { ...allMasterGate, guardianRegion: "0,-3" },
+    exits: { south: { target: "0,-3", name: "返回化石峽谷", x: 16, y: 1 }, north: { target: "0,-5", name: "前往星冠天文台", x: 16, y: 22 } }
+  });
+  D.regions["0,-5"] = makeArea({
+    id: "0,-5", name: "星冠天文台", enName: "Crownstar Observatory", tier: 9,
+    levelRange: [58, 66], recAtk: 125, recDef: 118, biome: "coast", seed: 763182,
+    guideName: "天文學家星澄", trainerName: "星冠守望者凱", water: true,
+    description: "最後的挑戰地圖。稀有、古代與傳說寶可夢皆取自現有圖鑑，傳說型只在特殊首領戰出現。",
+    ordinary: ["rare"], deep: ["rare", "ancient"], speciesIds: [93, 121, 123, 142, 149, 248, 448, 911, 912, 150], guardianPokemonId: 150,
+    guardianRequirement: { ...allMasterGate, guardianRegion: "0,-4" },
+    exits: { south: { target: "0,-4", name: "返回磁力山谷", x: 16, y: 1 } }
+  });
+
+  D.regionsOrder = [...D.regionsOrder, "0,-2", "0,-3", "0,-4", "0,-5"];
+  D.regionUnlocks["0,-2"] = { chinese: 120, math: 120, requireMasterBadges: true, guardianRegion: "1,0", label: "兩座原有道館大師徽章並擊敗淺蔥市守護者" };
+  D.regionUnlocks["0,-3"] = { ...allMasterGate, nature: 90, guardianRegion: "0,-2", label: "取得三科大師徽章並擊敗森野守護者" };
+  D.regionUnlocks["0,-4"] = { ...allMasterGate, nature: 90, guardianRegion: "0,-3", label: "取得三科大師徽章並擊敗化石峽谷守護者" };
+  D.regionUnlocks["0,-5"] = { ...allMasterGate, nature: 90, guardianRegion: "0,-4", label: "取得三科大師徽章並擊敗磁力山谷守護者" };
+  D.regions["-1,0"].exits.north = { target: "0,-2", name: "前往森野自然研究區", x: 16, y: 22 };
+  D.regions["-1,0"].tiles[16] = 1;
+  D.regions["-1,0"].tiles[32 + 16] = 1;
+
+  // 遮擋介面左下角的草叢全部移除，深層草叢挪到右側不被遮住的位置。
+  for (const reg of Object.values(D.regions)) {
+    if (!reg.tiles || reg.tiles.length !== 32 * 24) continue;
+    for (let y = 12; y < 24; y++) for (let x = 0; x <= 10; x++) {
+      const idx = y * 32 + x;
+      if (reg.tiles[idx] === 3) reg.tiles[idx] = 0;
+    }
+    if (reg.encounterRules) {
+      for (let y = 16; y <= 18; y++) for (let x = 22; x <= 27; x++) reg.tiles[y * 32 + x] = 3;
+      reg.encounterRules.deepZones = [{ x1: 22, y1: 16, x2: 27, y2: 18 }];
+    }
+  }
 })();

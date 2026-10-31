@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>國小三年級寶可夢訓練道館 — 柳溪谷冒險 (Willow Valley)</title>
-  <meta name="description" content="國小三年級寶可夢訓練道館：結合南一版三上國語（第1～6課）與康軒版三上數學（第1～4單元），探索柳溪、克洛佛班克河、低雨林小徑、桑布雷克海岸與韋斯頓露台五大區域！" />
+  <meta name="description" content="國小三年級寶可夢訓練道館：結合三上國語、數學與自然科，探索九個階梯地圖並挑戰三科道館。" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,14 +20,17 @@
         <button class="topline-pill party" id="topPartyPill" title="點擊查看寶可夢隊伍與升級強化">
           🐾 寶可夢：1 隻
         </button>
-        <button class="topline-pill nursery-pill" id="topNurseryPill" title="點擊開啟培育屋進行寶可夢跨種合成與孵蛋">
-          🧬 培育屋合成
+        <button class="topline-pill nursery-pill" id="topNurseryPill" title="點擊開啟培育屋，培育圖鑑內的寶可夢">
+          🥚 培育屋
         </button>
         <button class="topline-pill atk" id="topAtkPill" title="點擊進入國語文道館提升攻擊力">
           ⚔️ 國語攻擊 +0
         </button>
         <button class="topline-pill def" id="topDefPill" title="點擊進入數學道館提升防禦力">
           🛡️ 數學防禦 +0
+        </button>
+        <button class="topline-pill nature" id="topNaturePill" title="點擊進入自然道館提升最大 HP">
+          🌱 自然生命 +0
         </button>
         <button class="topline-pill coins" id="topCoinsPill" title="點擊開啟寶可夢商店購買道具">
           🪙 金幣 ₽ 150
@@ -65,7 +68,7 @@
         <div class="top-right-hud">
           <button class="start-button" id="btnHudNursery" title="開啟寶可夢培育屋合成工坊" style="background:#f3e8ff;border-color:#7e22ce;color:#581c87;">🧬 合成</button>
           <button class="start-button" id="btnHudSave" title="儲存或管理遊戲進度">💾 存檔</button>
-          <button class="start-button" id="btnHudMap" title="開啟五大地圖導覽與傳送">🗺️ 地圖</button>
+          <button class="start-button" id="btnHudMap" title="開啟九大地圖導覽與傳送">🗺️ 地圖</button>
           <button class="start-button" id="btnStartMenu" aria-label="開啟選單">START ☰</button>
         </div>
 
@@ -75,13 +78,14 @@
           <button data-menu="nursery" style="color:#6d28d9;"><span>🧬 NURSERY 培育屋合成</span><small id="menuEggTxt">合成</small></button>
           <button data-menu="bag"><span>BAG 背包道具</span><small>🎒</small></button>
           <button data-menu="shop"><span>SHOP 寶可夢商店</span><small id="menuCoinsTxt">₽150</small></button>
-          <button data-menu="map"><span>TOWN MAP 五大地圖</span><small>🗺️</small></button>
+          <button data-menu="map"><span>TOWN MAP 九大地圖</span><small>🗺️</small></button>
           <button data-menu="codex"><span>CODEX 寶可夢圖鑑</span><small>📖</small></button>
           <button data-menu="records"><span>🏆 RECORDS 冒險榜單</span><small>🏅</small></button>
           <button data-menu="trainer"><span id="menuTrainerName">TRAINER 名片</span><small>🧢</small></button>
           <button data-menu="save" style="color:#15803d;"><span>💾 儲存 / 讀取進度</span><small>SAVE</small></button>
           <button data-menu="chinese-gym" style="color:#b91c1c;"><span>📕 國語文道館</span><small>+ATK</small></button>
           <button data-menu="math-gym" style="color:#1d4ed8;"><span>📘 數學道館</span><small>+DEF</small></button>
+          <button data-menu="nature-gym" style="color:#15803d;"><span>🌱 自然道館</span><small>+HP</small></button>
           <button data-menu="reset" style="color:#64748b;font-size:15px;"><span>🔄 重置冒險進度</span></button>
           <button data-menu="close"><span>EXIT 關閉選單</span></button>
         </nav>
@@ -257,7 +261,7 @@
           <button id="btnQuickParty">🐾 隊伍 / 升級</button>
           <button id="btnQuickNurseryBottom" style="border-color:#c084fc;color:#e9d5ff;">🧬 寶可夢合成</button>
           <button id="btnQuickBag">🎒 背包道具</button>
-          <button id="btnQuickWorldMap">🗺️ 五大地圖</button>
+          <button id="btnQuickWorldMap">🗺️ 九大地圖</button>
         </div>
       </div>
 
@@ -274,7 +278,7 @@
           📱 平板觸控點擊地圖/方向鍵移動 · 💻 鍵盤 <kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> 移動 · <kbd>E</kbd> / <kbd>Space</kbd> 互動
         </span>
         <span class="world-window-top" id="worldChestCounter">
-          🎁 已開啟地圖寶箱：0 / 16 · 走出城鎮四個路口可前往五大地圖
+          🎁 已開啟地圖寶箱：0 / 20 · 通過道館與守護者挑戰，逐步探索九張地圖
         </span>
       </div>
     </div>
@@ -300,7 +304,7 @@
 
         <p style="font-size:16px;color:#334155;">
           歡迎來到<strong>柳溪 (Willowbrook)</strong>！請從下方三隻寶可夢中選擇你的第一隻出戰夥伴。<br />
-          <strong style="color:#b91c1c;">⚠️ 注意：初始寶可夢剛出發時只有 Lv.1（未受訓狀態），直接去野外草叢一定打不贏任何怪獸！</strong>選完夥伴後，請先進入城鎮中的<strong>「📕國語文道館」</strong>與<strong>「📘數學道館」</strong>進行訓練與提升，再到五大地圖挑戰並收服寶可夢！
+        <strong style="color:#b91c1c;">⚠️ 注意：初始寶可夢剛出發時只有 Lv.1（未受訓狀態），直接去野外草叢一定打不贏任何怪獸！</strong>選完夥伴後，請先進入城鎮中的<strong>「📕國語文道館」</strong>與<strong>「📘數學道館」</strong>進行訓練，再逐步挑戰九張地圖；後期挑戰地圖需要取得國語、數學與自然三枚大師徽章。
         </p>
 
         <div class="starter-choices" id="starterChoicesGrid">
@@ -384,6 +388,21 @@
       </div>
     </div>
 
+    <div class="modal-scrim hidden" id="natureGymModal" role="dialog" aria-modal="true" aria-labelledby="natureGymTitle">
+      <div class="modal wide pixel-window">
+        <div class="modal-title">
+          <h2 id="natureGymTitle" style="color:#166534;">🌱 自然道館（三年級上學期期中自然科）— 提升寶可夢最大 HP</h2>
+          <button class="close-button" id="closeNatureGym">×</button>
+        </div>
+        <div class="gym-tier-tabs">
+          <button class="tier-tab active-nature" id="naTab_a">🌿 (a) 初階：選擇題 · 隨機10題（最大 HP +4）</button>
+          <button class="tier-tab" id="naTab_b">🧪 (b) 中階：填空題 · 隨機8題（最大 HP +6）</button>
+          <button class="tier-tab" id="naTab_c">🔬 (c) 進階：混合挑戰 · 隨機5題（最大 HP +8）</button>
+        </div>
+        <div id="natureGymBody"></div>
+      </div>
+    </div>
+
     <!-- 頁尾資源致謝 -->
     <footer class="credits-footer">
       <div>
@@ -393,7 +412,7 @@
       </div>
       <div style="margin-top: 4px;">
         <strong>🎮 遊戲地圖、介面與資源參考：</strong>
-        地圖與介面參考 <a href="https://infinite-pokemon-blond.vercel.app/game/" target="_blank" rel="noopener noreferrer">Infinite Pokémon — Willow Valley</a>（柳溪、克洛佛班克河、低雨林小徑、桑布雷克海岸、韋斯頓露台五張地圖與商店道具系統），由 Daigan Games 使用 <a href="https://godotengine.org/" target="_blank" rel="noopener noreferrer">Godot 引擎</a> 4.7 製作。
+        地圖與介面參考 <a href="https://infinite-pokemon-blond.vercel.app/game/" target="_blank" rel="noopener noreferrer">Infinite Pokémon — Willow Valley</a>（柳溪谷與商店道具系統），由 Daigan Games 使用 <a href="https://godotengine.org/" target="_blank" rel="noopener noreferrer">Godot 引擎</a> 4.7 製作。
         寶可夢與金銀版地圖素材參考 <a href="https://www.spriters-resource.com/game_boy_gbc/pokemongoldsilver/" target="_blank" rel="noopener noreferrer">The Spriters Resource：Pokémon Gold / Silver</a>；進化等級依 <a href="https://wiki.52poke.com/zh-hant/寶可夢進化等級列表" target="_blank" rel="noopener noreferrer">神奇寶貝百科進化等級列表</a>。
         世界與音效素材參考：<a href="https://kenney.nl/" target="_blank" rel="noopener noreferrer">Kenney</a> (CC0)、<a href="https://opengameart.org/content/15-melodic-rpg-chiptunes" target="_blank" rel="noopener noreferrer">Aureolus_Omicron</a> (CC0)、AkitsukiShintai (PokemonHD-2D)，字體採用 Pixelify Sans 與 Nunito (SIL OFL 1.1)。
       </div>
